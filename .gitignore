@@ -1,0 +1,5 @@
+**/test_cache.sqlite
+/virtualpy/
+coverage.py
+.coverage
+Secrets.py

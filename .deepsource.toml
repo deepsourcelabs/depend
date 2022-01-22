@@ -1,5 +1,14 @@
 version = 1
 
+test_patterns = [
+  "tests/**",
+  "test_*.py"
+]
+
+[[analyzers]]
+name = "test-coverage"
+enabled = true
+
 [[analyzers]]
 name = "secrets"
 enabled = true
@@ -7,3 +16,6 @@ enabled = true
 [[analyzers]]
 name = "python"
 enabled = true
+
+  [analyzers.meta]
+  runtime_version = "3.x.x"
