@@ -1,5 +1,6 @@
 **/test_cache.sqlite
-/virtualpy/
+/venv/
+.idea
 coverage.xml
 .coverage
 Secrets.py
