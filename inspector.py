@@ -11,33 +11,31 @@ these may not support semantic versioning (https://semver.org/)
 
 """
 import Constants
-from bs4 import BeautifulSoup
-import re
-import json
 import requests
 import requests_cache
 from datetime import datetime, timedelta
-from db.ElasticWorker import Elasticsearch, connect_elasticsearch
-from helper import Result
+from helper import Result, handle_pypi, handle_npmjs, scrape_go
 from vcs.GithubWorker import handle_github
 import logging
-from typing import List
+from typing import List, Optional
 
 requests_cache.install_cache('test_cache', expire_after=Constants.CACHE_EXPIRY)
 source: dict = Constants.REGISTRY
 
 
-def make_vcs_request(
-        dependency: str
+def handle_vcs(
+        dependency: str,
+        gh_token: str = None
 ) -> Result:
     """
     Fall through to VCS check for a go namespace (only due to go.mod check)
+    :param gh_token: auth token for vcs requests
     :param dependency: package not found in other repositories
     :return: result object with name version license and dependencies
     """
     result = {}
     if "github.com" in dependency:
-        result = handle_github(dependency)
+        result = handle_github(dependency, gh_token)
     else:
         logging.error("VCS Request Failed: Unsupported Pattern")
         logging.info("VCS for BitBucket and GitLab coming soon!")
@@ -79,10 +77,11 @@ def make_url(
 
 
 def make_single_request(
-        es: Elasticsearch,
+        es: any,
         language: str,
         package: str,
-        version: str = ""
+        version: str = "",
+        gh_token: Optional[str] = None
 ) -> Result:
     """
     Obtain package license and dependency information.
@@ -90,136 +89,66 @@ def make_single_request(
     :param language: python, javascript or go
     :param package: as imported
     :param version: check for specific version
+    :param gh_token: GitHub token for authentication
     :return: result object with name version license and dependencies
     """
-    if version:
-        ESresult: dict = es.get(index=language, id=package + "@" + version, ignore=404)
-    else:
-        ESresult: dict = es.get(index=language, id=package, ignore=404)
-    if "found" in ESresult and ESresult["found"]:
-        db_time = datetime.fromisoformat(
-            ESresult["_source"]["timestamp"],
-        )
-        if db_time - datetime.utcnow() < timedelta(
-                seconds=Constants.CACHE_EXPIRY
-        ):
-            logging.info("Using " + package + " found in ES Database")
-            return ESresult["_source"]
-    result = {}
+    package_version = package
+    if es is not None:
+        ESresult: dict = es.get(index=language, id=package_version, ignore=404)
+        if ESresult.get("found"):
+            db_time = datetime.fromisoformat(
+                ESresult["_source"]["timestamp"],
+            )
+            if db_time - datetime.utcnow() < timedelta(
+                    seconds=Constants.CACHE_EXPIRY
+            ):
+                logging.info("Using " + package + " found in ES Database")
+                return ESresult["_source"]
+
     url = make_url(language, package, version)
     logging.info(url)
     response = requests.get(url)
-    name = source[language]['name']
-    version_tag = source[language]['version']
-    license_tag = source[language]['license']
-    dependencies = source[language]['dependency']
+    queries = source[language]
+
+    result = {
+        'name': package,
+        'version': '',
+        'license': '',
+        'dependencies': [],
+    }
+
     match language:
         case "python":
-            data = json.loads(response.text)
-            result['name'] = package
-            result['version'] = data["info"][version_tag]
-            result['license'] = data["info"][license_tag]
-            result['dependencies'] = data["info"][dependencies]
+            handle_pypi(response, queries, result)
         case "javascript":
-            data = json.loads(response.text)
-            result['license'] = ""
-            result['dependencies'] = []
-            if 'versions' in data.keys():
-                latest = data['dist-tags']['latest']
-                result['name'] = package
-                result['version'] = latest
-                latest_ = data['versions'][latest]
-            else:
-                result['name'] = package
-                result['version'] = data[version_tag]
-                latest_ = data
-            if "license" in latest_.keys():
-                result['license'] = latest_["license"]
-            elif "licenses" in latest_.keys():
-                result['license'] = ";".join(
-                    [
-                        lic["type"] for lic
-                        in latest_["licenses"]
-                    ]
-                )
-            if "dependencies" in latest_.keys():
-                result['dependencies'] = latest_['dependencies']
-            elif "__dependencies" in latest_.keys():
-                result['dependencies'] = latest_['__dependencies']
+            handle_npmjs(response, queries, result)
         case "go":
-            if response.status_code != 400:
-                soup = BeautifulSoup(response.text, "html.parser")
-                name_parse = name.split('.')
-                name_data = soup.find(
-                    name_parse[0],
-                    class_=name_parse[1]
-                ).getText().strip().split(" ")
-                package_name = package
-                if len(name_data) > 1:
-                    package_name = name_data[-1].strip()
-                key_parse = source[language]['parse'].split('.')
-                ver_parse = source[language]['versions'].split('.')
-                dep_parse = source[language]['dependencies'].split('.')
-                key_element = soup.find(
-                    key_parse[0],
-                    class_=key_parse[1]
-                ).getText()
-                key_data = re.findall(r"([^ \n:]+): ([a-zA-Z0-9-_ ,.]+)", key_element)
-                data = dict(key_data)
-                ver_res = requests.get(url + "?tab=versions", allow_redirects=False)
-                dep_res = requests.get(url + "?tab=imports", allow_redirects=False)
-                if ver_res.status_code == 200:
-                    version_soup = BeautifulSoup(ver_res.text, "html.parser")
-                    releases = [
-                        release.getText().strip()
-                        for release in version_soup.findAll(
-                            ver_parse[0],
-                            class_=ver_parse[1]
-                        )
-                    ]
-                    logging.info(releases)
-                dependencies = []
-                if dep_res.status_code == 200:
-                    dep_soup = BeautifulSoup(dep_res.text, "html.parser")
-                    dependencies = [
-                        dependency.getText().strip()
-                        for dependency in dep_soup.findAll(
-                            dep_parse[0],
-                            class_=dep_parse[1]
-                        )
-                    ]
-                result['name'] = package_name
-                result['version'] = data[version_tag]
-                result['license'] = data[license_tag]
-                result['dependencies'] = dependencies
+            if response.status_code == 200:
+                scrape_go(response, queries, result, url)
             else:
-                result = make_vcs_request(package)
+                result = handle_vcs(package, gh_token)
     result["timestamp"] = datetime.utcnow().isoformat()
-    if version:
+    if es is not None:
         es.index(
             index=language,
-            id=package + "@" + version,
-            document=result
-        )
-    else:
-        es.index(
-            index=language,
-            id=package,
+            id=package_version,
             document=result
         )
     return result
 
 
 def make_multiple_requests(
-        es: Elasticsearch,
+        es: any,
         language: str,
-        packages: List[str]
+        packages: List[str],
+        gh_token: Optional[str] = None
 ) -> dict:
     """
     Obtain license and dependency information for list of packages.
     :param es: ElasticSearch Instance
     :param language: python, javascript or go
     :param packages: a list of dependencies in each language
+    :param gh_token: GitHub token for authentication
     :return: result object with name version license and dependencies
     """
     result = {}
@@ -230,23 +159,6 @@ def make_multiple_requests(
             result[package] = make_single_request(es, language, package)
         else:
             result[package] = make_single_request(
-                es, language, name_ver[0], name_ver[1]
+                es, language, name_ver[0], name_ver[1], gh_token
             )
     return result
-
-
-def main():
-    """Main function for testing"""
-    es = connect_elasticsearch({'host': 'localhost', 'port': 9200})
-    for lang, dependencies in Constants.DEPENDENCY_TEST.items():
-        logging.info(
-            json.dumps(
-                make_multiple_requests(es, lang, dependencies),
-                indent=3
-            )
-        )
-
-
-if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.INFO)
-    main()

@@ -1,16 +1,14 @@
-"""Functions to work with ElasticSearch"""
+"""Functions to work with ElasticSearch."""
 
 import logging
 from elasticsearch import Elasticsearch
-import Secrets
 
 
-def connect_elasticsearch(target: dict) -> Elasticsearch:
+def connect_elasticsearch(target: dict, auth: tuple) -> Elasticsearch:
     """Connect to local elastic server"""
-    _es = None
     _es = Elasticsearch(
         [target],
-        http_auth=("elastic", Secrets.PASSWORD)
+        http_auth=auth
     )
     if _es.ping():
         logging.info('Connected to Elastic')
@@ -19,10 +17,11 @@ def connect_elasticsearch(target: dict) -> Elasticsearch:
         create_index(_es, "go")
     else:
         logging.error('Failed to connect!')
+        _es = None
     return _es
 
 
-def create_index(es: Elasticsearch, index_name: str = "versioner") -> bool:
+def create_index(es, index_name: str = "versioner") -> bool:
     """Populating Elastic with strict schema to index"""
     config = {
         "settings": {
@@ -34,7 +33,9 @@ def create_index(es: Elasticsearch, index_name: str = "versioner") -> bool:
     return True
 
 
-def clear_index(es: Elasticsearch, index_name: str = "versioner") -> bool:
+def clear_index(es, index_name: str = "versioner") -> bool:
     """Delete indexes from Elastic"""
-    es.indices.delete(index=index_name, ignore=400)
-    return True
+    if es is not None:
+        es.indices.delete(index=index_name, ignore=400)
+        return True
+    return False

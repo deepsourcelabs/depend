@@ -1,17 +1,65 @@
-"""Tests for all functions in inspector.py"""
+"""Tests for all functions in inspector."""
 
+import pytest
 import inspector
 from db.ElasticWorker import connect_elasticsearch, create_index, clear_index
-import Constants
-
-es = connect_elasticsearch({'host': 'localhost', 'port': 9200})
+import configparser
 
 
-def test_elasticsearch():
-    """Test if ES database can be connected to"""
-    assert es is not None
+@pytest.fixture
+def es():
+    """Return ES object"""
+    configfile = configparser.ConfigParser()
+    configfile.read("configuration.ini")
+    es = connect_elasticsearch(
+        {'host': 'localhost', 'port': 9200},
+        (
+            configfile.get("secrets", "es_uid").strip(),
+            configfile.get("secrets", "es_pass").strip()
+        )
+    )
+    return es
 
 
+@pytest.fixture(autouse=True)
+def skip_by_status(request: pytest.FixtureRequest, es: any):
+    """
+    :param request: pytest request
+    :param es: database object
+    """
+    if request.node.get_closest_marker('skip_status'):
+        if request.node.get_closest_marker('skip_status').args[0] == es:
+            pytest.skip('Skipped as es connection status: {}'.format(es))
+
+
+@pytest.fixture
+def dependency_payload():
+    """
+    Generates a fixed payload to test the script
+    :return: List of dependencies with language as key
+    """
+    return {
+        'javascript':
+            [
+                'react@0.12.0',
+                'react@17.0.2',
+                'jQuery@1.7.4',
+                'jQuery'
+            ],
+        "python":
+            [
+                'pygithub'
+            ],
+        "go":
+            [
+                "https://github.com/go-yaml/yaml",
+                "github.com/getsentry/sentry-go",
+                "github.com/cactus/go-statsd-client/v5/statsd",
+            ]
+    }
+
+
+@pytest.mark.skip_status(None)
 def test_clear_database():
     """Delete database indices - Only for local use"""
     assert clear_index(es, "python")
@@ -59,6 +107,7 @@ def test_make_url_without_version():
     ) == 'https://pkg.go.dev/bufio'
 
 
+@pytest.mark.skip_status(None)
 def test_created_index():
     """Create language indices again for caching"""
     assert create_index(es, "python")
@@ -121,23 +170,18 @@ def test_make_single_request_go_github():
     assert len(result['dependencies']) != 0
 
 
-def test_make_multiple_requests():
+def test_make_multiple_requests(dependency_payload):
     """Multiple package requests for JavaScript NPM and Go"""
     result = [
         inspector.make_multiple_requests(es, lang, dependencies)
         for lang, dependencies
-        in Constants.DEPENDENCY_TEST.items()
+        in dependency_payload.items()
     ]
     assert len(result) == 3
 
 
 def test_make_vcs_request():
     """Test VCS handler"""
-    assert inspector.make_vcs_request("code.didiapp.com/server-go/checker") == {}
-    result = inspector.make_vcs_request("github.com/getsentry/sentry-go")
+    assert inspector.handle_vcs("code.didiapp.com/server-go/checker") == {}
+    result = inspector.handle_vcs("github.com/getsentry/sentry-go")
     assert result["license"] == 'BSD 2-Clause "Simplified" License'
-
-
-def test_main_cached_retrieval():
-    """Execute main function so cached data is retrieved"""
-    inspector.main()
