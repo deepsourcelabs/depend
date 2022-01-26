@@ -41,14 +41,17 @@ def main(
         logging.error("dependencies section missing from config file")
         raise typer.Abort()
     for lang, dependencies in configfile["dependencies"].items():
-        logging.info(
-            json.dumps(
-                make_multiple_requests(
-                    es, lang, dependencies.split("\n"), gh_token
-                ),
-                indent=3
+        dep_list = dependencies.split("\n")
+        dep_list = list(filter(None, dep_list))
+        if dep_list:
+            logging.info(
+                json.dumps(
+                    make_multiple_requests(
+                        es, lang, dep_list, gh_token
+                    ),
+                    indent=3
+                )
             )
-        )
 
 
 if __name__ == "__main__":
