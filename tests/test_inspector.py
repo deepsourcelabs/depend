@@ -10,7 +10,7 @@ import configparser
 def es():
     """Return ES object"""
     configfile = configparser.ConfigParser()
-    configfile.read("configuration.ini")
+    configfile.read("config.ini")
     es = connect_elasticsearch(
         {'host': 'localhost', 'port': 9200},
         (
@@ -27,9 +27,9 @@ def skip_by_status(request: pytest.FixtureRequest, es: any):
     :param request: pytest request
     :param es: database object
     """
-    if request.node.get_closest_marker('skip_status'):
-        if request.node.get_closest_marker('skip_status').args[0] == es:
-            pytest.skip('Skipped as es connection status: {}'.format(es))
+    if request.node.get_closest_marker('skip_status') and \
+            request.node.get_closest_marker('skip_status').args[0] == es:
+        pytest.skip('Skipped as es connection status: {}'.format(es))
 
 
 @pytest.fixture
@@ -60,7 +60,7 @@ def dependency_payload():
 
 
 @pytest.mark.skip_status(None)
-def test_clear_database():
+def test_clear_database(es):
     """Delete database indices - Only for local use"""
     assert clear_index(es, "python")
     assert clear_index(es, "javascript")
@@ -108,14 +108,14 @@ def test_make_url_without_version():
 
 
 @pytest.mark.skip_status(None)
-def test_created_index():
+def test_created_index(es):
     """Create language indices again for caching"""
     assert create_index(es, "python")
     assert create_index(es, "javascript")
     assert create_index(es, "go")
 
 
-def test_make_single_request_py():
+def test_make_single_request_py(es):
     """Test version and license for python"""
     result = inspector.make_single_request(
         es,
@@ -129,7 +129,7 @@ def test_make_single_request_py():
     assert len(result['dependencies']) == 10
 
 
-def test_make_single_request_js():
+def test_make_single_request_js(es):
     """Test version and license for javascript"""
     result = inspector.make_single_request(
         es,
@@ -143,7 +143,7 @@ def test_make_single_request_js():
     assert len(result['dependencies']) == 2
 
 
-def test_make_single_request_go():
+def test_make_single_request_go(es):
     """Test version and license for go"""
     result = inspector.make_single_request(
         es,
@@ -157,7 +157,19 @@ def test_make_single_request_go():
     assert len(result['dependencies']) == 32
 
 
-def test_make_single_request_go_github():
+def test_make_single_request_go_redirect(es):
+    """Test version and license for go on redirects"""
+    result = inspector.make_single_request(
+        es,
+        "go",
+        "http",
+        "go1.16.13"
+    )
+    assert result['name'] == 'http'
+    assert result['version'] == 'go1.16.13'
+    assert result['license'] == 'BSD-3-Clause'
+
+def test_make_single_request_go_github(es):
     """Test version and license for go GitHub fallthrough"""
     result = inspector.make_single_request(
         es,
@@ -170,7 +182,7 @@ def test_make_single_request_go_github():
     assert len(result['dependencies']) != 0
 
 
-def test_make_multiple_requests(dependency_payload):
+def test_make_multiple_requests(dependency_payload, es):
     """Multiple package requests for JavaScript NPM and Go"""
     result = [
         inspector.make_multiple_requests(es, lang, dependencies)

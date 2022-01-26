@@ -124,6 +124,10 @@ def make_single_request(
             handle_npmjs(response, queries, result)
         case "go":
             if response.status_code == 200:
+                """Handle 302: Redirection"""
+                if response.history:
+                    red_url = response.url + "@" + version
+                    response = requests.get(red_url)
                 scrape_go(response, queries, result, url)
             else:
                 result = handle_vcs(package, gh_token)
