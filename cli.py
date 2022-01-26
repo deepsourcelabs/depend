@@ -22,7 +22,30 @@ def main(
         es_uid: Optional[str] = typer.Option(None),
         es_pass: Optional[str] = typer.Option(None)
 ):
-    """Main function for CLI"""
+    """
+    Dependency Inspector
+
+    Retrieves licenses and dependencies of Python, JavaScript and Go packages.
+    Uses Package Indexes for Python and Javascript
+    Go is temporarily handled by scraping go.pkg.dev and VCS
+    VCS support is currently limited to GitHub for fallthrough cases in Go
+    Parameters such as auth tokens and passwords can be defined in config.ini
+    rather than specifying as an argument
+
+    :param config: Specify location of a .ini file | refer config.ini sample
+
+    :param es_db: pass --es-db to link to Elastic instance
+
+    :param host: Host info for Elastic server
+
+    :param port: Port info for Elastic server
+
+    :param es_uid: Username for authenticating Elastic
+
+    :param es_pass: Password to authenticate Elastic
+
+    :param gh_token: GitHub token to authorize VCS and bypass rate limit
+    """
     if config is None or not config.is_file():
         logging.error("Configuration file not found")
         raise typer.Abort()
