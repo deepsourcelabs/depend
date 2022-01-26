@@ -49,9 +49,9 @@ def make_url(
 ) -> str:
     """
     Construct the API JSON request URL or web URL to scrape
-    :param language: python, javascript or go
-    :param package: as imported
-    :param version: optional
+    :param language: lowercase: python, javascript or go
+    :param package: as imported in source
+    :param version: optional version specification
     :return: url to fetch
     """
     match language:
@@ -124,7 +124,7 @@ def make_single_request(
             handle_npmjs(response, queries, result)
         case "go":
             if response.status_code == 200:
-                """Handle 302: Redirection"""
+                # Handle 302: Redirection
                 if response.history:
                     red_url = response.url + "@" + version
                     response = requests.get(red_url)
