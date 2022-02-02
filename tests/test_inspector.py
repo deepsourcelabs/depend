@@ -4,6 +4,8 @@ import pytest
 import inspector
 from db.ElasticWorker import connect_elasticsearch, create_index, clear_index
 import configparser
+from datetime import datetime
+from helper import Result
 
 
 @pytest.fixture
@@ -169,6 +171,7 @@ def test_make_single_request_go_redirect(es):
     assert result['version'] == 'go1.16.13'
     assert result['license'] == 'BSD-3-Clause'
 
+
 def test_make_single_request_go_github(es):
     """Test version and license for go GitHub fallthrough"""
     result = inspector.make_single_request(
@@ -194,6 +197,12 @@ def test_make_multiple_requests(dependency_payload, es):
 
 def test_make_vcs_request():
     """Test VCS handler"""
-    assert inspector.handle_vcs("code.didiapp.com/server-go/checker") == {}
-    result = inspector.handle_vcs("github.com/getsentry/sentry-go")
+    result: Result = {
+        'name': '',
+        'version': '',
+        'license': '',
+        'dependencies': [],
+        'timestamp': datetime.utcnow().isoformat()
+    }
+    inspector.handle_vcs("github.com/getsentry/sentry-go", result)
     assert result["license"] == 'BSD 2-Clause "Simplified" License'
