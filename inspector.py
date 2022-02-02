@@ -14,21 +14,20 @@ source: dict = Constants.REGISTRY
 
 def handle_vcs(
         dependency: str,
-        gh_token: str = None
-) -> Result:
+        result: Result,
+        gh_token: str = None,
+):
     """
     Fall through to VCS check for a go namespace (only due to go.mod check)
     :param gh_token: auth token for vcs requests
     :param dependency: package not found in other repositories
-    :return: result object with name version license and dependencies
+    :param result: object with name version license and dependencies
     """
-    result = {}
     if "github.com" in dependency:
-        result = handle_github(dependency, gh_token)
+        handle_github(dependency, result, gh_token)
     else:
         logging.error("VCS Request Failed: Unsupported Pattern")
         logging.info("VCS for BitBucket and GitLab coming soon!")
-    return result
 
 
 def make_url(
@@ -99,11 +98,12 @@ def make_single_request(
     response = requests.get(url)
     queries = source[language]
 
-    result = {
+    result: Result = {
         'name': package,
         'version': '',
         'license': '',
         'dependencies': [],
+        'timestamp': datetime.utcnow().isoformat()
     }
 
     match language:
@@ -119,8 +119,7 @@ def make_single_request(
                     response = requests.get(red_url)
                 scrape_go(response, queries, result, url)
             else:
-                result = handle_vcs(package, gh_token)
-    result["timestamp"] = datetime.utcnow().isoformat()
+                handle_vcs(package, result, gh_token)
     if es is not None:
         es.index(
             index=language,

@@ -13,7 +13,7 @@ class Result(TypedDict):
     name: str
     version: str
     license: str
-    dependencies: List[str]
+    dependencies: List[List[str]]
     timestamp: str
 
 
@@ -43,7 +43,10 @@ def handle_pypi(api_response: requests.Response, queries: dict, result: Result):
     data = api_response.json()
     result['version'] = version_q.search(data)
     result['license'] = license_q.search(data)
-    result['dependencies'] = dependencies_q.search(data)
+    result['dependencies'] = [
+        re.findall(r"([^\s()]+)", dependency.strip())
+        for dependency in dependencies_q.search(data)
+    ]
     return result
 
 
@@ -70,7 +73,11 @@ def handle_npmjs(api_response: requests.Response, queries: dict, result: Result)
             data
         )
     result['license'] = ";".join(license_q.search(data))
-    result['dependencies'] = dependencies_q.search(data)
+    result['dependencies'] = list(
+        map(
+            list, dependencies_q.search(data).items()
+        )
+    )
 
 
 def scrape_go(response: requests.Response, queries: dict, result: Result, url: str):
@@ -115,7 +122,7 @@ def scrape_go(response: requests.Response, queries: dict, result: Result, url: s
     if dep_res.status_code == 200:
         dep_soup = BeautifulSoup(dep_res.text, "html.parser")
         dependencies_tag = [
-            dependency.getText().strip()
+            [dependency.getText().strip()]
             for dependency in dep_soup.findAll(
                 dep_parse[0],
                 class_=dep_parse[1]
