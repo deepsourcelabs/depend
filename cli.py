@@ -73,14 +73,14 @@ def main(
     else:
         logging.warning("Elastic not connected")
         es = None
-    for lang, dependencies in payload.items():
+    for language, dependencies in payload.items():
         dep_list = dependencies.replace(',', '\n').split('\n')
         dep_list = list(filter(None, dep_list))
         if dep_list:
             logging.info(
                 json.dumps(
                     make_multiple_requests(
-                        es, lang, dep_list, gh_token
+                        es, language, dep_list, gh_token
                     ),
                     indent=3
                 )
