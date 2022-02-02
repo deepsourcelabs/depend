@@ -4,7 +4,7 @@ import datetime
 import logging
 import re
 import time
-from typing import Dict, List, Optional
+from typing import Optional
 
 from github import Github
 
