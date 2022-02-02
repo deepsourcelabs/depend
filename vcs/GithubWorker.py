@@ -5,11 +5,9 @@ import logging
 import re
 import time
 from typing import Optional
-
 from github import Github
-
 import Constants
-from helper import parse_license, Result
+from helper import parse_license, Result, handle_go_mod
 
 
 def handle_github(
@@ -54,11 +52,7 @@ def handle_github(
         "go.mod",
         ref=commit_branch_tag
     ).decoded_content.decode()
-    dep_data = re.findall(
-        r"[\s/]+[\"|\']?([^\s\n(\"\']+)[\"|\']?\s+[\"|\']?v([^\s\n]+)[\"|\']?",
-        dep_file
-    )
     result['name'] = dependency
     result['version'] = commit_branch_tag or releases[0]
     result['license'] = repo_lic
-    result['dependencies'] = dep_data
+    result['dependencies'] = handle_go_mod(dep_file)

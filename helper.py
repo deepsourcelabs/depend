@@ -5,6 +5,7 @@ from typing import TypedDict, List
 import requests
 import jmespath
 from bs4 import BeautifulSoup
+from pkg_resources import parse_requirements
 
 
 class Result(TypedDict):
@@ -30,6 +31,40 @@ def parse_license(license_file: str, license_dict: dict) -> str:
     return "Other"
 
 
+def handle_requirements_txt(req_file_data: str) -> list:
+    """
+    Parse requirements file
+    :param req_file_data: Content of requirements.txt
+    :return: list of requirement and specs
+    """
+    install_reqs = parse_requirements(req_file_data)
+    # not considering extras i.e. requests[security] == 2.9.1
+    return [
+        [ir.key, ir.specs]
+        for ir in install_reqs
+    ]
+
+
+def handle_go_mod(req_file_data: str) -> list:
+    """
+    Parse go.mod file
+    :param req_file_data: Content of go.mod
+    :return: list of requirement and specs
+    """
+    return re.findall(
+        r"[\s/]+[\"|\']?([^\s\n(\"\']+)[\"|\']?\s+[\"|\']?v([^\s\n]+)[\"|\']?",
+        req_file_data
+    )
+
+
+def handle_javascript(req_file_data: str) -> list:
+    """
+    Port of https://github.com/npm/read-package-json
+    :param req_file_data:
+    """
+    return []
+
+
 def handle_pypi(api_response: requests.Response, queries: dict, result: Result):
     """
     Take api response and return required results object
@@ -43,10 +78,8 @@ def handle_pypi(api_response: requests.Response, queries: dict, result: Result):
     data = api_response.json()
     result['version'] = version_q.search(data)
     result['license'] = license_q.search(data)
-    result['dependencies'] = [
-        re.findall(r"([^\s()]+)", dependency.strip())
-        for dependency in dependencies_q.search(data)
-    ]
+    req_file_data = "\n".join(dependencies_q.search(data))
+    result['dependencies'] = handle_requirements_txt(req_file_data)
     return result
 
 
