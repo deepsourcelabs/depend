@@ -1,15 +1,4 @@
-"""
-License Extractor
-
-This script extracts license information from various version control systems
-these may not support semantic versioning (https://semver.org/)
-
-    ! Popular options NPM supports for hosting packages - GitHub  - Gitlab - Bitbucket
-    ! user/repo but still commit hash - branch - version
-        There may exist copies in other repositories
-            gopkg.in/yaml.v1 - https://github.com/go-yaml/yaml/tree/v1
-
-"""
+"""License & Version Extractor"""
 import Constants
 import requests
 import requests_cache

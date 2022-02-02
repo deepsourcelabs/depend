@@ -10,12 +10,12 @@ import configparser
 def es():
     """Return ES object"""
     configfile = configparser.ConfigParser()
-    configfile.read("config.ini")
+    configfile.read("./data/config.ini")
     es = connect_elasticsearch(
         {'host': 'localhost', 'port': 9200},
         (
-            configfile.get("secrets", "es_uid").strip(),
-            configfile.get("secrets", "es_pass").strip()
+            configfile.get("secrets", "es_uid", fallback=None),
+            configfile.get("secrets", "es_pass", fallback=None)
         )
     )
     return es

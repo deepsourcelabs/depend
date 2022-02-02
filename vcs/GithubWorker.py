@@ -15,6 +15,8 @@ def handle_github(
         gh_token: Optional[str]
 ) -> Dict[str, str | List[Any]]:
     """VCS fallthrough for GitHub based GO"""
+    if gh_token is None:
+        logging.warning("Proceeding without Github Authentication")
     g = Github(gh_token)
     result = {}
     rl = g.get_rate_limit()
