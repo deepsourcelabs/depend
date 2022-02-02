@@ -30,7 +30,7 @@ def main(
 
     Retrieves licenses and dependencies of Python, JavaScript and Go packages.
     Uses Package Indexes for Python and Javascript
-    Go is temporarily handled by scraping go.pkg.dev and VCS
+    Go is temporarily handled by scraping pkg.go.dev and VCS
     VCS support is currently limited to GitHub for fallthrough cases in Go
     Parameters such as auth tokens and passwords can be defined in config.ini
     rather than specifying as an argument
