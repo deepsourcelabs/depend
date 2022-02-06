@@ -5,6 +5,8 @@ import logging
 import re
 import time
 from typing import Optional
+import github.GithubObject
+import github.GithubException
 from github import Github
 import Constants
 from helper import parse_license, Result, handle_go_mod
@@ -33,11 +35,15 @@ def handle_github(
     )
     repo = g.get_repo(repo_identifier.group(1) + "/" + repo_identifier.group(2))
     commit_branch_tag = repo_identifier.group(3)
-    repo_lic = parse_license(
-        repo.get_contents(
+    try:
+        lic_file = repo.get_contents(
             "LICENSE",
-            ref=commit_branch_tag
-        ).decoded_content.decode(),
+            ref=commit_branch_tag or repo.default_branch
+        ).decoded_content.decode()
+    except github.GithubException:
+        lic_file = ""
+    repo_lic = parse_license(
+        lic_file,
         Constants.LICENSE_DICT
     )
     if repo_lic == "Other":
@@ -47,11 +53,14 @@ def handle_github(
         logging.error("No releases found, defaulting to tags")
         releases = [tag.name for tag in repo.get_tags()]
     logging.info(releases)
-    # go.sum not checked
-    dep_file = repo.get_contents(
-        "go.mod",
-        ref=commit_branch_tag
-    ).decoded_content.decode()
+    print(commit_branch_tag)
+    try:
+        dep_file = repo.get_contents(
+            "go.mod",
+            ref=commit_branch_tag or repo.default_branch
+        ).decoded_content.decode()
+    except github.GithubException:
+        dep_file = ""
     result['name'] = dependency
     result['version'] = commit_branch_tag or releases[0]
     result['license'] = repo_lic

@@ -25,10 +25,11 @@ def parse_license(license_file: str, license_dict: dict) -> str:
     :param license_dict: Dictionary mapping license files and unique substring
     :return: Detected license type as a String, `Other` if failed to detect
     """
-    for lic in license_dict:
-        if lic in license_file:
-            return license_dict[lic]
-    return "Other"
+    licenses = [
+        license_str for lic, license_str
+        in license_dict.items() if lic in license_file
+    ]
+    return ";".join(licenses) or "Other"
 
 
 def handle_requirements_txt(req_file_data: str) -> list:
