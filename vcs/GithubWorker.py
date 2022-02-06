@@ -13,6 +13,7 @@ from helper import parse_license, Result, handle_go_mod
 
 
 def handle_github(
+        language: str,
         dependency: str,
         result: Result,
         gh_token: Optional[str]
@@ -34,11 +35,17 @@ def handle_github(
         dependency
     )
     repo = g.get_repo(repo_identifier.group(1) + "/" + repo_identifier.group(2))
-    commit_branch_tag = repo_identifier.group(3)
+    commit_branch_tag = repo_identifier.group(3) or repo.default_branch
+    files = repo.get_contents("", commit_branch_tag)
+    license_filename = "LICENSE"
+    for f in files:
+        if f.name in Constants.LICENSE_FILES:
+            license_filename = f.name
+            break
     try:
         lic_file = repo.get_contents(
-            "LICENSE",
-            ref=commit_branch_tag or repo.default_branch
+            license_filename,
+            ref=commit_branch_tag
         ).decoded_content.decode()
     except github.GithubException:
         lic_file = ""
@@ -53,11 +60,15 @@ def handle_github(
         logging.error("No releases found, defaulting to tags")
         releases = [tag.name for tag in repo.get_tags()]
     logging.info(releases)
-    print(commit_branch_tag)
+    req_filename = "requirements.txt"
+    for f in files:
+        if f.name in Constants.REQ_FILES[language]:
+            req_filename = f.name
+            break
     try:
         dep_file = repo.get_contents(
-            "go.mod",
-            ref=commit_branch_tag or repo.default_branch
+            req_filename,
+            ref=commit_branch_tag
         ).decoded_content.decode()
     except github.GithubException:
         dep_file = ""

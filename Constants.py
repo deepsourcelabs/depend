@@ -35,6 +35,49 @@ REGISTRY = {
             'dependency': 'dependencies',
         }
 }
+LICENSE_FILES = [
+    "LICENSE",
+    "LICENSE.md",
+    "LICENSE.txt",
+    "COPYRIGHT",
+    "COPYING",
+    "COPYING.md"
+    "LICENSE.textile",
+    "COPYING.textile",
+    "LICENSE-MIT",
+    "COPYING-MIT",
+    "MIT-LICENSE-MIT",
+    "MIT-COPYING",
+    "OFL.md",
+    "OFL.textile",
+    "OFL",
+    "OFL.txt",
+    "PATENTS",
+    "PATENTS.txt",
+    "WTFPL",
+    "UNLICENSE"
+]
+REQ_FILES = {
+    'python':
+        [
+           "setup.py",
+           "requirements.txt",
+           "pipfile.lock",
+           "pipfile",
+           "poetry.toml",
+           "pyproject.toml",
+        ],
+    'javascript':
+        [
+            "package-lock.json"
+            "package.json"
+            "yarn.lock",
+        ],
+    'go':
+        [
+            "go.mod"
+        ]
+}
 LICENSE_DICT = {
     'AFL': 'Academic Free License',
     'Apache': 'Apache Software License',
