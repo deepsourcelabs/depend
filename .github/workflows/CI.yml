@@ -25,7 +25,7 @@ jobs:
     - name: Run tests
       run: |
         pip install -r requirements.txt
-        pytest --cov=./ --cov-report=xml
+        python -m pytest --cov=./ --cov-report=xml tests/
 
     - name: Report test coverage to DeepSource
       uses: deepsourcelabs/test-coverage-action@master

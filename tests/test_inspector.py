@@ -201,7 +201,7 @@ def test_make_vcs_request(result_payload):
 
 
 def test_unsupported_language_fails():
-    """"""
+    """Checks if exception is raised for unsupported language"""
     with pytest.raises(
         LanguageNotSupportedError,
         match="java"
@@ -210,6 +210,7 @@ def test_unsupported_language_fails():
 
 
 def test_unsupported_vcs_fails(result_payload):
+    """Checks if exception is raised for unsupported pattern"""
     with pytest.raises(
         VCSNotSupportedError,
         match="gitlab"

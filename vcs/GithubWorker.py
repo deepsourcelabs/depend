@@ -6,7 +6,6 @@ import re
 import time
 from typing import Optional
 from github import Github
-import github.GithubObject
 import github.GithubException
 import Constants
 from helper import parse_license, Result

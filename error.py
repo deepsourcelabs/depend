@@ -1,9 +1,15 @@
 """All custom exceptions raised by Dependency Inspector"""
+import abc
 
 
 class UnsupportedError(Exception):
     """Raised when an unsupported action is attempted"""
-    pass
+
+    __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def __init__(self):
+        raise NotImplementedError
 
 
 class LanguageNotSupportedError(UnsupportedError):
