@@ -24,6 +24,7 @@ def handle_github(
     g = Github(gh_token)
     rl = g.get_rate_limit()
     if rl.core.remaining == 0:
+        # skipcq: TCV-001
         logging.error("GitHub API limit exhausted - Sleeping")
         time.sleep(
             (
@@ -56,7 +57,7 @@ def handle_github(
     if repo_lic == "Other":
         repo_lic = repo.get_license().license.name
     releases = [release.tag_name for release in repo.get_releases()]
-    if len(releases) == 0:
+    if not releases:
         logging.error("No releases found, defaulting to tags")
         releases = [tag.name for tag in repo.get_tags()]
     logging.info(releases)

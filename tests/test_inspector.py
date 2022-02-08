@@ -1,10 +1,11 @@
 """Tests for all functions in inspector."""
 
-import pytest
-import inspector
-from db.ElasticWorker import connect_elasticsearch, create_index, clear_index
 import configparser
 from datetime import datetime
+import pytest
+import inspector
+from db.ElasticWorker import connect_elasticsearch
+from error import LanguageNotSupportedError, VCSNotSupportedError
 from helper import Result
 
 
@@ -14,10 +15,13 @@ def es():
     configfile = configparser.ConfigParser()
     configfile.read("./data/config.ini")
     es = connect_elasticsearch(
-        {'host': 'localhost', 'port': 9200},
+        {
+            'host': configfile.get("secrets", "host", fallback="localhost"),
+            'port': configfile.get("secrets", "port", fallback=9200),
+        },
         (
-            configfile.get("secrets", "es_uid", fallback=None),
-            configfile.get("secrets", "es_pass", fallback=None)
+            configfile.get("secrets", "es_uid", fallback=""),
+            configfile.get("secrets", "es_pass", fallback="")
         )
     )
     return es
@@ -61,12 +65,20 @@ def dependency_payload():
     }
 
 
-@pytest.mark.skip_status(None)
-def test_clear_database(es):
-    """Delete database indices - Only for local use"""
-    assert clear_index(es, "python")
-    assert clear_index(es, "javascript")
-    assert clear_index(es, "go")
+@pytest.fixture
+def result_payload():
+    """
+    Generates a result object to test the script
+    :return: Result object to manipulate
+    """
+    result: Result = {
+        'name': '',
+        'version': '',
+        'license': '',
+        'dependencies': [],
+        'timestamp': datetime.utcnow().isoformat()
+    }
+    return result
 
 
 def test_make_url_with_version():
@@ -86,11 +98,6 @@ def test_make_url_with_version():
         'bufio',
         'go1.17.6'
     ) == 'https://pkg.go.dev/bufio@go1.17.6'
-    assert inspector.make_url(
-        'java',
-        'maven',
-        'random'
-    ) == ""
 
 
 def test_make_url_without_version():
@@ -109,14 +116,6 @@ def test_make_url_without_version():
     ) == 'https://pkg.go.dev/bufio'
 
 
-@pytest.mark.skip_status(None)
-def test_created_index(es):
-    """Create language indices again for caching"""
-    assert create_index(es, "python")
-    assert create_index(es, "javascript")
-    assert create_index(es, "go")
-
-
 def test_make_single_request_py(es):
     """Test version and license for python"""
     result = inspector.make_single_request(
@@ -128,7 +127,7 @@ def test_make_single_request_py(es):
     assert result['name'] == 'aiohttp'
     assert result['version'] == '3.7.2'
     assert result['license'] == 'Apache 2'
-    assert len(result['dependencies']) == 10
+    assert result['dependencies']
 
 
 def test_make_single_request_js(es):
@@ -142,7 +141,7 @@ def test_make_single_request_js(es):
     assert result['name'] == 'react'
     assert result['version'] == '17.0.2'
     assert result['license'] == 'MIT'
-    assert len(result['dependencies']) == 2
+    assert result['dependencies']
 
 
 def test_make_single_request_go(es):
@@ -156,7 +155,7 @@ def test_make_single_request_go(es):
     assert result['name'] == 'github.com/getsentry/sentry-go'
     assert result['version'] == 'v0.12.0'
     assert result['license'] == 'BSD-2-Clause'
-    assert len(result['dependencies']) == 32
+    assert result['dependencies']
 
 
 def test_make_single_request_go_redirect(es):
@@ -182,7 +181,7 @@ def test_make_single_request_go_github(es):
     assert result['name'] == 'https://github.com/go-yaml/yaml'
     assert result['version']
     assert result['license'] == 'Apache Software License'
-    assert len(result['dependencies']) != 0
+    assert result['dependencies']
 
 
 def test_make_multiple_requests(dependency_payload, es):
@@ -195,14 +194,41 @@ def test_make_multiple_requests(dependency_payload, es):
     assert len(result) == 3
 
 
-def test_make_vcs_request():
+def test_make_vcs_request(result_payload):
     """Test VCS handler"""
-    result: Result = {
-        'name': '',
-        'version': '',
-        'license': '',
-        'dependencies': [],
-        'timestamp': datetime.utcnow().isoformat()
-    }
-    inspector.handle_vcs("github.com/getsentry/sentry-go", result)
-    assert result["license"] == 'BSD 2-Clause "Simplified" License'
+    inspector.handle_vcs("go", "github.com/getsentry/sentry-go", result_payload)
+    assert result_payload["license"] == 'BSD 2-Clause "Simplified" License'
+
+
+def test_unsupported_language_fails():
+    """Checks if exception is raised for unsupported language"""
+    with pytest.raises(
+        LanguageNotSupportedError,
+        match="java"
+    ):
+        inspector.make_url("java", "foo")
+
+
+def test_unsupported_vcs_fails(result_payload):
+    """Checks if exception is raised for unsupported pattern"""
+    with pytest.raises(
+        VCSNotSupportedError,
+        match="gitlab"
+    ):
+        inspector.handle_vcs(
+            "go",
+            "gitlab.com/secmask/awserver",
+            result_payload
+        )
+
+
+def test_unsupported_repo(result_payload):
+    """Checks if missing dependency or requirement files are handled"""
+    inspector.handle_github(
+        "go",
+        "https://github.com/rust-lang/cargo",
+        result_payload,
+        None
+    )
+    assert result_payload["license"] == "Other"
+    assert not result_payload["dependencies"]

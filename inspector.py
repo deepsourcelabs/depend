@@ -7,6 +7,7 @@ from helper import Result, handle_pypi, handle_npmjs, scrape_go
 from vcs.GithubWorker import handle_github
 import logging
 from typing import List, Optional
+from error import LanguageNotSupportedError, VCSNotSupportedError
 
 requests_cache.install_cache('test_cache', expire_after=Constants.CACHE_EXPIRY)
 source: dict = Constants.REGISTRY
@@ -28,8 +29,7 @@ def handle_vcs(
     if "github.com" in dependency:
         handle_github(language, dependency, result, gh_token)
     else:
-        logging.error("VCS Request Failed: Unsupported Pattern")
-        logging.info("VCS for BitBucket and GitLab coming soon!")
+        raise VCSNotSupportedError(dependency)
 
 
 def make_url(
@@ -61,8 +61,7 @@ def make_url(
             else:
                 url_elements = (source[language]['url'], package)
         case _:
-            logging.error("This language is not supported")
-            return ""
+            raise LanguageNotSupportedError(language)
     return "/".join(url_elements).rstrip("/")
 
 
@@ -84,6 +83,7 @@ def make_single_request(
     """
     package_version = package
     if es is not None:
+        # skipcq: TCV-001
         ESresult: dict = es.get(index=language, id=package_version, ignore=404)
         if ESresult.get("found"):
             db_time = datetime.fromisoformat(
@@ -123,6 +123,7 @@ def make_single_request(
             else:
                 handle_vcs(language, package, result, gh_token)
     if es is not None:
+        # skipcq: TCV-001
         es.index(
             index=language,
             id=package_version,

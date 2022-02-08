@@ -63,7 +63,7 @@ def handle_javascript(req_file_data: str) -> list:
     Port of https://github.com/npm/read-package-json
     :param req_file_data:
     """
-    return []
+    return [req_file_data]
 
 
 def handle_pypi(api_response: requests.Response, queries: dict, result: Result):
