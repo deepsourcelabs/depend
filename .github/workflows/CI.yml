@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+      branches:
+      - master
+
+jobs:
+  run-tests:
+    runs-on: [ubuntu-latest]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 1
+        ref: ${{ github.event.pull_request.head.sha }}
+
+    - name: Set up python3.10
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'
+
+    - name: Run tests
+      run: |
+        pip install -r requirements.txt
+        pytest --cov=./ --cov-report=xml
+
+    - name: Report test coverage to DeepSource
+      uses: deepsourcelabs/test-coverage-action@master
+      with:
+        key: python
+        coverage-file: coverage.xml
+        dsn: ${{ secrets.DEEPSOURCE_DSN }}

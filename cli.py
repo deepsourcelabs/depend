@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional
 import typer
 from db.ElasticWorker import connect_elasticsearch
+from error import LanguageNotSupportedError, VCSNotSupportedError
 import configparser
 import logging
 
@@ -54,19 +55,19 @@ def main(
     if config is not None:
         if not config.is_file():
             logging.error("Configuration file not found")
-            raise typer.Abort()
+            raise typer.Exit(code=-1)
         configfile.read(config)
         es_uid = es_uid or configfile.get("secrets", "es_uid", fallback=None)
         es_pass = es_pass or configfile.get("secrets", "es_pass", fallback=None)
         gh_token = gh_token or configfile.get("secrets", "gh_token", fallback=None)
         if not configfile.has_section("dependencies"):
             logging.error("dependencies section missing from config file")
-            raise typer.Abort()
+            raise typer.Exit(code=-1)
         payload = configfile["dependencies"]
     else:
         if lang not in ["go", "python", "javascript"]:
             logging.error("Please specify a supported language!")
-            raise typer.Abort()
+            raise typer.Exit(code=-1)
         payload[lang] = packages
     if host and port:
         es = connect_elasticsearch({'host': host, 'port': port}, (es_uid, es_pass))
@@ -76,15 +77,19 @@ def main(
     for language, dependencies in payload.items():
         dep_list = dependencies.replace(',', '\n').split('\n')
         dep_list = list(filter(None, dep_list))
-        if dep_list:
-            logging.info(
-                json.dumps(
-                    make_multiple_requests(
-                        es, language, dep_list, gh_token
-                    ),
-                    indent=3
+        try:
+            if dep_list:
+                logging.info(
+                    json.dumps(
+                        make_multiple_requests(
+                            es, language, dep_list, gh_token
+                        ),
+                        indent=3
+                    )
                 )
-            )
+        except (LanguageNotSupportedError, VCSNotSupportedError) as e:
+            logging.error(e.msg)
+            raise typer.Exit(code=-1)
 
 
 if __name__ == "__main__":
