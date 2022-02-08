@@ -97,7 +97,7 @@ class LaxSetupReader(SetupReader):
                 for el in variable.elts:
                     install_requires.append(el.s)
 
-            elif variable is not None and isinstance(variable,str):
+            elif variable is not None and isinstance(variable, str):
                 return variable
 
         return install_requires

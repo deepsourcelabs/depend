@@ -8,7 +8,7 @@ from typing import Optional
 import github.GithubObject
 import github.GithubException
 from github import Github
-import Constants
+import constants
 from helper import parse_license, Result, handle_dep_file
 
 
@@ -24,7 +24,6 @@ def handle_github(
     g = Github(gh_token)
     rl = g.get_rate_limit()
     if rl.core.remaining == 0:
-        # skipcq: TCV-001
         logging.error("GitHub API limit exhausted - Sleeping")
         time.sleep(
             (
@@ -40,7 +39,7 @@ def handle_github(
     files = repo.get_contents("", commit_branch_tag)
     license_filename = "LICENSE"
     for f in files:
-        if f.name in Constants.LICENSE_FILES:
+        if f.name in constants.LICENSE_FILES:
             license_filename = f.name
             break
     try:
@@ -52,7 +51,7 @@ def handle_github(
         lic_file = ""
     repo_lic = parse_license(
         lic_file,
-        Constants.LICENSE_DICT
+        constants.LICENSE_DICT
     )
     if repo_lic == "Other":
         repo_lic = repo.get_license().license.name
@@ -63,7 +62,7 @@ def handle_github(
     logging.info(releases)
     req_filename = "requirements.txt"
     for f in files:
-        if f.name in Constants.REQ_FILES[language]:
+        if f.name in constants.REQ_FILES[language]:
             req_filename = f.name
             break
     try:

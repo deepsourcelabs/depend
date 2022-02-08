@@ -1,16 +1,16 @@
 """License & Version Extractor"""
-import Constants
+import constants
 import requests
 import requests_cache
 from datetime import datetime, timedelta
 from helper import Result, handle_pypi, handle_npmjs, scrape_go
-from vcs.GithubWorker import handle_github
+from vcs.github_worker import handle_github
 import logging
 from typing import List, Optional
 from error import LanguageNotSupportedError, VCSNotSupportedError
 
-requests_cache.install_cache('requests_cache', expire_after=Constants.CACHE_EXPIRY)
-source: dict = Constants.REGISTRY
+requests_cache.install_cache('requests_cache', expire_after=constants.CACHE_EXPIRY)
+source: dict = constants.REGISTRY
 
 
 def handle_vcs(
@@ -83,14 +83,13 @@ def make_single_request(
     """
     package_version = package
     if es is not None:
-        # skipcq: TCV-001
         ESresult: dict = es.get(index=language, id=package_version, ignore=404)
         if ESresult.get("found"):
             db_time = datetime.fromisoformat(
                 ESresult["_source"]["timestamp"],
             )
             if db_time - datetime.utcnow() < timedelta(
-                    seconds=Constants.CACHE_EXPIRY
+                    seconds=constants.CACHE_EXPIRY
             ):
                 logging.info("Using " + package + " found in ES Database")
                 return ESresult["_source"]
@@ -123,7 +122,6 @@ def make_single_request(
             else:
                 handle_vcs(language, package, result, gh_token)
     if es is not None:
-        # skipcq: TCV-001
         es.index(
             index=language,
             id=package_version,
