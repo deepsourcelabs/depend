@@ -15,6 +15,7 @@ configfile = configparser.ConfigParser()
 
 
 @app.callback(invoke_without_command=True)
+# skipcq: TCV-001
 def main(
         lang: Optional[str] = typer.Option(None),
         packages: Optional[str] = typer.Option(None),

@@ -219,3 +219,14 @@ def test_unsupported_vcs_fails(result_payload):
             "gitlab.com/secmask/awserver",
             result_payload
         )
+
+
+def test_unsupported_repo(result_payload):
+    """Checks if missing dependency or requirement files are handled"""
+    inspector.handle_github(
+        "https://github.com/rust-lang/cargo",
+        result_payload,
+        None
+    )
+    assert result_payload["license"] == "Other"
+    assert not result_payload["dependencies"]

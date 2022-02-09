@@ -21,6 +21,7 @@ def handle_github(
         logging.warning("Proceeding without Github Authentication")
     g = Github(gh_token)
     rl = g.get_rate_limit()
+    # skipcq: TCV-001
     if rl.core.remaining == 0:
         logging.error("GitHub API limit exhausted - Sleeping")
         time.sleep(
