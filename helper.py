@@ -10,6 +10,8 @@ from bs4 import BeautifulSoup
 from pkg_resources import parse_requirements
 from ctypes import string_at
 from binaries.BinaryWorker import getDepVer, free
+from pyarn import lockfile
+import yaml
 
 
 class Result(TypedDict):
@@ -65,6 +67,20 @@ def handle_requirements_txt(req_file_data: str) -> list:
         [ir.key, ir.specs]
         for ir in install_reqs
     ]
+
+
+def handle_yarn_lock(req_file_data: str) -> list:
+    """
+    Parse yarn lock file
+    :param req_file_data: Content of yarn.lock
+    :return: list of requirement and specs
+    """
+    if "lockfile v1" in req_file_data:
+        parsed_lockfile = lockfile.Lockfile.from_str(req_file_data)
+        unfiltered_content = parsed_lockfile.to_json()
+    else:
+        unfiltered_content = yaml.safe_load(req_file_data)
+    return unfiltered_content
 
 
 def handle_package_json(req_file_data: str) -> dict:

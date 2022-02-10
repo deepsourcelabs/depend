@@ -9,7 +9,7 @@ import logging
 from typing import List, Optional
 from error import LanguageNotSupportedError, VCSNotSupportedError
 
-requests_cache.install_cache('test_cache', expire_after=Constants.CACHE_EXPIRY)
+requests_cache.install_cache('requests_cache', expire_after=Constants.CACHE_EXPIRY)
 source: dict = Constants.REGISTRY
 
 

@@ -24,3 +24,19 @@ def test_package_json():
         json_content = f.read()
     result = helper.handle_package_json(json_content)
     assert result["version"] == "1.0.0"
+
+
+def test_yarn_v1_lock():
+    """Check yarn.lock v1 file output"""
+    with open("tests/data/example_v1_yarn.lock") as f:
+        yarn_content = f.read()
+    result = helper.handle_yarn_lock(yarn_content)
+    assert result
+
+
+def test_yarn_v2_lock():
+    """Check yarn.lock v2 file output"""
+    with open("tests/data/example_v2_yarn.lock") as f:
+        yarn_content = f.read()
+    result = helper.handle_yarn_lock(yarn_content)
+    assert result
