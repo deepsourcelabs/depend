@@ -80,8 +80,8 @@ def make_single_request(
     :return: result object with name version license and dependencies
     """
     package_version = package
-    # skipcq: TCV-001
     if es is not None:
+        # skipcq: TCV-001
         ESresult: dict = es.get(index=language, id=package_version, ignore=404)
         if ESresult.get("found"):
             db_time = datetime.fromisoformat(
@@ -120,8 +120,8 @@ def make_single_request(
                 scrape_go(response, queries, result, url)
             else:
                 handle_vcs(package, result, gh_token)
-    # skipcq: TCV-001
     if es is not None:
+        # skipcq: TCV-001
         es.index(
             index=language,
             id=package_version,

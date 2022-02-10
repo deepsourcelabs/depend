@@ -1,4 +1,4 @@
-"""VCS Handler for Github"""
+"""VCS Handler for GitHub"""
 
 import datetime
 import logging
@@ -18,12 +18,13 @@ def handle_github(
 ):
     """VCS fallthrough for GitHub based GO"""
     if gh_token is None:
-        logging.warning("Proceeding without Github Authentication")
+        logging.warning("Proceeding without GitHub Authentication")
     g = Github(gh_token)
     rl = g.get_rate_limit()
-    # skipcq: TCV-001
     if rl.core.remaining == 0:
+        # skipcq: TCV-001
         logging.error("GitHub API limit exhausted - Sleeping")
+        # skipcq: TCV-001
         time.sleep(
             (
                     rl.core.reset - datetime.datetime.now()
