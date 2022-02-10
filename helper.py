@@ -1,4 +1,5 @@
 """Helper Functions for Inspector."""
+import json
 import logging
 import re
 from typing import TypedDict, List
@@ -6,6 +7,8 @@ import requests
 import jmespath
 from bs4 import BeautifulSoup
 from pkg_resources import parse_requirements
+from ctypes import string_at
+from binaries.BinaryWorker import getDepVer, free
 
 
 class Result(TypedDict):
@@ -39,23 +42,24 @@ def handle_requirements_txt(req_file_data: str) -> list:
     :return: list of requirement and specs
     """
     install_reqs = parse_requirements(req_file_data)
-    # not considering extras i.e. requests[security] == 2.9.1
     return [
         [ir.key, ir.specs]
         for ir in install_reqs
     ]
 
 
-def handle_go_mod(req_file_data: str) -> list:
+def handle_go_mod(req_file_data: str) -> dict:
     """
     Parse go.mod file
     :param req_file_data: Content of go.mod
     :return: list of requirement and specs
     """
-    return re.findall(
-        r"[\s/]+[\"|\']?([^\s\n(\"\']+)[\"|\']?\s+[\"|\']?v([^\s\n]+)[\"|\']?",
-        req_file_data
+    ptr = getDepVer(
+        req_file_data.encode('utf-8')
     )
+    out = string_at(ptr).decode('utf-8')
+    free(ptr)
+    return json.loads(out)
 
 
 def handle_javascript(req_file_data: str) -> list:

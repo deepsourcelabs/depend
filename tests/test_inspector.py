@@ -231,4 +231,3 @@ def test_unsupported_repo(result_payload):
         None
     )
     assert result_payload["license"] == "Other"
-    assert not result_payload["dependencies"]
