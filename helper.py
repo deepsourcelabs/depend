@@ -52,18 +52,11 @@ def handle_go_mod(req_file_data: str) -> list:
     :param req_file_data: Content of go.mod
     :return: list of requirement and specs
     """
+    # skipcq: TCV-001
     return re.findall(
         r"[\s/]+[\"|\']?([^\s\n(\"\']+)[\"|\']?\s+[\"|\']?v([^\s\n]+)[\"|\']?",
         req_file_data
     )
-
-
-def handle_javascript(req_file_data: str) -> list:
-    """
-    Port of https://github.com/npm/read-package-json
-    :param req_file_data:
-    """
-    return []
 
 
 def handle_pypi(api_response: requests.Response, queries: dict, result: Result):
