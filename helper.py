@@ -9,7 +9,7 @@ import jmespath
 from bs4 import BeautifulSoup
 from pkg_resources import parse_requirements
 from ctypes import string_at
-from binaries.BinaryWorker import getDepVer, free
+from lib.LibWorker import getDepVer, free
 from pyarn import lockfile
 import yaml
 
