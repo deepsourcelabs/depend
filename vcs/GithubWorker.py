@@ -1,4 +1,4 @@
-"""VCS Handler for Github"""
+"""VCS Handler for GitHub"""
 
 import datetime
 import logging
@@ -9,7 +9,7 @@ import github.GithubObject
 import github.GithubException
 from github import Github
 import Constants
-from helper import parse_license, Result, handle_go_mod
+from helper import parse_license, Result, handle_dep_file
 
 
 def handle_github(
@@ -20,7 +20,7 @@ def handle_github(
 ):
     """VCS fallthrough for GitHub based GO"""
     if gh_token is None:
-        logging.warning("Proceeding without Github Authentication")
+        logging.warning("Proceeding without GitHub Authentication")
     g = Github(gh_token)
     rl = g.get_rate_limit()
     if rl.core.remaining == 0:
@@ -76,4 +76,4 @@ def handle_github(
     result['name'] = dependency
     result['version'] = commit_branch_tag or releases[0]
     result['license'] = repo_lic
-    result['dependencies'] = handle_go_mod(dep_file)
+    result['dependencies'] = handle_dep_file(req_filename, dep_file)

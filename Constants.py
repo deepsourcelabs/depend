@@ -60,18 +60,19 @@ LICENSE_FILES = [
 REQ_FILES = {
     'python':
         [
-           "setup.py",
-           "requirements.txt",
-           "pipfile.lock",
-           "pipfile",
-           "poetry.toml",
-           "pyproject.toml",
+            "setup.py",
+            "setup.cfg",
+            "requirements.txt",
+            "pipfile.lock",
+            "pipfile",
+            "poetry.toml",
+            "pyproject.toml",
         ],
     'javascript':
         [
-            "package-lock.json"
-            "package.json"
             "yarn.lock",
+            "package-lock.json",
+            "package.json",
         ],
     'go':
         [
