@@ -4,7 +4,7 @@ import configparser
 from datetime import datetime
 import pytest
 import inspector
-from db.ElasticWorker import connect_elasticsearch
+from db.elastic_worker import connect_elasticsearch
 from error import LanguageNotSupportedError, VCSNotSupportedError
 from helper import Result
 

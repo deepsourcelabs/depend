@@ -1,4 +1,4 @@
-**/test_cache.sqlite
+**/*_cache.sqlite
 /venv/
 .idea
 coverage.xml

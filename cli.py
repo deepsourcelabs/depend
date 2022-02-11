@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from typing import Optional
 import typer
-from db.ElasticWorker import connect_elasticsearch
+from db.elastic_worker import connect_elasticsearch
 from error import LanguageNotSupportedError, VCSNotSupportedError
 import configparser
 import logging

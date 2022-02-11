@@ -7,7 +7,7 @@ import time
 from typing import Optional
 from github import Github
 import github.GithubException
-import Constants
+import constants
 from helper import parse_license, Result
 
 
@@ -22,9 +22,7 @@ def handle_github(
     g = Github(gh_token)
     rl = g.get_rate_limit()
     if rl.core.remaining == 0:
-        # skipcq: TCV-001
         logging.error("GitHub API limit exhausted - Sleeping")
-        # skipcq: TCV-001
         time.sleep(
             (
                     rl.core.reset - datetime.datetime.now()
@@ -45,7 +43,7 @@ def handle_github(
         lic_file = ""
     repo_lic = parse_license(
         lic_file,
-        Constants.LICENSE_DICT
+        constants.LICENSE_DICT
     )
     if repo_lic == "Other":
         repo_lic = repo.get_license().license.name

@@ -46,19 +46,6 @@ def handle_requirements_txt(req_file_data: str) -> list:
     ]
 
 
-def handle_go_mod(req_file_data: str) -> list:
-    """
-    Parse go.mod file
-    :param req_file_data: Content of go.mod
-    :return: list of requirement and specs
-    """
-    # skipcq: TCV-001
-    return re.findall(
-        r"[\s/]+[\"|\']?([^\s\n(\"\']+)[\"|\']?\s+[\"|\']?v([^\s\n]+)[\"|\']?",
-        req_file_data
-    )
-
-
 def handle_pypi(api_response: requests.Response, queries: dict, result: Result):
     """
     Take api response and return required results object
