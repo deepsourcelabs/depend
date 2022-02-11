@@ -2,16 +2,19 @@
 import json
 import logging
 import re
-from error import FileNotSupportedError
+from ctypes import string_at
 from typing import TypedDict, Collection
-import requests
+
 import jmespath
+import requests
+import yaml
 from bs4 import BeautifulSoup
 from pkg_resources import parse_requirements
-from ctypes import string_at
-from lib.LibWorker import getDepVer, free
 from pyarn import lockfile
-import yaml
+
+from error import FileNotSupportedError
+from lib.LibWorker import getDepVer, free
+from lib.setup_reader import LaxSetupReader
 
 
 class Result(TypedDict):
@@ -67,6 +70,37 @@ def handle_requirements_txt(req_file_data: str) -> list:
         [ir.key, ir.specs]
         for ir in install_reqs
     ]
+
+
+def handle_setup_py(req_file_data: str) -> dict:
+    """
+    Parse setup.cfg
+    :param req_file_data: Content of setup.py
+    :return: dict containing dependency info and specs
+    """
+    parser = LaxSetupReader()
+    return parser.read_setup_py(req_file_data)
+
+
+def get_setup_data(rough_data):
+    """
+    Iterates through string to match closing brace
+    :param rough_data: setup function body
+    :return: string to be analysed
+    """
+    stack = ["("]
+    index = 0
+    for index, i in enumerate(rough_data):
+        if i == "(":
+            stack.append(i)
+        elif i == ")":
+            if len(stack) > 0:
+                stack.pop()
+            else:
+                break
+        if len(stack) == 0:
+            break
+    return index
 
 
 def handle_yarn_lock(req_file_data: str) -> list:

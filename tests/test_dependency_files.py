@@ -40,3 +40,10 @@ def test_yarn_v2_lock():
         yarn_content = f.read()
     result = helper.handle_yarn_lock(yarn_content)
     assert result
+
+
+def test_setup_py():
+    with open("tests/data/example_setup.py") as f:
+        py_content = f.read()
+    result = helper.handle_setup_py(py_content)
+    assert result

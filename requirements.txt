@@ -10,3 +10,4 @@ jmespath==0.10.0
 typer==0.4.0
 pyarn==0.1.2
 PyYAML==6.0
+poetry==1.1.13
