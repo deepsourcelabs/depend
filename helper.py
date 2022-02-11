@@ -13,7 +13,7 @@ from pkg_resources import parse_requirements
 from pyarn import lockfile
 
 from error import FileNotSupportedError
-from lib.LibWorker import getDepVer, free
+from lib.lib_worker import getDepVer, free
 from lib.setup_reader import LaxSetupReader
 
 
