@@ -1,0 +1,10 @@
+beautifulsoup4==4.10.0
+elasticsearch==7.16.3
+PyGithub==1.55
+requests==2.27.1
+requests-cache==0.9.1
+pytest==6.2.5
+responses==0.17.0
+pytest_cov==3.0.0
+jmespath==0.10.0
+typer==0.4.0
