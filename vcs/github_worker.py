@@ -5,13 +5,15 @@ import logging
 import re
 import time
 from typing import Optional
-from github import Github
+import github.GithubObject
 import github.GithubException
+from github import Github
 import constants
-from helper import parse_license, Result
+from helper import parse_license, Result, handle_dep_file
 
 
 def handle_github(
+        language: str,
         dependency: str,
         result: Result,
         gh_token: Optional[str]
@@ -34,9 +36,15 @@ def handle_github(
     )
     repo = g.get_repo(repo_identifier.group(1) + "/" + repo_identifier.group(2))
     commit_branch_tag = repo_identifier.group(3) or repo.default_branch
+    files = repo.get_contents("", commit_branch_tag)
+    license_filename = "LICENSE"
+    for f in files:
+        if f.name in constants.LICENSE_FILES:
+            license_filename = f.name
+            break
     try:
         lic_file = repo.get_contents(
-            "LICENSE",
+            license_filename,
             ref=commit_branch_tag
         ).decoded_content.decode()
     except github.GithubException:
@@ -52,18 +60,19 @@ def handle_github(
         logging.error("No releases found, defaulting to tags")
         releases = [tag.name for tag in repo.get_tags()]
     logging.info(releases)
+    req_filename = "requirements.txt"
+    for f in files:
+        if f.name in constants.REQ_FILES[language]:
+            req_filename = f.name
+            break
     try:
         dep_file = repo.get_contents(
-            "go.mod",
+            req_filename,
             ref=commit_branch_tag
         ).decoded_content.decode()
     except github.GithubException:
         dep_file = ""
-    dep_data = re.findall(
-        r"[\s/]+[\"|\']?([^\s\n(\"\']+)[\"|\']?\s+[\"|\']?v([^\s\n]+)[\"|\']?",
-        dep_file
-    )
     result['name'] = dependency
     result['version'] = commit_branch_tag or releases[0]
     result['license'] = repo_lic
-    result['dependencies'] = dep_data
+    result['dependencies'] = handle_dep_file(req_filename, dep_file)

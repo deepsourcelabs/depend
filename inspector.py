@@ -14,18 +14,20 @@ source: dict = constants.REGISTRY
 
 
 def handle_vcs(
+        language: str,
         dependency: str,
         result: Result,
         gh_token: str = None,
 ):
     """
     Fall through to VCS check for a go namespace (only due to go.mod check)
+    :param language: primary language of the package
     :param gh_token: auth token for vcs requests
     :param dependency: package not found in other repositories
     :param result: object with name version license and dependencies
     """
     if "github.com" in dependency:
-        handle_github(dependency, result, gh_token)
+        handle_github(language, dependency, result, gh_token)
     else:
         raise VCSNotSupportedError(dependency)
 
@@ -118,7 +120,7 @@ def make_single_request(
                     response = requests.get(red_url)
                 scrape_go(response, queries, result, url)
             else:
-                handle_vcs(package, result, gh_token)
+                handle_vcs(language, package, result, gh_token)
     if es is not None:
         es.index(
             index=language,
