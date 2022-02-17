@@ -49,7 +49,18 @@ def handle_json(req_file_data: str) -> dict:
         "name", "version", "license",
         "dependencies", "engines"
     ]
-    return {
+    filtered_data = {
         k: v for k, v in package_data.items()
         if k in filter_keys
     }
+    filtered_dep = filtered_data.get("dependencies", {})
+    if any(
+            isinstance(i, dict) for i in
+            filtered_dep.values()
+    ):
+        dependency_data = {
+            k: v.get("version", "") for k, v in filtered_dep.items()
+            if isinstance(v, dict)
+        }
+        filtered_data["dependencies"] = dependency_data
+    return filtered_data

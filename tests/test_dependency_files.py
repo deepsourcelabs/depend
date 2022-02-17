@@ -34,20 +34,20 @@ def test_package_json():
     assert result["version"] == "1.0.0"
 
 
-def test_package_json():
+def test_npm_shrinkwrap_json():
     """Check package.json file output"""
-    with open("tests/data/example_package.json") as f:
+    with open("tests/data/example_npm_shrinkwrap.json") as f:
         json_content = f.read()
     result = dependencies.js.js_worker.handle_json(json_content)
-    assert result["version"] == "1.0.0"
+    assert result["version"] == "0.0.1"
 
 
-def test_package_json():
+def test_package_lock_json():
     """Check package.json file output"""
-    with open("tests/data/example_package.json") as f:
+    with open("tests/data/example_package_lock.json") as f:
         json_content = f.read()
     result = dependencies.js.js_worker.handle_json(json_content)
-    assert result["version"] == "1.0.0"
+    assert result["version"] == "3.11.4"
 
 
 def test_yarn_v1_lock():
