@@ -5,14 +5,13 @@ import yaml
 from pyarn import lockfile
 
 
-def handle_yarn_lock(req_file_data: str) -> dict:
+def handle_yarn_lock(req_file_data: str) -> list:
     """
     Parse yarn lock file
     :param req_file_data: Content of yarn.lock
     :return: list of requirement and specs
     """
-    res = {}
-    keys = ["version", "dependencies"]
+    res = []
     if "lockfile v1" in req_file_data:
         parsed_lockfile = lockfile.Lockfile.from_str(req_file_data)
         unfiltered_content: dict = json.loads(
@@ -20,11 +19,23 @@ def handle_yarn_lock(req_file_data: str) -> dict:
         )
     else:
         unfiltered_content = yaml.safe_load(req_file_data)
-    # for name, obj in unfiltered_content.items():
-    #     result = dict((k, obj[k]) for k in keys if k in obj)
-    #     res[name] = result
-    #     combined-stream@1.0.6, combined-stream@~1.0.5
-    return unfiltered_content
+    keys = ["resolution", "dependencies"]
+    for name, obj in unfiltered_content.items():
+        flat = {}
+        gen = (x for x in keys if x in obj)
+        for k in gen:
+            if isinstance(obj[k], dict):
+                flat[k] = list(
+                    map(
+                        lambda x: str(x[0]) + ";" + str(x[1]),
+                        obj[k].items()
+                    )
+                )
+            else:
+                flat[k] = obj[k]
+        flat["name"] = name
+        res.append(flat)
+    return res
 
 
 def handle_package_json(req_file_data: str) -> dict:

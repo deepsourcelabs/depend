@@ -4,17 +4,16 @@ https://github.com/python-poetry/poetry/blob/master/src/poetry/utils/setup_reade
 """
 
 import ast
-import sys
-from typing import Dict
-from typing import List
-from typing import Union
-from typing import Iterable
+from configparser import ConfigParser
 from typing import Any
+from typing import Dict
+from typing import Iterable
+from typing import List
 from typing import Optional
+from typing import Union
+from poetry.core.semver import Version
+from poetry.core.semver import exceptions
 from poetry.utils.setup_reader import SetupReader
-
-PY35 = sys.version_info >= (3, 5)
-basestring = str
 
 
 class LaxSetupReader(SetupReader):
@@ -47,6 +46,9 @@ class LaxSetupReader(SetupReader):
         )
         result["classifiers"] = self._find_single_string(
             setup_call, body, "classifiers"
+        )
+        result["license"] = self._find_single_string(
+            setup_call, body, "license"
         )
         result["python_requires"] = self._find_single_string(
             setup_call, body, "python_requires"
@@ -143,3 +145,43 @@ class LaxSetupReader(SetupReader):
 
                 if target.id == name:
                     return elem.value
+
+    def read_setup_cfg(
+            self, content: str
+    ) -> Dict[str, Union[List, Dict]]:
+        """
+        Analyzes content of setup.cfg
+        :param content: file content
+        :return: filtered metadata
+        """
+        parser = ConfigParser()
+
+        parser.read_string(content)
+
+        name = parser.get("metadata", "name", fallback=None)
+
+        licenses = parser.get("metadata", "license", fallback=None)
+
+        classifiers = parser.get("metadata", "classifiers", fallback=None)
+
+        try:
+            version = Version.parse(parser.get("metadata", "version", fallback="")).text
+        except exceptions.ParseVersionError:
+            version = None
+
+        install_requires = [
+            dep.strip() for dep
+            in parser.get("options", "install_requires", fallback="").split("\n")
+            if dep
+        ]
+
+        python_requires = parser.get("options", "python_requires", fallback=None)
+
+        return {
+            "name": name,
+            "version": version,
+            "install_requires": install_requires,
+            "python_requires": python_requires,
+            "classifiers": classifiers,
+            "license": licenses
+        }
