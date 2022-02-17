@@ -1,12 +1,22 @@
 """Functions to handle Go files"""
 import json
+import logging
 from ctypes import cdll, c_char_p, c_void_p, string_at
+import platform
 
-libgo = cdll.LoadLibrary("dependencies/go/_gomod.so")
-getDepVer = libgo.getDepVer
+match platform.system():
+    case "Linux":
+        lib_go = cdll.LoadLibrary("dependencies/go/linux/_gomod.so")
+    case "Windows":
+        lib_go = cdll.LoadLibrary("dependencies/go/win32/_gomod.so")
+    case _:
+        lib_go = None
+        logging.error("Not compiled for Darwin")
+
+getDepVer = lib_go.getDepVer
 getDepVer.argtypes = [c_char_p]
 getDepVer.restype = c_void_p
-free = libgo.freeCByte
+free = lib_go.freeCByte
 free.argtypes = [c_void_p]
 
 
