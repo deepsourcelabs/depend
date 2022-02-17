@@ -119,22 +119,21 @@ class LaxSetupReader(SetupReader):
                 break
 
             # checks if filename is found in with
-            if isinstance(elem, ast.With):
-                if self.find_variable_in_body(elem.body, name) is not None:
-                    for item in elem.items:
-                        if not isinstance(item, ast.withitem):
-                            continue
-                        cont = item.context_expr
-                        if not isinstance(cont, ast.Call):
-                            continue
-                        func = cont.func
-                        if not (isinstance(func, ast.Name)
-                                and func.id == "open"):
-                            continue
-                        for arg in cont.args:
-                            if not (isinstance(arg, ast.Constant)):
-                                return "check_all_paths"
-                            return arg.value
+            if isinstance(elem, ast.With) and self.find_variable_in_body(elem.body, name) is not None:
+                for item in elem.items:
+                    if not isinstance(item, ast.withitem):
+                        continue
+                    cont = item.context_expr
+                    if not isinstance(cont, ast.Call):
+                        continue
+                    func = cont.func
+                    if not (isinstance(func, ast.Name)
+                            and func.id == "open"):
+                        continue
+                    for arg in cont.args:
+                        if not (isinstance(arg, ast.Constant)):
+                            return "check_all_paths"
+                        return arg.value
 
             if not isinstance(elem, ast.Assign):
                 continue

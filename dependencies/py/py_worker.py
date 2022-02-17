@@ -46,7 +46,7 @@ def handle_toml(file_data: str) -> dict:
     :param file_data: content of toml
     """
     toml_parsed = dict(toml.loads(file_data))
-    package_data = toml_parsed.get("package", None)
+    package_data = toml_parsed.get("package")
     if not package_data:
         package_data = toml_parsed.get("tool.poetry", {})
         package_dep = package_data.get("tool.poetry.dependencies", [])
