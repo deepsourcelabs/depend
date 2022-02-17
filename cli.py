@@ -77,8 +77,8 @@ def main(
             os.path.basename(dep_file), dep_file.read_text()
         )
         logging.info(dep_content)
+        payload[lang] = dep_content.get("dependencies")
         raise typer.Exit()
-        # payload[lang] = dep_content.get("dependencies")
     else:
         if lang not in ["go", "python", "javascript"]:
             logging.error("Please specify a supported language!")

@@ -5,7 +5,6 @@ import logging
 import re
 import time
 from typing import Optional
-import github.GithubObject
 import github.GithubException
 from github import Github
 import constants
