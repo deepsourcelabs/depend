@@ -55,6 +55,7 @@ def test_yarn_v2_lock():
     with open("tests/data/example_v2_yarn.lock") as f:
         yarn_content = f.read()
     result = dependencies.js.js_worker.handle_yarn_lock(yarn_content)
+    assert result
 
 
 def test_requirements_txt():

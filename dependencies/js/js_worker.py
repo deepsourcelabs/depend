@@ -44,15 +44,17 @@ def handle_json(req_file_data: str) -> dict:
     :return: list of requirement and specs
     """
     package_data = json.loads(req_file_data)
-    filter_keys = [
-        "name", "version", "license",
-        "dependencies", "engines"
-    ]
-    filtered_data = {
-        k: v for k, v in package_data.items()
-        if k in filter_keys
+    filter_dict = {
+        "name": "",
+        "version": "",
+        "license": "",
+        "dependencies": {},
+        "engines": {}
     }
-    filtered_dep = filtered_data.get("dependencies", {})
+    for k, v in package_data.items():
+        if k in filter_dict:
+            filter_dict[k] = v
+    filtered_dep = filter_dict.get("dependencies")
     if any(
             isinstance(i, dict) for i in
             filtered_dep.values()
@@ -61,5 +63,5 @@ def handle_json(req_file_data: str) -> dict:
             k: v.get("version", "") for k, v in filtered_dep.items()
             if isinstance(v, dict)
         }
-        filtered_data["dependencies"] = dependency_data
-    return filtered_data
+        filter_dict["dependencies"] = dependency_data
+    return filter_dict
