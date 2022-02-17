@@ -30,7 +30,23 @@ def test_package_json():
     """Check package.json file output"""
     with open("tests/data/example_package.json") as f:
         json_content = f.read()
-    result = dependencies.js.js_worker.handle_package_json(json_content)
+    result = dependencies.js.js_worker.handle_json(json_content)
+    assert result["version"] == "1.0.0"
+
+
+def test_package_json():
+    """Check package.json file output"""
+    with open("tests/data/example_package.json") as f:
+        json_content = f.read()
+    result = dependencies.js.js_worker.handle_json(json_content)
+    assert result["version"] == "1.0.0"
+
+
+def test_package_json():
+    """Check package.json file output"""
+    with open("tests/data/example_package.json") as f:
+        json_content = f.read()
+    result = dependencies.js.js_worker.handle_json(json_content)
     assert result["version"] == "1.0.0"
 
 

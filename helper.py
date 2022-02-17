@@ -4,7 +4,7 @@ import re
 import jmespath
 import requests
 from bs4 import BeautifulSoup
-from dependencies.js.js_worker import handle_package_json
+from dependencies.js.js_worker import handle_json
 from dependencies.py.py_worker import handle_requirements_txt
 from dependencies.go.go_worker import handle_go_mod
 from error import FileNotSupportedError
@@ -48,7 +48,7 @@ def handle_dep_file(file_name: str, file_content: str) -> Collection:
         case 'requirements.txt':
             return handle_requirements_txt(file_content)
         case 'package.json':
-            return handle_package_json(file_content)
+            return handle_json(file_content)
         case _:
             raise FileNotSupportedError(file_name)
 
