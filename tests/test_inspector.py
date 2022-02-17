@@ -196,7 +196,7 @@ def test_make_multiple_requests(dependency_payload, es):
 
 def test_make_vcs_request(result_payload):
     """Test VCS handler"""
-    inspector.handle_vcs("github.com/getsentry/sentry-go", result_payload)
+    inspector.handle_vcs("go", "github.com/getsentry/sentry-go", result_payload)
     assert result_payload["license"] == 'BSD 2-Clause "Simplified" License'
 
 
@@ -216,6 +216,7 @@ def test_unsupported_vcs_fails(result_payload):
         match="gitlab"
     ):
         inspector.handle_vcs(
+            "go",
             "gitlab.com/secmask/awserver",
             result_payload
         )
@@ -224,9 +225,9 @@ def test_unsupported_vcs_fails(result_payload):
 def test_unsupported_repo(result_payload):
     """Checks if missing dependency or requirement files are handled"""
     inspector.handle_github(
+        "go",
         "https://github.com/rust-lang/cargo",
         result_payload,
         None
     )
     assert result_payload["license"] == "Other"
-    assert not result_payload["dependencies"]
