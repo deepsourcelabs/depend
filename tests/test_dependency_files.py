@@ -23,7 +23,7 @@ def test_requirements_txt():
     with open("tests/data/example_requirements.txt") as f:
         txt_content = f.read()
     result = dependencies.py.py_worker.handle_requirements_txt(txt_content)
-    assert len(result) == 20
+    assert result["dependencies"]
 
 
 def test_package_json():

@@ -1,10 +1,12 @@
 """CLI for dependency-inspector."""
 import json
+import os.path
 from pathlib import Path
 from typing import Optional
 import typer
 from db.elastic_worker import connect_elasticsearch
 from error import LanguageNotSupportedError, VCSNotSupportedError
+from helper import handle_dep_file
 import configparser
 import logging
 
@@ -18,6 +20,7 @@ configfile = configparser.ConfigParser()
 def main(
         lang: Optional[str] = typer.Option(None),
         packages: Optional[str] = typer.Option(None),
+        dep_file: Optional[Path] = typer.Option(None),
         config: Optional[Path] = typer.Option(None),
         gh_token: Optional[str] = typer.Option(None),
         host: Optional[str] = typer.Option(None),
@@ -38,6 +41,8 @@ def main(
     :param lang: go, python or javascript
 
     :param packages: list of packages to check
+
+    :param dep_file: location of file to parse for packages
 
     :param config: Specify location of a .ini file | refer config.ini sample
 
@@ -64,6 +69,16 @@ def main(
             logging.error("dependencies section missing from config file")
             raise typer.Exit(code=-1)
         payload = configfile["dependencies"]
+    elif dep_file is not None:
+        if not dep_file.is_file():
+            logging.error("Dependency file cannot be read")
+            raise typer.Exit(code=-1)
+        dep_content = handle_dep_file(
+            os.path.basename(dep_file), dep_file.read_text()
+        )
+        logging.info(dep_content)
+        raise typer.Exit()
+        # payload[lang] = dep_content.get("dependencies")
     else:
         if lang not in ["go", "python", "javascript"]:
             logging.error("Please specify a supported language!")
@@ -75,8 +90,11 @@ def main(
         logging.warning("Elastic not connected")
         es = None
     for language, dependencies in payload.items():
-        dep_list = dependencies.replace(',', '\n').split('\n')
-        dep_list = list(filter(None, dep_list))
+        if not isinstance(dependencies, dict):
+            dep_list = dependencies.replace(',', '\n').split('\n')
+            dep_list = list(filter(None, dep_list))
+        else:
+            dep_list = dependencies.keys()
         try:
             if dep_list:
                 logging.info(

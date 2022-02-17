@@ -4,9 +4,9 @@ import re
 import jmespath
 import requests
 from bs4 import BeautifulSoup
-from dependencies.js.js_worker import handle_json
-from dependencies.py.py_worker import handle_requirements_txt
-from dependencies.go.go_worker import handle_go_mod
+from dependencies.js import js_worker
+from dependencies.py import py_worker
+from dependencies.go import go_worker
 from error import FileNotSupportedError
 from typing import TypedDict, Collection
 
@@ -35,7 +35,7 @@ def parse_license(license_file: str, license_dict: dict) -> str:
     return ";".join(licenses) or "Other"
 
 
-def handle_dep_file(file_name: str, file_content: str) -> Collection:
+def handle_dep_file(file_name: str, file_content: str) -> dict:
     """
     Parses contents of requirement file and returns useful insights
     :param file_name: name of requirement file
@@ -44,11 +44,19 @@ def handle_dep_file(file_name: str, file_content: str) -> Collection:
     """
     match file_name:
         case 'go.mod':
-            return handle_go_mod(file_content)
+            return go_worker.handle_go_mod(file_content)
+        case file_name if '.json' in file_name:
+            return js_worker.handle_json(file_content)
+        case 'yarn.lock':
+            return js_worker.handle_yarn_lock(file_content)
         case 'requirements.txt':
-            return handle_requirements_txt(file_content)
-        case 'package.json':
-            return handle_json(file_content)
+            return py_worker.handle_requirements_txt(file_content)
+        case 'pyproject.toml':
+            return py_worker.handle_toml(file_content)
+        case 'setup.py':
+            return py_worker.handle_setup_py(file_content)
+        case 'setup.cfg':
+            return py_worker.handle_setup_cfg(file_content)
         case _:
             raise FileNotSupportedError(file_name)
 
@@ -66,8 +74,10 @@ def handle_pypi(api_response: requests.Response, queries: dict, result: Result):
     data = api_response.json()
     result['version'] = version_q.search(data)
     result['license'] = license_q.search(data)
-    req_file_data = "\n".join(dependencies_q.search(data))
-    result['dependencies'] = handle_requirements_txt(req_file_data)
+    req_file_data = "\n".join(dependencies_q.search(data) or "")
+    result['dependencies'] = py_worker.handle_requirements_txt(
+        req_file_data
+    ).get("dependencies")
     return result
 
 

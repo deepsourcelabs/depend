@@ -1,15 +1,15 @@
 """License & Version Extractor"""
 import constants
 import requests
-import requests_cache
 from datetime import datetime, timedelta
 from helper import Result, handle_pypi, handle_npmjs, scrape_go
 from vcs.github_worker import handle_github
 import logging
 from typing import List, Optional
 from error import LanguageNotSupportedError, VCSNotSupportedError
+# import requests_cache
 
-requests_cache.install_cache('requests_cache', expire_after=constants.CACHE_EXPIRY)
+# requests_cache.install_cache('requests_cache', expire_after=constants.CACHE_EXPIRY)
 source: dict = constants.REGISTRY
 
 

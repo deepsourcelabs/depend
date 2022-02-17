@@ -5,13 +5,13 @@ import yaml
 from pyarn import lockfile
 
 
-def handle_yarn_lock(req_file_data: str) -> list:
+def handle_yarn_lock(req_file_data: str) -> dict:
     """
     Parse yarn lock file
     :param req_file_data: Content of yarn.lock
     :return: list of requirement and specs
     """
-    res = []
+    res = {}
     if "lockfile v1" in req_file_data:
         parsed_lockfile = lockfile.Lockfile.from_str(req_file_data)
         unfiltered_content: dict = json.loads(
@@ -33,8 +33,7 @@ def handle_yarn_lock(req_file_data: str) -> list:
                 )
             else:
                 flat[k] = obj[k]
-        flat["name"] = name
-        res.append(flat)
+        res[name] = flat
     return res
 
 
