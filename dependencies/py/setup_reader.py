@@ -23,8 +23,9 @@ def handle_classifiers(classifiers, res):
     :param classifiers: content used for indexing in pypi
     :param res: dict to modify
     """
-    lic = re.findall(r"License :: ([^\"]+)", classifiers)
-    res["pkg_lic"] = ";".join(lic)
+    if not res["pkg_lic"] or res["pkg_lic"] is "Other":
+        lic = re.findall(r'License :: ([^"\n]+)', classifiers)
+        res["pkg_lic"] = ";".join(lic)
 
 
 class LaxSetupReader(SetupReader):
@@ -171,34 +172,29 @@ class LaxSetupReader(SetupReader):
         :param content: file content
         :return: filtered metadata
         """
+        res = {
+            "lang_ver": "",
+            "pkg_name": "",
+            "pkg_ver": "",
+            "pkg_lic": "",
+            "pkg_err": "",
+            "pkg_dep": [],
+        }
         parser = ConfigParser()
-
         parser.read_string(content)
-
-        name = parser.get("metadata", "name", fallback=None)
-
-        licenses = parser.get("metadata", "license", fallback=None)
-
+        res["pkg_name"] = parser.get("metadata", "name", fallback=None)
+        res["pkg_lic"] = parser.get("metadata", "license", fallback=None)
         classifiers = parser.get("metadata", "classifiers", fallback=None)
-
         try:
-            version = Version.parse(parser.get("metadata", "version", fallback="")).text
+            res["pkg_ver"] = Version.parse(parser.get("metadata", "version", fallback="")).text
         except exceptions.ParseVersionError:
-            version = None
-
-        install_requires = [
+            res["pkg_ver"] = ""
+        res["pkg_dep"] = [
             dep.strip() for dep
             in parser.get("options", "install_requires", fallback="").split("\n")
             if dep
         ]
-
-        python_requires = parser.get("options", "python_requires", fallback=None)
-
-        return {
-            "name": name,
-            "version": version,
-            "install_requires": install_requires,
-            "python_requires": python_requires,
-            "classifiers": classifiers,
-            "license": licenses
-        }
+        res["lang_ver"] = str(parser.get("options", "python_requires", fallback=""))
+        if classifiers:
+            handle_classifiers(classifiers, res)
+        return res

@@ -81,7 +81,7 @@ def handle_pypi(api_response: requests.Response, queries: dict, result: Result):
     req_file_data = "\n".join(dependencies_q.search(data) or "")
     result['dependencies'] = py_worker.handle_requirements_txt(
         req_file_data
-    ).get("dependencies")
+    ).get("pkg_dep")
     return result
 
 

@@ -80,7 +80,7 @@ def main(
             os.path.basename(dep_file), dep_file.read_text()
         )
         logging.info(dep_content)
-        payload[lang] = dep_content.get("dependencies", [])
+        payload[lang] = dep_content.get("pkg_dep", [])
         if not deep_search:
             return dep_content
     else:

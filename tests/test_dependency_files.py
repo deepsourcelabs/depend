@@ -9,7 +9,7 @@ def test_go_mod():
     with open("tests/data/example_go.mod") as f:
         mod_content = f.read()
     result = dependencies.go.go_worker.handle_go_mod(mod_content)
-    assert result["Dep_ver"] == [
+    assert result["pkg_dep"] == [
         'github.com/alecthomas/template;v0.0.0-20160405071501-a0175ee3bccc',
         'github.com/alecthomas/units;v0.0.0-20151022065526-2efee857e7cf',
         'github.com/gorilla/mux;v1.6.2',
@@ -23,7 +23,7 @@ def test_package_json():
     with open("tests/data/example_package.json") as f:
         json_content = f.read()
     result = dependencies.js.js_worker.handle_json(json_content)
-    assert result["version"] == "1.0.0"
+    assert result["pkg_ver"] == "1.0.0"
 
 
 def test_npm_shrinkwrap_json():
@@ -31,7 +31,7 @@ def test_npm_shrinkwrap_json():
     with open("tests/data/example_npm_shrinkwrap.json") as f:
         json_content = f.read()
     result = dependencies.js.js_worker.handle_json(json_content)
-    assert result["version"] == "0.0.1"
+    assert result["pkg_ver"] == "0.0.1"
 
 
 def test_package_lock_json():
@@ -39,7 +39,7 @@ def test_package_lock_json():
     with open("tests/data/example_package_lock.json") as f:
         json_content = f.read()
     result = dependencies.js.js_worker.handle_json(json_content)
-    assert result["version"] == "3.11.4"
+    assert result["pkg_ver"] == "3.11.4"
 
 
 def test_yarn_v1_lock():
@@ -63,24 +63,27 @@ def test_requirements_txt():
     with open("tests/data/example_requirements.txt") as f:
         txt_content = f.read()
     result = dependencies.py.py_worker.handle_requirements_txt(txt_content)
-    assert result["dependencies"]
+    assert result["pkg_dep"]
 
 
 def test_setup_py():
+    """Check setup.py file output"""
     with open("tests/data/example_setup.py") as f:
         py_content = f.read()
     result = dependencies.py.py_worker.handle_setup_py(py_content)
-    assert result["version"] == "1.55"
+    assert result["pkg_ver"] == "1.55"
 
 
 def test_setup_cfg():
+    """Check setup.cfg file output"""
     with open("tests/data/example_setup.cfg") as f:
         cfg_content = f.read()
     result = dependencies.py.py_worker.handle_setup_cfg(cfg_content)
-    assert result["license"] == "MIT"
+    assert result["pkg_lic"] == "MIT"
 
 
 def test_pyproject_toml():
+    """Check toml file output"""
     with open("tests/data/example_pyproject.toml") as f:
         pyproject = f.read()
     result = dependencies.py.py_worker.handle_toml(pyproject)
@@ -88,6 +91,7 @@ def test_pyproject_toml():
 
 
 def test_poetry_toml():
+    """Check poetry toml file output"""
     with open("tests/data/example_pyproject_poetry.toml") as f:
         pyproject = f.read()
     result = dependencies.py.py_worker.handle_toml(pyproject)
