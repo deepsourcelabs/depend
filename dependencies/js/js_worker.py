@@ -32,23 +32,6 @@ def handle_yarn_lock(req_file_data: str) -> dict:
             str(package.split(",")[0].rsplit("@", 1)[0]) + ";" +
             str(unfiltered_content[package].get("version", ""))
         )
-    # handle sub_dep
-    #
-    # keys = ["resolution", "dependencies"]
-    # for name, obj in unfiltered_content.items():
-    #     flat = {}
-    #     gen = (x for x in keys if x in obj)
-    #     for k in gen:
-    #         if isinstance(obj[k], dict):
-    #             flat[k] = list(
-    #                 map(
-    #                     lambda x: str(x[0]) + ";" + str(x[1]),
-    #                     obj[k].items()
-    #                 )
-    #             )
-    #         else:
-    #             flat[k] = obj[k]
-    #     res[name] = flat
     return res
 
 
