@@ -16,6 +16,7 @@ def handle_yarn_lock(req_file_data: str) -> dict:
         "pkg_name": "",
         "pkg_ver": "",
         "pkg_lic": "",
+        "pkg_err": "",
         "pkg_dep": [],
     }
     if "lockfile v1" in req_file_data:

@@ -11,13 +11,22 @@ def handle_requirements_txt(req_file_data: str) -> dict:
     :param req_file_data: Content of requirements.txt
     :return: list of requirement and specs
     """
-    install_reqs = parse_requirements(req_file_data)
-    return {
-        "dependencies": {
-            ir.key: ir.specs
-            for ir in install_reqs
-        }
+    res = {
+        "lang_ver": "",
+        "pkg_name": "",
+        "pkg_ver": "",
+        "pkg_lic": "",
+        "pkg_err": "",
+        "pkg_dep": [],
     }
+    install_reqs = parse_requirements(req_file_data)
+    for ir in install_reqs:
+        for spec in ir.specs:
+            res["pkg_dep"].append(
+                str(ir.key) + ";" +
+                str(spec[1]) + ";" + str(spec[0])
+            )
+    return res
 
 
 def handle_setup_py(req_file_data: str) -> dict:

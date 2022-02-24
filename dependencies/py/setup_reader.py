@@ -4,6 +4,7 @@ https://github.com/python-poetry/poetry/blob/master/src/poetry/utils/setup_reade
 """
 
 import ast
+import re
 from configparser import ConfigParser
 from typing import Any
 from typing import Dict
@@ -14,6 +15,16 @@ from typing import Union
 from poetry.core.semver import Version
 from poetry.core.semver import exceptions
 from poetry.utils.setup_reader import SetupReader
+
+
+def handle_classifiers(classifiers, res):
+    """
+    Obtains missing info from classifiers
+    :param classifiers: content used for indexing in pypi
+    :param res: dict to modify
+    """
+    lic = re.findall(r"License :: ([^\"]+)", classifiers)
+    res["pkg_lic"] = ";".join(lic)
 
 
 class LaxSetupReader(SetupReader):
@@ -29,8 +40,14 @@ class LaxSetupReader(SetupReader):
         :param content: content of setup.py
         :return: info required by dependency inspector
         """
-        result = {}
-
+        res = {
+            "lang_ver": "",
+            "pkg_name": "",
+            "pkg_ver": "",
+            "pkg_lic": "",
+            "pkg_err": "",
+            "pkg_dep": [],
+        }
         body = ast.parse(content).body
 
         setup_call, body = self._find_setup_call(body)
@@ -38,26 +55,27 @@ class LaxSetupReader(SetupReader):
             return self.DEFAULT
 
         # Inspecting keyword arguments
-        result["name"] = self._find_single_string(
+        res["pkg_name"] = self._find_single_string(
             setup_call, body, "name"
         )
-        result["version"] = self._find_single_string(
+        res["pkg_ver"] = self._find_single_string(
             setup_call, body, "version"
         )
-        result["classifiers"] = self._find_single_string(
-            setup_call, body, "classifiers"
-        )
-        result["license"] = self._find_single_string(
+        res["pkg_lic"] = self._find_single_string(
             setup_call, body, "license"
         )
-        result["python_requires"] = self._find_single_string(
+        res["lang_ver"] = self._find_single_string(
             setup_call, body, "python_requires"
         )
-        result["install_requires"] = self._find_install_requires(
+        res["pkg_dep"] = self._find_install_requires(
             setup_call, body
         )
-
-        return result
+        classifiers = self._find_single_string(
+            setup_call, body, "classifiers"
+        )
+        if classifiers:
+            handle_classifiers(classifiers, res)
+        return res
 
     def _find_install_requires(
             self, call: ast.Call, body: Iterable[Any]
