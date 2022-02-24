@@ -21,7 +21,7 @@ def main(
         lang: Optional[str] = typer.Option(None),
         packages: Optional[str] = typer.Option(None),
         dep_file: Optional[Path] = typer.Option(None),
-        deep_search: bool = typer.Option(False),
+        deep_search: Optional[bool] = typer.Option(False),
         config: Optional[Path] = typer.Option(None),
         gh_token: Optional[str] = typer.Option(None),
         host: Optional[str] = typer.Option(None),
