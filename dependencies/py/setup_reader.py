@@ -84,6 +84,44 @@ class LaxSetupReader(SetupReader):
             handle_classifiers(classifiers, res)
         return res
 
+    def _find_single_string(
+            self, call: ast.Call,
+            body: List[Any], name: str
+    ) -> str:
+        value = self._find_in_call(call, name)
+        if value is None:
+            # Trying to find in kwargs
+            kwargs = self._find_call_kwargs(call)
+
+            if kwargs is None or not isinstance(kwargs, ast.Name):
+                return ""
+
+            variable = self._find_variable_in_body(body, kwargs.id)
+            if not isinstance(variable, (ast.Dict, ast.Call)):
+                return ""
+
+            if isinstance(variable, ast.Call):
+                if not isinstance(variable.func, ast.Name):
+                    return ""
+
+                if variable.func.id != "dict":
+                    return ""
+
+                value = self._find_in_call(variable, name)
+            else:
+                value = self._find_in_dict(variable, name)
+
+        if value is None:
+            return ""
+
+        if isinstance(value, ast.Str):
+            return value.s
+        elif isinstance(value, ast.Name):
+            variable = self._find_variable_in_body(body, value.id)
+
+            if variable is not None and isinstance(variable, ast.Str):
+                return variable.s
+
     def _find_install_requires(
             self, call: ast.Call, body: Iterable[Any]
     ) -> Union[List[str], str]:
