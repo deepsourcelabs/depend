@@ -4,6 +4,7 @@ from schema import Schema, Or, Optional
 import pytest
 
 from cli import main
+from error import FileNotSupportedError
 
 
 @pytest.fixture
@@ -139,3 +140,19 @@ def test_poetry_toml(json_schema):
         config=None
     )
     assert json_schema.is_valid(result)
+
+
+def test_unsupported():
+    """Check no extension output"""
+    with pytest.raises(
+            FileNotSupportedError,
+            match="example_pipfile"
+    ):
+        result = main(
+            lang="python",
+            dep_file=Path("tests/data/example_pipfile"),
+            deep_search=False,
+            config=None
+        )
+        assert json_schema.is_valid(result)
+
