@@ -53,7 +53,7 @@ def handle_json(req_file_data: str) -> dict:
         "pkg_dep": package_data.get("dependencies", []),
     }
     for k, v in filter_dict.items():
-        if k is "pkg_dep":
+        if k == "pkg_dep":
             handle_json_dep(filter_dict, k, v)
         else:
             flatten_content(filter_dict, k, v)

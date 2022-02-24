@@ -29,7 +29,7 @@ def handle_classifiers(classifiers, res):
             classifiers
         )
         res["lang_ver"] = ";".join(lang)
-    if not res["lang_ver"] or res["pkg_lic"] is "Other":
+    if not res["pkg_lic"] or res["pkg_lic"] == "Other":
         lic = re.findall(r'License :: ([^"\n]+)', classifiers)
         res["pkg_lic"] = ";".join(lic)
 
