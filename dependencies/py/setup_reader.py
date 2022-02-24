@@ -23,7 +23,13 @@ def handle_classifiers(classifiers, res):
     :param classifiers: content used for indexing in pypi
     :param res: dict to modify
     """
-    if not res["pkg_lic"] or res["pkg_lic"] is "Other":
+    if not res["lang_ver"]:
+        lang = re.findall(
+            r'Programming Language :: Python :: ([^"\n]+)',
+            classifiers
+        )
+        res["lang_ver"] = ";".join(lang)
+    if not res["lang_ver"] or res["pkg_lic"] is "Other":
         lic = re.findall(r'License :: ([^"\n]+)', classifiers)
         res["pkg_lic"] = ";".join(lic)
 
@@ -67,7 +73,7 @@ class LaxSetupReader(SetupReader):
         )
         res["lang_ver"] = self._find_single_string(
             setup_call, body, "python_requires"
-        )
+        ).replace(",", ";")
         res["pkg_dep"] = self._find_install_requires(
             setup_call, body
         )
@@ -194,7 +200,9 @@ class LaxSetupReader(SetupReader):
             in parser.get("options", "install_requires", fallback="").split("\n")
             if dep
         ]
-        res["lang_ver"] = str(parser.get("options", "python_requires", fallback=""))
+        res["lang_ver"] = parser.get(
+            "options", "python_requires", fallback=""
+        ).replace(",", ";")
         if classifiers:
             handle_classifiers(classifiers, res)
         return res
