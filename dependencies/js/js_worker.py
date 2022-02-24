@@ -45,23 +45,31 @@ def handle_json(req_file_data: str) -> dict:
     """
     package_data = json.loads(req_file_data)
     filter_dict = {
-        "name": "",
-        "version": "",
-        "license": "",
-        "dependencies": {},
-        "engines": {}
+        "lang_ver": package_data.get(
+            "engines", {}
+        ).get("node", ""),
+        "pkg_name": package_data.get("name", ""),
+        "pkg_ver": package_data.get("version", ""),
+        "pkg_lic": package_data.get("license", ""),
+        "pkg_dep": package_data.get("dependencies", []),
     }
-    for k, v in package_data.items():
-        if k in filter_dict:
-            filter_dict[k] = v
-    filtered_dep = filter_dict.get("dependencies")
-    if any(
-            isinstance(i, dict) for i in
-            filtered_dep.values()
-    ):
-        dependency_data = {
-            k: v.get("version", "") for k, v in filtered_dep.items()
-            if isinstance(v, dict)
-        }
-        filter_dict["dependencies"] = dependency_data
+    for k, v in filter_dict.items():
+        if k is "pkg_dep":
+            filter_dict[k] = [";".join(i) for i in v.items()]
+        elif isinstance(v, dict):
+            filter_dict[k] = ";".join(v.values())
+        elif isinstance(v, list):
+            if any(
+                    isinstance(i, dict)
+                    for i in v
+            ):
+                temp_list = [
+                    ";".join(s.values())
+                    for s in v
+                    if isinstance(s, dict)
+                ]
+                filter_dict[k] = ";".join(temp_list)
+            else:
+                filter_dict[k] = ";".join(v)
+    filter_dict["pkg_err"] = ""
     return filter_dict

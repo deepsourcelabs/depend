@@ -31,4 +31,14 @@ def handle_go_mod(req_file_data: str) -> dict:
     )
     out = string_at(ptr).decode('utf-8')
     free(ptr)
-    return json.loads(out)
+    d = json.loads(out)
+    m = {
+        'Min_go_ver': 'lang_ver',
+        'ModPath': 'pkg_name',
+        'ModVer': 'pkg_ver',
+        'ModDeprecated': 'pkg_err',
+        'Dep_ver': 'pkg_dep'
+    }
+    data_available = {m[k]: d[k] for k in d}
+    data_available["pkg_lic"] = ""
+    return data_available
