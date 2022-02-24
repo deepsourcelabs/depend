@@ -35,27 +35,31 @@ def parse_license(license_file: str, license_dict: dict) -> str:
     return ";".join(licenses) or "Other"
 
 
-def handle_dep_file(file_name: str, file_content: str) -> dict:
+def handle_dep_file(
+        file_name: str,
+        file_content: str,
+) -> dict:
     """
     Parses contents of requirement file and returns useful insights
     :param file_name: name of requirement file
     :param file_content: content of the file
     :return: key features for dependency-inspector
     """
-    match file_name:
-        case 'go.mod':
+    file_extension = file_name.split(".")[-1]
+    match file_extension:
+        case 'mod':
             return go_worker.handle_go_mod(file_content)
-        case file_name if '.json' in file_name:
+        case 'json':
             return js_worker.handle_json(file_content)
-        case 'yarn.lock':
+        case 'lock':
             return js_worker.handle_yarn_lock(file_content)
-        case 'requirements.txt':
+        case 'txt':
             return py_worker.handle_requirements_txt(file_content)
-        case 'pyproject.toml':
+        case 'toml':
             return py_worker.handle_toml(file_content)
-        case 'setup.py':
+        case 'py':
             return py_worker.handle_setup_py(file_content)
-        case 'setup.cfg':
+        case 'cfg':
             return py_worker.handle_setup_cfg(file_content)
         case _:
             raise FileNotSupportedError(file_name)

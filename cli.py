@@ -21,13 +21,14 @@ def main(
         lang: Optional[str] = typer.Option(None),
         packages: Optional[str] = typer.Option(None),
         dep_file: Optional[Path] = typer.Option(None),
+        deep_search: bool = typer.Option(False),
         config: Optional[Path] = typer.Option(None),
         gh_token: Optional[str] = typer.Option(None),
         host: Optional[str] = typer.Option(None),
         port: Optional[int] = typer.Option(None),
         es_uid: Optional[str] = typer.Option(None),
         es_pass: Optional[str] = typer.Option(None)
-):
+) -> dict:
     """
     Dependency Inspector
 
@@ -43,6 +44,8 @@ def main(
     :param packages: list of packages to check
 
     :param dep_file: location of file to parse for packages
+
+    :param deep_search: when true populating all fields is attempted
 
     :param config: Specify location of a .ini file | refer config.ini sample
 
@@ -77,8 +80,9 @@ def main(
             os.path.basename(dep_file), dep_file.read_text()
         )
         logging.info(dep_content)
-        payload[lang] = dep_content.get("dependencies")
-        raise typer.Exit()
+        payload[lang] = dep_content.get("dependencies", [])
+        if not deep_search:
+            return dep_content
     else:
         if lang not in ["go", "python", "javascript"]:
             logging.error("Please specify a supported language!")
@@ -96,15 +100,18 @@ def main(
         else:
             dep_list = dependencies.keys()
         try:
+
             if dep_list:
+                res_content = make_multiple_requests(
+                    es, language, dep_list, gh_token
+                )
                 logging.info(
                     json.dumps(
-                        make_multiple_requests(
-                            es, language, dep_list, gh_token
-                        ),
+                        res_content,
                         indent=3
                     )
                 )
+                return res_content
         except (LanguageNotSupportedError, VCSNotSupportedError) as e:
             logging.error(e.msg)
             raise typer.Exit(code=-1)
