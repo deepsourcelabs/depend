@@ -108,12 +108,12 @@ def make_single_request(
         'pkg_dep': [],
         'timestamp': datetime.utcnow().isoformat()
     }
-
+    repo = ""
     match language:
         case "python":
-            handle_pypi(response, queries, result)
+            repo = handle_pypi(response, queries, result)
         case "javascript":
-            handle_npmjs(response, queries, result)
+            repo = handle_npmjs(response, queries, result)
         case "go":
             if response.status_code == 200:
                 # Handle 302: Redirection
@@ -122,7 +122,9 @@ def make_single_request(
                     response = requests.get(red_url)
                 scrape_go(response, queries, result, url)
             else:
-                handle_vcs(language, package, result, gh_token)
+                repo = package
+    if repo:
+        handle_vcs(language, repo, result, gh_token)
     if es is not None:
         es.index(
             index=language,

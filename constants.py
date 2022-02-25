@@ -11,6 +11,7 @@ REGISTRY = {
             'version': jc('info.version'),
             'license': jc('info.license'),
             'dependency': jc('info.requires_dist'),
+            'repo': jc('info.home_page')
         },
     'javascript':
         {
@@ -22,6 +23,7 @@ REGISTRY = {
             'version': jc('version'),
             'license': jc('[license,licenses|[?type!=null].type][]'),
             'dependency': jc('dependencies||__dependencies'),
+            'repo': jc('homepage')
         },
     'go':
         {
@@ -147,13 +149,19 @@ LICENSE_DICT = {
     'Zope': 'Zope Public License'
 }
 DEP_FIELDS_MISSED = {
-    "mod": ["pkg_lic"],
-    "json": [],
-    "lock": ["lang_ver", "pkg_name", "pkg_ver", "pkg_lic"],
-    "toml": [],
-    "py": [],
-    "cfg": [],
-    "txt": ["lang_ver", "pkg_name", "pkg_ver", "pkg_lic"],
+    "go": {
+        "mod": ["pkg_lic"],
+    },
+    "javascript": {
+        "json": [],
+        "lock": ["lang_ver", "pkg_name", "pkg_ver", "pkg_lic"],
+    },
+    "python": {
+        "toml": [],
+        "py": [],
+        "cfg": [],
+        "txt": ["lang_ver", "pkg_name", "pkg_ver", "pkg_lic"],
+    }
 }
 # PYPI_LIC = [
 #     'Aladdin Free Public License (AFPL)',

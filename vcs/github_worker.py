@@ -18,6 +18,7 @@ def handle_github(
         gh_token: Optional[str]
 ):
     """VCS fallthrough for GitHub based GO"""
+    # VERIFY_RUN_REQUIRED
     if gh_token is None:
         logging.warning("Proceeding without GitHub Authentication")
     g = Github(gh_token)

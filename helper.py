@@ -76,6 +76,7 @@ def handle_pypi(api_response: requests.Response, queries: dict, result: Result):
     version_q: jmespath.parser.ParsedResult = queries['version']
     license_q: jmespath.parser.ParsedResult = queries['license']
     dependencies_q: jmespath.parser.ParsedResult = queries['dependency']
+    repo_q: jmespath.parser.ParsedResult = queries['repo']
     data = api_response.json()
     result['pkg_ver'] = version_q.search(data)
     result['pkg_lic'] = license_q.search(data)
@@ -83,7 +84,8 @@ def handle_pypi(api_response: requests.Response, queries: dict, result: Result):
     result['pkg_dep'] = py_worker.handle_requirements_txt(
         req_file_data
     ).get("pkg_dep")
-    return result
+    repo = repo_q.search(data) or ""
+    return repo
 
 
 def handle_npmjs(api_response: requests.Response, queries: dict, result: Result):
@@ -97,6 +99,7 @@ def handle_npmjs(api_response: requests.Response, queries: dict, result: Result)
     version_q: jmespath.parser.ParsedResult = queries['version']
     license_q: jmespath.parser.ParsedResult = queries['license']
     dependencies_q: jmespath.parser.ParsedResult = queries['dependency']
+    repo_q: jmespath.parser.ParsedResult = queries['repo']
     version = version_q.search(data)
     if version is not None:
         result['pkg_ver'] = version
@@ -114,6 +117,8 @@ def handle_npmjs(api_response: requests.Response, queries: dict, result: Result)
             list, dependencies_q.search(data).items()
         )
     )
+    repo = repo_q.search(data) or ""
+    return repo
 
 
 def scrape_go(response: requests.Response, queries: dict, result: Result, url: str):
