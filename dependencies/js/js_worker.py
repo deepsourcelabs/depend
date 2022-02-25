@@ -1,5 +1,6 @@
 """Functions to handle JavaScript files"""
 import json
+from datetime import datetime
 
 import yaml
 from pyarn import lockfile
@@ -18,6 +19,7 @@ def handle_yarn_lock(req_file_data: str) -> dict:
         "pkg_lic": "",
         "pkg_err": "",
         "pkg_dep": [],
+        'timestamp': datetime.utcnow().isoformat()
     }
     if "lockfile v1" in req_file_data:
         parsed_lockfile = lockfile.Lockfile.from_str(req_file_data)
@@ -51,6 +53,7 @@ def handle_json(req_file_data: str) -> dict:
         "pkg_ver": package_data.get("version", ""),
         "pkg_lic": package_data.get("license", ""),
         "pkg_dep": package_data.get("dependencies", []),
+        'timestamp': datetime.utcnow().isoformat()
     }
     for k, v in filter_dict.items():
         if k == "pkg_dep":

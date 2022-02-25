@@ -1,4 +1,6 @@
 """Functions to handle Python files"""
+from datetime import datetime
+
 import toml
 from pkg_resources import parse_requirements
 
@@ -19,6 +21,7 @@ def handle_requirements_txt(req_file_data: str) -> dict:
         "pkg_lic": "",
         "pkg_err": "",
         "pkg_dep": [],
+        'timestamp': datetime.utcnow().isoformat()
     }
     install_reqs = parse_requirements(req_file_data)
     for ir in install_reqs:
@@ -62,6 +65,7 @@ def handle_toml(file_data: str) -> dict:
         "pkg_lic": "",
         "pkg_err": "",
         "pkg_dep": [],
+        'timestamp': datetime.utcnow().isoformat()
     }
     toml_parsed = dict(toml.loads(file_data))
     package_data = toml_parsed.get("package")

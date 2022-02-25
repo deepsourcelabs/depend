@@ -6,6 +6,7 @@ https://github.com/python-poetry/poetry/blob/master/src/poetry/utils/setup_reade
 import ast
 import re
 from configparser import ConfigParser
+from datetime import datetime
 from typing import Any
 from typing import Dict
 from typing import Iterable
@@ -54,6 +55,7 @@ class LaxSetupReader(SetupReader):
             "pkg_lic": "",
             "pkg_err": "",
             "pkg_dep": [],
+            'timestamp': datetime.utcnow().isoformat()
         }
         body = ast.parse(content).body
 
@@ -224,6 +226,7 @@ class LaxSetupReader(SetupReader):
             "pkg_lic": "",
             "pkg_err": "",
             "pkg_dep": [],
+            'timestamp': datetime.utcnow().isoformat()
         }
         parser = ConfigParser()
         parser.read_string(content)

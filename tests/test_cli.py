@@ -18,6 +18,7 @@ def json_schema():
         "pkg_lic": str,
         "pkg_err": str,
         "pkg_dep": Or(list, str),
+        'timestamp': str
     })
     return schema
 
@@ -156,4 +157,3 @@ def test_unsupported():
             config=None
         )
         assert json_schema.is_valid(result)
-
