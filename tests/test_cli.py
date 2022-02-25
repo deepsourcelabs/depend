@@ -1,7 +1,8 @@
 """Test cli and overall pipeline for dependency-inspector"""
 from pathlib import Path
-from schema import Schema, Or, Optional
+
 import pytest
+from schema import Schema, Or
 
 from cli import main
 from error import FileNotSupportedError

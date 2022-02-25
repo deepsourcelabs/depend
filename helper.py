@@ -8,16 +8,17 @@ from dependencies.js import js_worker
 from dependencies.py import py_worker
 from dependencies.go import go_worker
 from error import FileNotSupportedError
-from typing import TypedDict, Collection
+from typing import TypedDict
 
 
 class Result(TypedDict):
     """Type hinting for results"""
-
-    name: str
-    version: str
-    license: str
-    dependencies: Collection
+    lang_ver: str
+    pkg_name: str
+    pkg_ver: str
+    pkg_lic: str
+    pkg_err: str
+    pkg_dep: list
     timestamp: str
 
 
@@ -76,10 +77,10 @@ def handle_pypi(api_response: requests.Response, queries: dict, result: Result):
     license_q: jmespath.parser.ParsedResult = queries['license']
     dependencies_q: jmespath.parser.ParsedResult = queries['dependency']
     data = api_response.json()
-    result['version'] = version_q.search(data)
-    result['license'] = license_q.search(data)
+    result['pkg_ver'] = version_q.search(data)
+    result['pkg_lic'] = license_q.search(data)
     req_file_data = "\n".join(dependencies_q.search(data) or "")
-    result['dependencies'] = py_worker.handle_requirements_txt(
+    result['pkg_dep'] = py_worker.handle_requirements_txt(
         req_file_data
     ).get("pkg_dep")
     return result
@@ -98,17 +99,17 @@ def handle_npmjs(api_response: requests.Response, queries: dict, result: Result)
     dependencies_q: jmespath.parser.ParsedResult = queries['dependency']
     version = version_q.search(data)
     if version is not None:
-        result['version'] = version
+        result['pkg_ver'] = version
     else:
         latest_q: jmespath.parser.ParsedResult = queries['latest']
         latest = latest_q.search(data)
-        result['version'] = latest
+        result['pkg_ver'] = latest
         data = jmespath.search(
             queries['versions'].format(latest),
             data
         )
-    result['license'] = ";".join(license_q.search(data))
-    result['dependencies'] = list(
+    result['pkg_lic'] = ";".join(license_q.search(data) or "")
+    result['pkg_dep'] = list(
         map(
             list, dependencies_q.search(data).items()
         )
@@ -129,7 +130,7 @@ def scrape_go(response: requests.Response, queries: dict, result: Result, url: s
         name_parse[0],
         class_=name_parse[1]
     ).getText().strip().split(" ")
-    package_name = result['name']
+    package_name = result['pkg_name']
     if len(name_data) > 1:
         package_name = name_data[-1].strip()
     key_parse = queries['parse'].split('.')
@@ -139,7 +140,7 @@ def scrape_go(response: requests.Response, queries: dict, result: Result, url: s
         key_parse[0],
         class_=key_parse[1]
     ).getText()
-    key_data = re.findall(r"([^ \n:]+): ([a-zA-Z0-9-_ ,.]+)", key_element)
+    key_data = re.findall(r"([^ \n:]+): ([- ,.\w]+)", key_element)
     data = dict(key_data)
     ver_res = requests.get(url + "?tab=versions", allow_redirects=False)
     dep_res = requests.get(url + "?tab=imports", allow_redirects=False)
@@ -163,7 +164,7 @@ def scrape_go(response: requests.Response, queries: dict, result: Result, url: s
                 class_=dep_parse[1]
             )
         ]
-    result['name'] = package_name
-    result['version'] = data[queries['version']]
-    result['license'] = data[queries['license']]
-    result['dependencies'] = dependencies_tag
+    result['pkg_name'] = package_name
+    result['pkg_ver'] = data[queries['version']]
+    result['pkg_lic'] = data[queries['license']]
+    result['pkg_dep'] = dependencies_tag

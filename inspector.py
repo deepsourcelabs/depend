@@ -100,10 +100,12 @@ def make_single_request(
     queries = source[language]
 
     result: Result = {
-        'name': package,
-        'version': '',
-        'license': '',
-        'dependencies': [],
+        'lang_ver': '',
+        'pkg_name': package,
+        'pkg_ver': '',
+        'pkg_lic': '',
+        'pkg_err': '',
+        'pkg_dep': [],
         'timestamp': datetime.utcnow().isoformat()
     }
 
@@ -147,7 +149,7 @@ def make_multiple_requests(
     result = {}
 
     for package in packages:
-        name_ver = package.split("@")
+        name_ver = package.split(";")
         if len(name_ver) == 1:
             result[package] = make_single_request(es, language, package)
         else:

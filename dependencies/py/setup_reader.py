@@ -122,6 +122,7 @@ class LaxSetupReader(SetupReader):
             if variable is not None and isinstance(variable, ast.Str):
                 return variable.s
 
+    # noinspection PyUnresolvedReferences
     def _find_install_requires(
             self, call: ast.Call, body: Iterable[Any]
     ) -> Union[List[str], str]:

@@ -71,7 +71,9 @@ def handle_github(
         ).decoded_content.decode()
     except github.GithubException:
         dep_file = ""
-    result['name'] = dependency
-    result['version'] = commit_branch_tag or releases[0]
-    result['license'] = repo_lic
-    result['dependencies'] = handle_dep_file(req_filename, dep_file)
+    result['pkg_name'] = dependency
+    result['pkg_ver'] = commit_branch_tag or releases[0]
+    result['pkg_lic'] = repo_lic
+    result['pkg_dep'] = handle_dep_file(
+        req_filename, dep_file
+    ).get("pkg_dep", [])

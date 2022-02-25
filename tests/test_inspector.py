@@ -47,9 +47,9 @@ def dependency_payload():
     return {
         'javascript':
             [
-                'react@0.12.0',
-                'react@17.0.2',
-                'jQuery@1.7.4',
+                'react;0.12.0',
+                'react;17.0.2',
+                'jQuery;1.7.4',
                 'jQuery'
             ],
         "python":
@@ -72,10 +72,12 @@ def result_payload():
     :return: Result object to manipulate
     """
     result: Result = {
-        'name': '',
-        'version': '',
-        'license': '',
-        'dependencies': [],
+        'lang_ver': '',
+        'pkg_name': '',
+        'pkg_ver': '',
+        'pkg_lic': '',
+        'pkg_err': '',
+        'pkg_dep': [],
         'timestamp': datetime.utcnow().isoformat()
     }
     return result
@@ -124,10 +126,10 @@ def test_make_single_request_py(es):
         "aiohttp",
         "3.7.2"
     )
-    assert result['name'] == 'aiohttp'
-    assert result['version'] == '3.7.2'
-    assert result['license'] == 'Apache 2'
-    assert result['dependencies']
+    assert result['pkg_name'] == 'aiohttp'
+    assert result['pkg_ver'] == '3.7.2'
+    assert result['pkg_lic'] == 'Apache 2'
+    assert result['pkg_dep']
 
 
 def test_make_single_request_js(es):
@@ -138,10 +140,10 @@ def test_make_single_request_js(es):
         "react",
         "17.0.2"
     )
-    assert result['name'] == 'react'
-    assert result['version'] == '17.0.2'
-    assert result['license'] == 'MIT'
-    assert result['dependencies']
+    assert result['pkg_name'] == 'react'
+    assert result['pkg_ver'] == '17.0.2'
+    assert result['pkg_lic'] == 'MIT'
+    assert result['pkg_dep']
 
 
 def test_make_single_request_go(es):
@@ -152,10 +154,10 @@ def test_make_single_request_go(es):
         "github.com/getsentry/sentry-go",
         "v0.12.0"
     )
-    assert result['name'] == 'github.com/getsentry/sentry-go'
-    assert result['version'] == 'v0.12.0'
-    assert result['license'] == 'BSD-2-Clause'
-    assert result['dependencies']
+    assert result['pkg_name'] == 'github.com/getsentry/sentry-go'
+    assert result['pkg_ver'] == 'v0.12.0'
+    assert result['pkg_lic'] == 'BSD-2-Clause'
+    assert result['pkg_dep']
 
 
 def test_make_single_request_go_redirect(es):
@@ -166,9 +168,9 @@ def test_make_single_request_go_redirect(es):
         "http",
         "go1.16.13"
     )
-    assert result['name'] == 'http'
-    assert result['version'] == 'go1.16.13'
-    assert result['license'] == 'BSD-3-Clause'
+    assert result['pkg_name'] == 'http'
+    assert result['pkg_ver'] == 'go1.16.13'
+    assert result['pkg_lic'] == 'BSD-3-Clause'
 
 
 def test_make_single_request_go_github(es):
@@ -178,10 +180,10 @@ def test_make_single_request_go_github(es):
         "go",
         "https://github.com/go-yaml/yaml",
     )
-    assert result['name'] == 'https://github.com/go-yaml/yaml'
-    assert result['version']
-    assert result['license'] == 'Apache Software License'
-    assert result['dependencies']
+    assert result['pkg_name'] == 'https://github.com/go-yaml/yaml'
+    assert result['pkg_ver']
+    assert result['pkg_lic'] == 'Apache Software License'
+    assert result['pkg_dep']
 
 
 def test_make_multiple_requests(dependency_payload, es):
@@ -197,7 +199,7 @@ def test_make_multiple_requests(dependency_payload, es):
 def test_make_vcs_request(result_payload):
     """Test VCS handler"""
     inspector.handle_vcs("go", "github.com/getsentry/sentry-go", result_payload)
-    assert result_payload["license"] == 'BSD 2-Clause "Simplified" License'
+    assert result_payload["pkg_lic"] == 'BSD 2-Clause "Simplified" License'
 
 
 def test_unsupported_language_fails():
@@ -230,4 +232,4 @@ def test_unsupported_repo(result_payload):
         result_payload,
         None
     )
-    assert result_payload["license"] == "Other"
+    assert result_payload["pkg_lic"] == "Other"
