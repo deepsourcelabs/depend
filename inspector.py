@@ -4,16 +4,13 @@ import re
 import constants
 import tldextract
 import requests
-import requests_cache
 from datetime import datetime, timedelta
 from helper import Result, handle_pypi, handle_npmjs, scrape_go
 from vcs.github_worker import handle_github
 import logging
 from typing import List, Optional
 from error import LanguageNotSupportedError, VCSNotSupportedError
-
-requests_cache.install_cache('test_cache', expire_after=constants.CACHE_EXPIRY)
-source: dict = constants.REGISTRY
+from constants import REGISTRY
 
 
 def handle_vcs(
@@ -50,19 +47,19 @@ def make_url(
     match language:
         case "python":
             if version:
-                url_elements = (source[language]['url'], package, version, 'json')
+                url_elements = (REGISTRY[language]['url'], package, version, 'json')
             else:
-                url_elements = (source[language]['url'], package, 'json')
+                url_elements = (REGISTRY[language]['url'], package, 'json')
         case "javascript":
             if version:
-                url_elements = (source[language]['url'], package, version)
+                url_elements = (REGISTRY[language]['url'], package, version)
             else:
-                url_elements = (source[language]['url'], package)
+                url_elements = (REGISTRY[language]['url'], package)
         case "go":
             if version:
-                url_elements = (source[language]['url'], package + "@" + version)
+                url_elements = (REGISTRY[language]['url'], package + "@" + version)
             else:
-                url_elements = (source[language]['url'], package)
+                url_elements = (REGISTRY[language]['url'], package)
         case _:
             raise LanguageNotSupportedError(language)
     return "/".join(url_elements).rstrip("/")
@@ -116,7 +113,7 @@ def make_single_request(
     url = make_url(language, package, version)
     logging.info(url)
     response = requests.get(url)
-    queries = source[language]
+    queries = REGISTRY[language]
 
     result: Result = {
         'lang_ver': '',
@@ -176,7 +173,7 @@ def make_multiple_requests(
     result = {}
 
     for package in packages:
-        name_ver = package.split(";")
+        name_ver = package.replace("@", ";").split(";")
         if len(name_ver) == 1:
             result[package] = make_single_request(es, language, package)
         else:
