@@ -52,7 +52,7 @@ def handle_json(req_file_data: str) -> dict:
         "pkg_name": package_data.get("name", ""),
         "pkg_ver": package_data.get("version", ""),
         "pkg_lic": package_data.get("license", ""),
-        "pkg_dep": package_data.get("dependencies", []),
+        "pkg_dep": package_data.get("dependencies", {}),
         'timestamp': datetime.utcnow().isoformat()
     }
     for k, v in filter_dict.items():

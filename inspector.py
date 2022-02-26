@@ -1,5 +1,8 @@
 """License & Version Extractor"""
+import re
+
 import constants
+import tldextract
 import requests
 import requests_cache
 from datetime import datetime, timedelta
@@ -65,6 +68,22 @@ def make_url(
     return "/".join(url_elements).rstrip("/")
 
 
+def find_github(text: str) -> str:
+    """
+    Returns a repo url from a string
+    :param text: string to check
+    """
+    repo_identifier = re.search(
+        r"github.com/([^/]+)/([^/.\r\n]+)(?:/tree/|)?([^/.\r\n]+)?",
+        text
+    )
+    if repo_identifier:
+        return "https://github.com/" + \
+               repo_identifier.group(1) + "/" + repo_identifier.group(2)
+    else:
+        return ""
+
+
 def make_single_request(
         es: any,
         language: str,
@@ -123,8 +142,14 @@ def make_single_request(
                 scrape_go(response, queries, result, url)
             else:
                 repo = package
+    supported_domains = [
+        "github",
+    ]
     if repo:
-        handle_vcs(language, repo, result, gh_token)
+        if tldextract.extract(repo).domain not in supported_domains:
+            repo = find_github(response.text)
+        if repo:
+            handle_vcs(language, repo, result, gh_token)
     if es is not None:
         es.index(
             index=language,
