@@ -26,21 +26,23 @@ def handle_requirements_txt(req_file_data: str) -> dict:
     install_reqs = parse_requirements(req_file_data)
     for ir in install_reqs:
         for spec in ir.specs:
-            res["pkg_dep"].append(
-                str(ir.key) + ";" +
-                str(spec[1]) + ";" + str(spec[0])
-            )
+            if "=" in str(spec[0]):
+                res["pkg_dep"].append(
+                    str(ir.key) + ";" + str(spec[1])
+                )
+            else:
+                res["pkg_dep"].append(str(ir.key))
     return res
 
 
-def handle_setup_py(req_file_data: str) -> dict:
+def handle_setup_py(req_file_data: str, gh_token:str) -> dict:
     """
     Parse setup.py
     :param req_file_data: Content of setup.py
     :return: dict containing dependency info and specs
     """
     parser = LaxSetupReader()
-    return parser.read_setup_py(req_file_data)
+    return parser.read_setup_py(req_file_data, gh_token)
 
 
 def handle_setup_cfg(req_file_data: str) -> dict:

@@ -157,8 +157,8 @@ DEP_FIELDS_MISSED = {
         "lock": ["lang_ver", "pkg_name", "pkg_ver", "pkg_lic"],
     },
     "python": {
-        "toml": [],
         "py": [],
+        "toml": [],
         "cfg": [],
         "txt": ["lang_ver", "pkg_name", "pkg_ver", "pkg_lic"],
     }

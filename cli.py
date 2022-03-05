@@ -6,7 +6,7 @@ from typing import Optional
 import typer
 from db.elastic_worker import connect_elasticsearch
 from error import LanguageNotSupportedError, VCSNotSupportedError
-from helper import handle_dep_file
+from helper import parse_dep_response, handle_dep_file
 import configparser
 import logging
 
@@ -77,11 +77,11 @@ def main(
             logging.error("Dependency file cannot be read")
             raise typer.Exit(code=-1)
         dep_content = handle_dep_file(
-            os.path.basename(dep_file), dep_file.read_text()
+            os.path.basename(dep_file), dep_file.read_text(), gh_token
         )
-        logging.info(dep_content)
-        payload[lang] = dep_content.get("pkg_dep", [])
+        payload[lang] = dep_content.get("pkg_dep")
         if not deep_search:
+            logging.info(parse_dep_response(dep_content))
             return dep_content
     else:
         if lang not in ["go", "python", "javascript"]:
@@ -94,11 +94,15 @@ def main(
         logging.warning("Elastic not connected")
         es = None
     for language, dependencies in payload.items():
-        if not isinstance(dependencies, dict):
+        if isinstance(dependencies, str):
             dep_list = dependencies.replace(',', '\n').split('\n')
             dep_list = list(filter(None, dep_list))
+        elif isinstance(dependencies, list):
+            dep_list = dependencies
         else:
-            dep_list = dependencies.keys()
+            dep_list = []
+            logging.error("Unknown Response")
+
         try:
 
             if dep_list:

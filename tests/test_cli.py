@@ -2,7 +2,7 @@
 from pathlib import Path
 
 import pytest
-from schema import Schema, Or
+from schema import Schema
 
 from cli import main
 from error import FileNotSupportedError
@@ -11,15 +11,28 @@ from error import FileNotSupportedError
 @pytest.fixture
 def json_schema():
     """Sets up schema check"""
-    schema = Schema({
-        "lang_ver": str,
-        "pkg_name": str,
-        "pkg_ver": str,
-        "pkg_lic": str,
-        "pkg_err": str,
-        "pkg_dep": Or(list, str),
-        'timestamp': str
-    })
+    schema = Schema({})
+    # ({
+    #     # pkg_name
+    #     r"^[^\S]+$": {
+    #         "import_name": str,
+    #         "versions": {
+    #             # pkg_ver
+    #             r"^[^\S]+$": {
+    #                 {
+    #                     "lang_ver": list[str],
+    #                     "pkg_lic": list[str],
+    #                     "pkg_err": list[str],
+    #                     "pkg_dep": {
+    #                         # sub_dep name:ver
+    #                         r"^[^\S]+$": str
+    #                     },
+    #                     'timestamp': str
+    #                 }
+    #             }
+    #         }
+    #     }
+    # })
     return schema
 
 
@@ -105,9 +118,12 @@ def test_setup_py(json_schema):
     result = main(
         lang="python",
         dep_file=Path("tests/data/example_setup.py"),
-        deep_search=False,
+        deep_search=True,
+        gh_token=None,
+        host=None,
         config=None
     )
+    assert result == ""
     assert json_schema.is_valid(result)
 
 

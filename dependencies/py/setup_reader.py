@@ -4,18 +4,35 @@ https://github.com/python-poetry/poetry/blob/master/src/poetry/utils/setup_reade
 """
 
 import ast
+import logging
 import re
 from configparser import ConfigParser
 from datetime import datetime
-from typing import Any
+from typing import Any, Match
 from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Union
+
+import github
 from poetry.core.semver import Version
 from poetry.core.semver import exceptions
 from poetry.utils.setup_reader import SetupReader
+
+from dependencies.py import py_worker
+
+
+def find_github(text: str) -> Match[str] | None:
+    """
+    Returns a repo url from a string
+    :param text: string to check
+    """
+    repo_identifier = re.search(
+        r"github.com/([^/]+)/([^/.\r\n]+)(?:/tree/|)?([^/.\r\n]+)?",
+        text
+    )
+    return repo_identifier
 
 
 def handle_classifiers(classifiers, res):
@@ -41,14 +58,16 @@ class LaxSetupReader(SetupReader):
     """
 
     def read_setup_py(
-            self, content: str
+            self, content: str, gh_token: str = None
     ) -> Dict[str, Union[List, Dict]]:
         """
         Directly reads setup.py content and returns key info
+        :param gh_token: github token
         :param content: content of setup.py
         :return: info required by dependency inspector
         """
         res = {
+            "import_name": "",
             "lang_ver": "",
             "pkg_name": "",
             "pkg_ver": "",
@@ -58,7 +77,7 @@ class LaxSetupReader(SetupReader):
             'timestamp': datetime.utcnow().isoformat()
         }
         body = ast.parse(content).body
-
+        repo_identifier = find_github(content)
         setup_call, body = self._find_setup_call(body)
         if not setup_call:
             return self.DEFAULT
@@ -66,6 +85,9 @@ class LaxSetupReader(SetupReader):
         # Inspecting keyword arguments
         res["pkg_name"] = self._find_single_string(
             setup_call, body, "name"
+        )
+        import_options = self._find_single_string(
+            setup_call, body, "packages"
         )
         res["pkg_ver"] = self._find_single_string(
             setup_call, body, "version"
@@ -76,14 +98,34 @@ class LaxSetupReader(SetupReader):
         res["lang_ver"] = self._find_single_string(
             setup_call, body, "python_requires"
         ).replace(",", ";")
-        res["pkg_dep"] = self._find_install_requires(
+        pkg_dep = self._find_install_requires(
             setup_call, body
         )
+        if isinstance(pkg_dep, str) and repo_identifier:
+            g = github.Github(gh_token)
+            repo = g.get_repo(repo_identifier.group(1) + "/" + repo_identifier.group(2))
+            commit_branch_tag = repo_identifier.group(3) or repo.default_branch
+            try:
+                dep_file = repo.get_contents(
+                    pkg_dep,
+                    ref=commit_branch_tag
+                ).decoded_content.decode()
+                res["pkg_dep"] = py_worker.handle_requirements_txt(
+                    dep_file
+                ).get("pkg_dep")
+            except github.GithubException as e:
+                logging.error(e)
+        else:
+            res["pkg_dep"] = py_worker.handle_requirements_txt(
+                "\n".join(pkg_dep)
+            ).get("pkg_dep")
         classifiers = self._find_single_string(
             setup_call, body, "classifiers"
         )
         if classifiers:
             handle_classifiers(classifiers, res)
+        if import_options:
+            res["import_name"] = import_options.split("\n")[0]
         return res
 
     def _find_single_string(
@@ -118,6 +160,12 @@ class LaxSetupReader(SetupReader):
 
         if isinstance(value, ast.Str):
             return value.s
+        if isinstance(value, ast.List):
+            out = ""
+            for subnode in value.elts:
+                if isinstance(subnode, ast.Str):
+                    out = out + subnode.s + "\n"
+            return out
         elif isinstance(value, ast.Name):
             variable = self._find_variable_in_body(body, value.id)
 

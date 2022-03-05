@@ -72,6 +72,7 @@ def result_payload():
     :return: Result object to manipulate
     """
     result: Result = {
+        'import_name': '',
         'lang_ver': '',
         'pkg_name': '',
         'pkg_ver': '',
@@ -229,7 +230,6 @@ def test_unsupported_repo(result_payload):
     inspector.handle_github(
         "go",
         "https://github.com/rust-lang/cargo",
-        result_payload,
-        None
+        result_payload, None
     )
     assert result_payload["pkg_lic"] == "Other"

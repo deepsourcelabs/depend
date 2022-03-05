@@ -1,14 +1,15 @@
 """License & Version Extractor"""
-import re
 
 import constants
 import tldextract
 import requests
 from datetime import datetime, timedelta
-from helper import Result, handle_pypi, handle_npmjs, scrape_go
-from vcs.github_worker import handle_github
 import logging
 from typing import List, Optional
+import re
+
+from vcs.github_worker import handle_github
+from helper import Result, handle_pypi, handle_npmjs, scrape_go, parse_dep_response
 from error import LanguageNotSupportedError, VCSNotSupportedError
 from constants import REGISTRY
 
@@ -17,10 +18,11 @@ def handle_vcs(
         language: str,
         dependency: str,
         result: Result,
-        gh_token: str = None,
+        gh_token: str = "",
 ):
     """
     Fall through to VCS check for a go namespace (only due to go.mod check)
+    :param single_file: process file in vcs step
     :param language: primary language of the package
     :param gh_token: auth token for vcs requests
     :param dependency: package not found in other repositories
@@ -116,6 +118,7 @@ def make_single_request(
     queries = REGISTRY[language]
 
     result: Result = {
+        'import_name': '',
         'lang_ver': '',
         'pkg_name': package,
         'pkg_ver': '',
@@ -175,9 +178,10 @@ def make_multiple_requests(
     for package in packages:
         name_ver = package.replace("@", ";").split(";")
         if len(name_ver) == 1:
-            result[package] = make_single_request(es, language, package)
+            dep_resp = make_single_request(es, language, package, gh_token=gh_token)
         else:
-            result[package] = make_single_request(
+            dep_resp = make_single_request(
                 es, language, name_ver[0], name_ver[1], gh_token
             )
+        result[package] = parse_dep_response(dep_resp)
     return result

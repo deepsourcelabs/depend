@@ -1,18 +1,21 @@
 """Helper Functions for Inspector."""
 import logging
 import re
+from typing import TypedDict, Optional
+
 import jmespath
 import requests
 from bs4 import BeautifulSoup
+
+from dependencies.go import go_worker
 from dependencies.js import js_worker
 from dependencies.py import py_worker
-from dependencies.go import go_worker
 from error import FileNotSupportedError
-from typing import TypedDict
 
 
 class Result(TypedDict):
     """Type hinting for results"""
+    import_name: Optional[str]
     lang_ver: str
     pkg_name: str
     pkg_ver: str
@@ -39,6 +42,7 @@ def parse_license(license_file: str, license_dict: dict) -> str:
 def handle_dep_file(
         file_name: str,
         file_content: str,
+        gh_token: str
 ) -> dict:
     """
     Parses contents of requirement file and returns useful insights
@@ -59,11 +63,36 @@ def handle_dep_file(
         case 'toml':
             return py_worker.handle_toml(file_content)
         case 'py':
-            return py_worker.handle_setup_py(file_content)
+            return py_worker.handle_setup_py(file_content, gh_token)
         case 'cfg':
             return py_worker.handle_setup_cfg(file_content)
         case _:
             raise FileNotSupportedError(file_name)
+
+
+def parse_dep_response(
+        ec: dict,
+) -> dict:
+    """
+    Constructs required schema from extracted fields
+    :param ec: extracted content to fix
+    :return: final result for a package as per schema
+    """
+    final_response = {
+        ec.get("pkg_name"): {
+            "import_name": ec.get("import_name", ""),
+            "versions": {
+                ec.get("pkg_ver"): {
+                        "lang_ver": ec.get("lang_ver"),
+                        "pkg_lic": ec.get("pkg_lic"),
+                        "pkg_err": ec.get("pkg_err"),
+                        "pkg_dep": ec.get("pkg_dep"),
+                        'timestamp': ec.get("timestamp")
+                }
+            }
+        }
+    }
+    return final_response
 
 
 def handle_pypi(api_response: requests.Response, queries: dict, result: Result):
