@@ -28,7 +28,7 @@ def main(
         port: Optional[int] = typer.Option(None),
         es_uid: Optional[str] = typer.Option(None),
         es_pass: Optional[str] = typer.Option(None)
-) -> dict:
+) -> list:
     """
     Dependency Inspector
 
@@ -60,19 +60,21 @@ def main(
     :param gh_token: GitHub token to authorize VCS and bypass rate limit
     """
     payload = {}
+    result = []
     if config is not None:
         if not config.is_file():
             logging.error("Configuration file not found")
             raise typer.Exit(code=-1)
         configfile.read(config)
-        es_uid = es_uid or configfile.get("secrets", "es_uid", fallback=None)
-        es_pass = es_pass or configfile.get("secrets", "es_pass", fallback=None)
-        gh_token = gh_token or configfile.get("secrets", "gh_token", fallback=None)
+        es_uid = configfile.get("secrets", "es_uid", fallback=None) or es_uid
+        es_pass = configfile.get("secrets", "es_pass", fallback=None) or es_pass
+        gh_token = configfile.get("secrets", "gh_token", fallback=None) or gh_token
         if not configfile.has_section("dependencies"):
             logging.error("dependencies section missing from config file")
             raise typer.Exit(code=-1)
         payload = configfile["dependencies"]
-    elif dep_file is not None:
+    if dep_file is not None:
+        payload = {}
         if not dep_file.is_file():
             logging.error("Dependency file cannot be read")
             raise typer.Exit(code=-1)
@@ -80,14 +82,19 @@ def main(
             os.path.basename(dep_file), dep_file.read_text(), gh_token
         )
         payload[lang] = dep_content.get("pkg_dep")
+        # pkg_name = dep_content.get("pkg_name")
+        # pkg_ver = dep_content.get("pkg_ver")
+        result.append(parse_dep_response([dep_content]))
         if not deep_search:
-            logging.info(parse_dep_response(dep_content))
-            return dep_content
+            logging.info(result)
+            return result
     else:
-        if lang not in ["go", "python", "javascript"]:
-            logging.error("Please specify a supported language!")
-            raise typer.Exit(code=-1)
         payload[lang] = packages
+        # pkg_name = ""
+        # pkg_ver = ""
+    if lang not in ["go", "python", "javascript"]:
+        logging.error("Please specify a supported language!")
+        raise typer.Exit(code=-1)
     if host and port:
         es = connect_elasticsearch({'host': host, 'port': port}, (es_uid, es_pass))
     else:
@@ -106,16 +113,21 @@ def main(
         try:
 
             if dep_list:
-                res_content = make_multiple_requests(
+                # if pkg_name:
+                # result[pkg_name]["versions"][pkg_ver]["pkg_dep"] = make_multiple_requests(
+                #     es, language, dep_list, gh_token
+                # )
+                result.extend(make_multiple_requests(
                     es, language, dep_list, gh_token
-                )
+                ))
+
                 logging.info(
                     json.dumps(
-                        res_content,
+                        result,
                         indent=3
                     )
                 )
-                return res_content
+                return result
         except (LanguageNotSupportedError, VCSNotSupportedError) as e:
             logging.error(e.msg)
             raise typer.Exit(code=-1)

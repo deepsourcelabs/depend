@@ -8,6 +8,7 @@ REGISTRY = {
             'registry': 'PyPI',
             'url': 'https://pypi.org/pypi',
             'name': jc('info.name'),
+            'versions': 'releases."{}"',
             'version': jc('info.version'),
             'license': jc('info.license'),
             'dependency': jc('info.requires_dist'),

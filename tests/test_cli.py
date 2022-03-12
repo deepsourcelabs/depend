@@ -9,30 +9,34 @@ from error import FileNotSupportedError
 
 
 @pytest.fixture
+def config_file():
+    """Reads config file"""
+    parent_folder = Path(__file__).parent.parent
+    return Path.joinpath(parent_folder, "configuration.ini")
+
+
+@pytest.fixture
 def json_schema():
     """Sets up schema check"""
-    schema = Schema({})
-    # ({
-    #     # pkg_name
-    #     r"^[^\S]+$": {
-    #         "import_name": str,
-    #         "versions": {
-    #             # pkg_ver
-    #             r"^[^\S]+$": {
-    #                 {
-    #                     "lang_ver": list[str],
-    #                     "pkg_lic": list[str],
-    #                     "pkg_err": list[str],
-    #                     "pkg_dep": {
-    #                         # sub_dep name:ver
-    #                         r"^[^\S]+$": str
-    #                     },
-    #                     'timestamp': str
-    #                 }
-    #             }
-    #         }
-    #     }
-    # })
+    schema = Schema({
+        # pkg_name
+        r"^[^\S]+$": {
+            "import_name": str,
+            "versions": {
+                # pkg_ver
+                r"^[^\S]+$": {
+                        "lang_ver": list[str],
+                        "pkg_lic": list[str],
+                        "pkg_err": list[str],
+                        "pkg_dep": {
+                            # sub_dep name:ver
+                            r"^[^\S]+$": str
+                        },
+                        'timestamp': str
+                }
+            }
+        }
+    })
     return schema
 
 
@@ -113,15 +117,14 @@ def test_requirements_txt(json_schema):
     assert json_schema.is_valid(result)
 
 
-def test_setup_py(json_schema):
+def test_setup_py(json_schema, config_file):
     """Check setup.py file output"""
     result = main(
         lang="python",
         dep_file=Path("tests/data/example_setup.py"),
         deep_search=True,
-        gh_token=None,
         host=None,
-        config=None
+        config=config_file
     )
     assert result == ""
     assert json_schema.is_valid(result)

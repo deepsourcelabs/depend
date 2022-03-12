@@ -10,6 +10,7 @@ import re
 
 from vcs.github_worker import handle_github
 from helper import Result, handle_pypi, handle_npmjs, scrape_go, parse_dep_response
+from helper import go_versions, js_versions, py_versions
 from error import LanguageNotSupportedError, VCSNotSupportedError
 from constants import REGISTRY
 
@@ -22,7 +23,6 @@ def handle_vcs(
 ):
     """
     Fall through to VCS check for a go namespace (only due to go.mod check)
-    :param single_file: process file in vcs step
     :param language: primary language of the package
     :param gh_token: auth token for vcs requests
     :param dependency: package not found in other repositories
@@ -89,7 +89,7 @@ def make_single_request(
         package: str,
         version: str = "",
         gh_token: Optional[str] = None
-) -> Result:
+) -> dict:
     """
     Obtain package license and dependency information.
     :param es: ElasticSearch Instance
@@ -99,6 +99,7 @@ def make_single_request(
     :param gh_token: GitHub token for authentication
     :return: result object with name version license and dependencies
     """
+    result_list = []
     package_version = package
     if es is not None:
         ESresult: dict = es.get(index=language, id=package_version, ignore=404)
@@ -112,51 +113,70 @@ def make_single_request(
                 logging.info("Using " + package + " found in ES Database")
                 return ESresult["_source"]
 
-    url = make_url(language, package, version)
-    logging.info(url)
-    response = requests.get(url)
-    queries = REGISTRY[language]
+    if not version:
+        vers = []
+        url = make_url(language, package, version)
+        response = requests.get(url)
+        queries = REGISTRY[language]
+        match language:
+            case "python":
+                vers = py_versions(response, queries)
+            case "javascript":
+                vers = js_versions(response, queries)
+            case "go":
+                vers = go_versions(url, queries)
+    else:
+        vers = [version]
 
-    result: Result = {
-        'import_name': '',
-        'lang_ver': '',
-        'pkg_name': package,
-        'pkg_ver': '',
-        'pkg_lic': '',
-        'pkg_err': '',
-        'pkg_dep': [],
-        'timestamp': datetime.utcnow().isoformat()
-    }
-    repo = ""
-    match language:
-        case "python":
-            repo = handle_pypi(response, queries, result)
-        case "javascript":
-            repo = handle_npmjs(response, queries, result)
-        case "go":
-            if response.status_code == 200:
-                # Handle 302: Redirection
-                if response.history:
-                    red_url = response.url + "@" + version
-                    response = requests.get(red_url)
-                scrape_go(response, queries, result, url)
-            else:
-                repo = package
-    supported_domains = [
-        "github",
-    ]
-    if repo:
-        if tldextract.extract(repo).domain not in supported_domains:
-            repo = find_github(response.text)
+    for ver in vers:
+        url = make_url(language, package, ver)
+        logging.info(url)
+        response = requests.get(url)
+        queries = REGISTRY[language]
+
+        result: Result = {
+            'import_name': '',
+            'lang_ver': '',
+            'pkg_name': package,
+            'pkg_ver': '',
+            'pkg_lic': '',
+            'pkg_err': '',
+            'pkg_dep': [],
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        repo = ""
+        match language:
+            case "python":
+                repo = handle_pypi(response, queries, result)
+            case "javascript":
+                repo = handle_npmjs(response, queries, result)
+            case "go":
+                if response.status_code == 200:
+                    # Handle 302: Redirection
+                    if response.history:
+                        red_url = response.url + "@" + version
+                        response = requests.get(red_url)
+                    scrape_go(response, queries, result, url)
+                else:
+                    repo = package
+        supported_domains = [
+            "github",
+        ]
         if repo:
-            handle_vcs(language, repo, result, gh_token)
-    if es is not None:
-        es.index(
-            index=language,
-            id=package_version,
-            document=result
-        )
-    return result
+            if tldextract.extract(repo).domain not in supported_domains:
+                repo = find_github(response.text)
+            if repo:
+                handle_vcs(language, repo, result, gh_token)
+        if es is not None:
+            es.index(
+                index=language,
+                id=package_version,
+                document=result
+            )
+        # handle vers into format
+        # parse_dep_response
+        result_list.append(result)
+    return parse_dep_response(result_list)
 
 
 def make_multiple_requests(
@@ -164,7 +184,7 @@ def make_multiple_requests(
         language: str,
         packages: List[str],
         gh_token: Optional[str] = None
-) -> dict:
+) -> list:
     """
     Obtain license and dependency information for list of packages.
     :param es: ElasticSearch Instance
@@ -173,7 +193,7 @@ def make_multiple_requests(
     :param gh_token: GitHub token for authentication
     :return: result object with name version license and dependencies
     """
-    result = {}
+    result = []
 
     for package in packages:
         name_ver = package.replace("@", ";").split(";")
@@ -183,5 +203,5 @@ def make_multiple_requests(
             dep_resp = make_single_request(
                 es, language, name_ver[0], name_ver[1], gh_token
             )
-        result[package] = parse_dep_response(dep_resp)
+        result.append(dep_resp)
     return result

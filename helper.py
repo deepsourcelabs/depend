@@ -1,5 +1,4 @@
 """Helper Functions for Inspector."""
-import logging
 import re
 from typing import TypedDict, Optional
 
@@ -46,6 +45,7 @@ def handle_dep_file(
 ) -> dict:
     """
     Parses contents of requirement file and returns useful insights
+    :param gh_token: GitHub token
     :param file_name: name of requirement file
     :param file_content: content of the file
     :return: key features for dependency-inspector
@@ -71,24 +71,24 @@ def handle_dep_file(
 
 
 def parse_dep_response(
-        ec: dict,
+        ecs: list[dict],
 ) -> dict:
     """
     Constructs required schema from extracted fields
-    :param ec: extracted content to fix
+    :param ecs: list of extracted content to fix
     :return: final result for a package as per schema
     """
     final_response = {
-        ec.get("pkg_name"): {
-            "import_name": ec.get("import_name", ""),
+        ecs[0].get("pkg_name"): {
             "versions": {
                 ec.get("pkg_ver"): {
-                        "lang_ver": ec.get("lang_ver"),
-                        "pkg_lic": ec.get("pkg_lic"),
-                        "pkg_err": ec.get("pkg_err"),
-                        "pkg_dep": ec.get("pkg_dep"),
-                        'timestamp': ec.get("timestamp")
-                }
+                    "import_name": ec.get("import_name", ""),
+                    "lang_ver": ec.get("lang_ver"),
+                    "pkg_lic": ec.get("pkg_lic"),
+                    "pkg_err": ec.get("pkg_err"),
+                    "pkg_dep": ec.get("pkg_dep"),
+                    'timestamp': ec.get("timestamp")
+                } for ec in ecs
             }
         }
     }
@@ -168,7 +168,6 @@ def scrape_go(response: requests.Response, queries: dict, result: Result, url: s
     if len(name_data) > 1:
         package_name = name_data[-1].strip()
     key_parse = queries['parse'].split('.')
-    ver_parse = queries['versions'].split('.')
     dep_parse = queries['dependencies'].split('.')
     key_element = soup.find(
         key_parse[0],
@@ -176,18 +175,7 @@ def scrape_go(response: requests.Response, queries: dict, result: Result, url: s
     ).getText()
     key_data = re.findall(r"([^ \n:]+): ([- ,.\w]+)", key_element)
     data = dict(key_data)
-    ver_res = requests.get(url + "?tab=versions", allow_redirects=False)
     dep_res = requests.get(url + "?tab=imports", allow_redirects=False)
-    if ver_res.status_code == 200:
-        version_soup = BeautifulSoup(ver_res.text, "html.parser")
-        releases = [
-            release.getText().strip()
-            for release in version_soup.findAll(
-                ver_parse[0],
-                class_=ver_parse[1]
-            )
-        ]
-        logging.info(releases)
     dependencies_tag = []
     if dep_res.status_code == 200:
         dep_soup = BeautifulSoup(dep_res.text, "html.parser")
@@ -202,3 +190,55 @@ def scrape_go(response: requests.Response, queries: dict, result: Result, url: s
     result['pkg_ver'] = data[queries['version']]
     result['pkg_lic'] = data[queries['license']]
     result['pkg_dep'] = dependencies_tag
+
+
+def go_versions(url: str, queries: dict) -> list:
+    """
+    Get list of all versions for go package
+    :param queries: compiled jmespath queries
+    :param url: go url scraped
+    :return: list of versions
+    """
+    ver_parse = queries['versions'].split('.')
+    ver_res = requests.get(url + "?tab=versions", allow_redirects=False)
+    releases = []
+    if ver_res.status_code == 200:
+        version_soup = BeautifulSoup(ver_res.text, "html.parser")
+        releases = [
+            release.getText().strip()
+            for release in version_soup.findAll(
+                ver_parse[0],
+                class_=ver_parse[1]
+            )
+        ]
+    return releases
+
+
+def js_versions(api_response: requests.Response, queries: dict) -> list:
+    """
+    Get list of all versions for js package
+    :param queries: compiled jmespath queries
+    :param api_response: registry response
+    :return: list of versions
+    """
+    data = api_response.json()
+    versions_q: jmespath.parser.ParsedResult = queries['repo']
+    versions = versions_q.search(data)
+    if not versions:
+        return []
+    return versions
+
+
+def py_versions(api_response: requests.Response, queries: dict) -> list:
+    """
+    Get list of all versions for py package
+    :param queries: compiled jmespath queries
+    :param api_response: registry response
+    :return: list of versions
+    """
+    data = api_response.json()
+    versions_q: jmespath.parser.ParsedResult = queries['repo']
+    versions = versions_q.search(data)
+    if not versions:
+        return []
+    return versions

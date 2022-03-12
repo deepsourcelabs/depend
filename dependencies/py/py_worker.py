@@ -35,9 +35,10 @@ def handle_requirements_txt(req_file_data: str) -> dict:
     return res
 
 
-def handle_setup_py(req_file_data: str, gh_token:str) -> dict:
+def handle_setup_py(req_file_data: str, gh_token: str = None) -> dict:
     """
     Parse setup.py
+    :param gh_token: GitHub token
     :param req_file_data: Content of setup.py
     :return: dict containing dependency info and specs
     """

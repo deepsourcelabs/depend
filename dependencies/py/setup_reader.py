@@ -62,7 +62,7 @@ class LaxSetupReader(SetupReader):
     ) -> Dict[str, Union[List, Dict]]:
         """
         Directly reads setup.py content and returns key info
-        :param gh_token: github token
+        :param gh_token: GitHub token
         :param content: content of setup.py
         :return: info required by dependency inspector
         """
@@ -127,6 +127,11 @@ class LaxSetupReader(SetupReader):
         if import_options:
             res["import_name"] = import_options.split("\n")[0]
         return res
+
+    def _find_in_dict(self, dict_: ast.Dict, name: str) -> Optional[Any]:
+        for key, val in zip(dict_.keys, dict_.values):
+            if isinstance(key, ast.Str) and key.s == name:
+                return val
 
     def _find_single_string(
             self, call: ast.Call,
