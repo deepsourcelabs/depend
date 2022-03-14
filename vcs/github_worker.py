@@ -51,54 +51,61 @@ def handle_github(
             )
 
         repo_identifier = re.search(
-            r"github.com/([^/]+)/([^/.\r\n]+)(?:/tree/|)?([^/.\r\n]+)?",
+            r"github.com/([^/]+)/([^/\\\r\n\s]+)(?:/tree/|)?([^/.\\\r\n\s]+)?",
             dependency
         )
-        repo = g.get_repo(repo_identifier.group(1) + "/" + repo_identifier.group(2))
-        commit_branch_tag = repo_identifier.group(3) or repo.default_branch
         try:
-            files = repo.get_contents("", commit_branch_tag)
+            repo = g.get_repo(repo_identifier.group(1) + "/" + repo_identifier.group(2))
         except github.GithubException:
-            commit_branch_tag = repo.default_branch
-            files = repo.get_contents("", commit_branch_tag)
-        files = [f.name for f in files]
-
-        if "pkg_lic" in retrievable_keys:
-            license_filename = "LICENSE"
-            for f in files:
-                if f in constants.LICENSE_FILES:
-                    license_filename = f
-                    break
+            logging.error(f"{dependency} cannot be parsed")
+        else:
+            commit_branch_tag = repo_identifier.group(3) or repo.default_branch
             try:
-                lic_file = repo.get_contents(
-                    license_filename,
-                    ref=commit_branch_tag
-                ).decoded_content.decode()
+                files = repo.get_contents("", commit_branch_tag)
             except github.GithubException:
-                lic_file = ""
-            repo_lic = parse_license(
-                lic_file,
-                constants.LICENSE_DICT
-            )
-            if repo_lic == "Other":
-                if r_lic := repo.get_license():
-                    repo_lic = r_lic.license.name
-            result['pkg_lic'] = repo_lic
+                commit_branch_tag = repo.default_branch
+                files = repo.get_contents("", commit_branch_tag)
+            files = [f.name for f in files]
 
-        if "pkg_name" in retrievable_keys:
-            result['pkg_name'] = dependency
+            if "pkg_lic" in retrievable_keys:
+                license_filename = "LICENSE"
+                for f in files:
+                    if f in constants.LICENSE_FILES:
+                        license_filename = f
+                        break
+                try:
+                    lic_file = repo.get_contents(
+                        license_filename,
+                        ref=commit_branch_tag
+                    ).decoded_content.decode()
+                except github.GithubException:
+                    lic_file = ""
+                repo_lic = parse_license(
+                    lic_file,
+                    constants.LICENSE_DICT
+                )
+                if repo_lic == "Other":
+                    try:
+                        if r_lic := repo.get_license():
+                            repo_lic = r_lic.license.name
+                    except github.GithubException:
+                        repo_lic = "Other"
 
-        if "pkg_ver" in retrievable_keys:
-            releases = [release.tag_name for release in repo.get_releases()]
-            if not releases:
-                logging.error("No releases found, defaulting to tags")
-                releases = [tag.name for tag in repo.get_tags()]
-            logging.info(releases)
-            result['pkg_ver'] = commit_branch_tag or releases[0]
+                result['pkg_lic'] = repo_lic
 
-        req_files = constants.REQ_FILES[language]
-        for f in files:
-            if f in req_files:
+            if "pkg_name" in retrievable_keys:
+                result['pkg_name'] = dependency
+
+            if "pkg_ver" in retrievable_keys:
+                releases = [release.tag_name for release in repo.get_releases()]
+                if not releases:
+                    logging.error("No releases found, defaulting to tags")
+                    releases = [tag.name for tag in repo.get_tags()]
+                logging.info(releases)
+                result['pkg_ver'] = commit_branch_tag or releases[0]
+
+            req_files = constants.REQ_FILES[language]
+            for f in set(files).intersection(req_files):
                 req_filename = f
                 file_extension = req_filename.split(".")[-1]
                 if retrievable_keys := verify_run(language, result, file_extension):

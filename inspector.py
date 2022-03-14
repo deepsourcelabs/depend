@@ -136,7 +136,7 @@ def make_single_request(
 
         result: Result = {
             'import_name': '',
-            'lang_ver': '',
+            'lang_ver': "",
             'pkg_name': package,
             'pkg_ver': '',
             'pkg_lic': '',

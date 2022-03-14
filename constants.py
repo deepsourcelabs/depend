@@ -151,11 +151,11 @@ LICENSE_DICT = {
 }
 DEP_FIELDS_MISSED = {
     "go": {
-        "mod": ["pkg_lic"],
+        "mod": ['import_name', "pkg_lic"],
     },
     "javascript": {
-        "json": [],
-        "lock": ["lang_ver", "pkg_name", "pkg_ver", "pkg_lic"],
+        "json": ['import_name'],
+        "lock": ['import_name', "lang_ver", "pkg_name", "pkg_ver", "pkg_lic"],
     },
     "python": {
         "py": [],

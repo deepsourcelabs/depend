@@ -95,9 +95,11 @@ class LaxSetupReader(SetupReader):
         res["pkg_lic"] = self._find_single_string(
             setup_call, body, "license"
         )
-        res["lang_ver"] = self._find_single_string(
+        lang_ver = self._find_single_string(
             setup_call, body, "python_requires"
-        ).replace(",", ";")
+        )
+        if lang_ver:
+            res["lang_ver"] = lang_ver.replace(",", ";")
         pkg_dep = self._find_install_requires(
             setup_call, body
         )
@@ -209,8 +211,18 @@ class LaxSetupReader(SetupReader):
             return install_requires
 
         if isinstance(value, ast.List):
-            for el in value.elts:
-                install_requires.append(el.s)
+            for el_n in value.elts:
+                if isinstance(el_n, ast.Name):
+                    variable = self.find_variable_in_body(body, el_n.id)
+
+                    if variable is not None and isinstance(variable, ast.List):
+                        for el in variable.elts:
+                            install_requires.append(el.s)
+
+                    elif variable is not None and isinstance(variable, str):
+                        install_requires.append(el_n.s)
+                else:
+                    install_requires.append(el_n.s)
         elif isinstance(value, ast.Name):
             variable = self.find_variable_in_body(body, value.id)
 
