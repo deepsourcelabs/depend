@@ -77,7 +77,7 @@ def result_payload():
         'pkg_name': '',
         'pkg_ver': '',
         'pkg_lic': '',
-        'pkg_err': '',
+        'pkg_err': {},
         'pkg_dep': [],
         'timestamp': datetime.utcnow().isoformat()
     }

@@ -37,10 +37,12 @@ def handle_go_mod(req_file_data: str) -> dict:
         'Min_go_ver': 'lang_ver',
         'ModPath': 'pkg_name',
         'ModVer': 'pkg_ver',
-        'ModDeprecated': 'pkg_err',
         'Dep_ver': 'pkg_dep'
     }
-    data_available = {m[k]: d[k] for k in d}
+    data_available = {m[k]: d[k] for k in d if k in m}
+    data_available["pkg_err"] = {
+        'pkg_dep': d.get("ModDeprecated", "")
+    }
     data_available["pkg_lic"] = ""
     data_available['timestamp'] = datetime.utcnow().isoformat()
     return data_available

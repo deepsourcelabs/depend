@@ -19,8 +19,8 @@ class Result(TypedDict):
     pkg_name: str
     pkg_ver: str
     pkg_lic: str
-    pkg_err: str
-    pkg_dep: list
+    pkg_err: dict
+    pkg_dep: list[str]
     timestamp: str
 
 
@@ -78,11 +78,12 @@ def parse_dep_response(
     :param ecs: list of extracted content to fix
     :return: final result for a package as per schema
     """
+    main_key = ecs[0].get("pkg_name")
     final_response = {
-        ecs[0].get("pkg_name"): {
+        main_key: {
             "versions": {
                 ec.get("pkg_ver"): {
-                    "import_name": ec.get("import_name", ""),
+                    "import_name": ec.get("import_name") or main_key,
                     "lang_ver": ec.get("lang_ver"),
                     "pkg_lic": ec.get("pkg_lic"),
                     "pkg_err": ec.get("pkg_err"),
@@ -141,11 +142,13 @@ def handle_npmjs(api_response: requests.Response, queries: dict, result: Result)
             data
         )
     result['pkg_lic'] = ";".join(license_q.search(data) or "")
-    result['pkg_dep'] = list(
-        map(
-            list, dependencies_q.search(data).items()
-        )
-    )
+    dep_data = dependencies_q.search(data)
+    if dep_data:
+        result['pkg_dep'] = [
+            ";".join(tup)
+            for tup in
+            dep_data.items()
+        ]
     repo = repo_q.search(data) or ""
     return repo
 
@@ -180,7 +183,7 @@ def scrape_go(response: requests.Response, queries: dict, result: Result, url: s
     if dep_res.status_code == 200:
         dep_soup = BeautifulSoup(dep_res.text, "html.parser")
         dependencies_tag = [
-            [dependency.getText().strip()]
+            dependency.getText().strip()
             for dependency in dep_soup.findAll(
                 dep_parse[0],
                 class_=dep_parse[1]

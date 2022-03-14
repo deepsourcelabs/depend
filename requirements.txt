@@ -12,5 +12,5 @@ poetry==1.1.13
 toml==0.10.2
 pyarn==0.1.2
 PyYAML==6.0
-schema==0.7.5
 tldextract==3.2.0
+jsonschema==4.4.0

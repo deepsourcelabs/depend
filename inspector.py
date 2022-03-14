@@ -140,7 +140,7 @@ def make_single_request(
             'pkg_name': package,
             'pkg_ver': '',
             'pkg_lic': '',
-            'pkg_err': '',
+            'pkg_err': {},
             'pkg_dep': [],
             'timestamp': datetime.utcnow().isoformat()
         }

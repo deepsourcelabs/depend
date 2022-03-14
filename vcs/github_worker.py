@@ -81,7 +81,8 @@ def handle_github(
                 constants.LICENSE_DICT
             )
             if repo_lic == "Other":
-                repo_lic = repo.get_license().license.name
+                if r_lic := repo.get_license():
+                    repo_lic = r_lic.license.name
             result['pkg_lic'] = repo_lic
 
         if "pkg_name" in retrievable_keys:
