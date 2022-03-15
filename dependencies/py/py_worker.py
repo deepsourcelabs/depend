@@ -15,11 +15,11 @@ def handle_requirements_txt(req_file_data: str) -> dict:
     :return: list of requirement and specs
     """
     res = {
-        "lang_ver": "",
+        "lang_ver": [],
         "pkg_name": "",
         "pkg_ver": "",
-        "pkg_lic": "",
-        "pkg_err": "",
+        "pkg_lic": ["Other"],
+        "pkg_err": {},
         "pkg_dep": [],
         'timestamp': datetime.utcnow().isoformat()
     }
@@ -31,6 +31,7 @@ def handle_requirements_txt(req_file_data: str) -> dict:
                     str(ir.key) + ";" + str(spec[1])
                 )
             else:
+                # ! Handle each case properly
                 res["pkg_dep"].append(str(ir.key))
     return res
 
@@ -62,11 +63,11 @@ def handle_toml(file_data: str) -> dict:
     :param file_data: content of toml
     """
     res = {
-        "lang_ver": "",
+        "lang_ver": [],
         "pkg_name": "",
         "pkg_ver": "",
-        "pkg_lic": "",
-        "pkg_err": "",
+        "pkg_lic": ["Other"],
+        "pkg_err": {},
         "pkg_dep": [],
         'timestamp': datetime.utcnow().isoformat()
     }
@@ -95,7 +96,7 @@ def handle_toml(file_data: str) -> dict:
                     )
     res["pkg_name"] = package_data.get("name", "")
     res["pkg_ver"] = package_data.get("version", "")
-    res["pkg_lic"] = package_data.get("license", "")
+    res["pkg_lic"] = [package_data.get("license", "Other")]
     classifiers = "\n".join(package_data.get("classifiers", []))
     if classifiers:
         handle_classifiers(classifiers, res)

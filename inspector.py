@@ -136,10 +136,10 @@ def make_single_request(
 
         result: Result = {
             'import_name': '',
-            'lang_ver': "",
+            'lang_ver': [],
             'pkg_name': package,
             'pkg_ver': '',
-            'pkg_lic': '',
+            'pkg_lic': ["Other"],
             'pkg_err': {},
             'pkg_dep': [],
             'timestamp': datetime.utcnow().isoformat()
@@ -163,7 +163,7 @@ def make_single_request(
             "github",
         ]
         if repo:
-            if tldextract.extract(repo).domain not in supported_domains:
+            if tldextract.extract(str(repo)).domain not in supported_domains:
                 repo = find_github(response.text)
             if repo:
                 handle_vcs(language, repo, result, gh_token)

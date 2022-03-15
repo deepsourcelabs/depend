@@ -25,6 +25,8 @@ def verify_run(language, result, file_extension="git") -> list[str]:
         k for k, v in result.items()
         if not v and k not in unavailable_keys
     ]
+    if result["pkg_lic"][0] == "Other" and "pkg_lic" not in unavailable_keys:
+        retrievable_keys.append("pkg_lic")
     return retrievable_keys
 
 
@@ -91,7 +93,7 @@ def handle_github(
                     except github.GithubException:
                         repo_lic = "Other"
 
-                result['pkg_lic'] = repo_lic
+                result['pkg_lic'] = [repo_lic]
 
             if "pkg_name" in retrievable_keys:
                 result['pkg_name'] = dependency

@@ -15,10 +15,10 @@ from error import FileNotSupportedError
 class Result(TypedDict):
     """Type hinting for results"""
     import_name: Optional[str]
-    lang_ver: str
+    lang_ver: list[str]
     pkg_name: str
     pkg_ver: str
-    pkg_lic: str
+    pkg_lic: list[str]
     pkg_err: dict
     pkg_dep: list[str]
     timestamp: str
@@ -84,10 +84,11 @@ def parse_dep_response(
             "versions": {
                 ec.get("pkg_ver"): {
                     "import_name": ec.get("import_name") or main_key,
-                    "lang_ver": ec.get("lang_ver"),
-                    "pkg_lic": ec.get("pkg_lic"),
-                    "pkg_err": ec.get("pkg_err"),
-                    "pkg_dep": ec.get("pkg_dep"),
+                    "lang_ver": ec.get("lang_ver") or [],
+                    "pkg_lic": [ec.get("pkg_lic")]
+                    if isinstance(ec.get("pkg_lic"), str) else ec.get("pkg_lic"),
+                    "pkg_err": ec.get("pkg_err") or {},
+                    "pkg_dep": ec.get("pkg_dep") or [],
                     'timestamp': ec.get("timestamp")
                 } for ec in ecs
             }
@@ -107,9 +108,11 @@ def handle_pypi(api_response: requests.Response, queries: dict, result: Result):
     license_q: jmespath.parser.ParsedResult = queries['license']
     dependencies_q: jmespath.parser.ParsedResult = queries['dependency']
     repo_q: jmespath.parser.ParsedResult = queries['repo']
+    if api_response.status_code == 404:
+        return ""
     data = api_response.json()
-    result['pkg_ver'] = version_q.search(data)
-    result['pkg_lic'] = license_q.search(data)
+    result['pkg_ver'] = version_q.search(data) or ""
+    result['pkg_lic'] = [license_q.search(data) or "Other"]
     req_file_data = "\n".join(dependencies_q.search(data) or "")
     result['pkg_dep'] = py_worker.handle_requirements_txt(
         req_file_data
@@ -125,6 +128,8 @@ def handle_npmjs(api_response: requests.Response, queries: dict, result: Result)
     :param queries: compiled jmespath queries
     :param result: object to mutate
     """
+    if api_response.status_code == 404:
+        return ""
     data = api_response.json()
     version_q: jmespath.parser.ParsedResult = queries['version']
     license_q: jmespath.parser.ParsedResult = queries['license']
@@ -141,7 +146,7 @@ def handle_npmjs(api_response: requests.Response, queries: dict, result: Result)
             queries['versions'].format(latest),
             data
         )
-    result['pkg_lic'] = ";".join(license_q.search(data) or "")
+    result['pkg_lic'] = license_q.search(data) or ["Other"]
     dep_data = dependencies_q.search(data)
     if dep_data:
         result['pkg_dep'] = [
@@ -190,8 +195,8 @@ def scrape_go(response: requests.Response, queries: dict, result: Result, url: s
             )
         ]
     result['pkg_name'] = package_name
-    result['pkg_ver'] = data[queries['version']]
-    result['pkg_lic'] = data[queries['license']]
+    result['pkg_ver'] = data[queries['version']] or ""
+    result['pkg_lic'] = [data[queries['license']] or "Other"]
     result['pkg_dep'] = dependencies_tag
 
 
@@ -224,6 +229,8 @@ def js_versions(api_response: requests.Response, queries: dict) -> list:
     :param api_response: registry response
     :return: list of versions
     """
+    if api_response.status_code == 404:
+        return []
     data = api_response.json()
     versions_q: jmespath.parser.ParsedResult = queries['repo']
     versions = versions_q.search(data)
@@ -239,6 +246,8 @@ def py_versions(api_response: requests.Response, queries: dict) -> list:
     :param api_response: registry response
     :return: list of versions
     """
+    if api_response.status_code == 404:
+        return []
     data = api_response.json()
     versions_q: jmespath.parser.ParsedResult = queries['repo']
     versions = versions_q.search(data)

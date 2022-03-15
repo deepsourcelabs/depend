@@ -73,10 +73,10 @@ def result_payload():
     """
     result: Result = {
         'import_name': '',
-        'lang_ver': '',
+        'lang_ver': [],
         'pkg_name': '',
         'pkg_ver': '',
-        'pkg_lic': '',
+        'pkg_lic': ["Other"],
         'pkg_err': {},
         'pkg_dep': [],
         'timestamp': datetime.utcnow().isoformat()

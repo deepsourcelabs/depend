@@ -13,11 +13,11 @@ def handle_yarn_lock(req_file_data: str) -> dict:
     :return: list of requirement and specs
     """
     res = {
-        "lang_ver": "",
+        "lang_ver": [],
         "pkg_name": "",
         "pkg_ver": "",
-        "pkg_lic": "",
-        "pkg_err": "",
+        "pkg_lic": ["Other"],
+        "pkg_err": {},
         "pkg_dep": [],
         'timestamp': datetime.utcnow().isoformat()
     }
@@ -46,21 +46,21 @@ def handle_json(req_file_data: str) -> dict:
     """
     package_data = json.loads(req_file_data)
     filter_dict = {
-        "lang_ver": package_data.get(
+        "lang_ver": [package_data.get(
             "engines", {}
-        ).get("node", ""),
+        ).get("node", "")],
         "pkg_name": package_data.get("name", ""),
         "pkg_ver": package_data.get("version", ""),
-        "pkg_lic": package_data.get("license", ""),
+        "pkg_lic": package_data.get("license", "Other").split(","),
         "pkg_dep": package_data.get("dependencies", {}),
         'timestamp': datetime.utcnow().isoformat()
     }
     for k, v in filter_dict.items():
         if k == "pkg_dep":
             handle_json_dep(filter_dict, k, v)
-        else:
+        elif k not in ["lang_ver", "pkg_lic"]:
             flatten_content(filter_dict, k, v)
-    filter_dict["pkg_err"] = ""
+    filter_dict["pkg_err"] = {}
     return filter_dict
 
 

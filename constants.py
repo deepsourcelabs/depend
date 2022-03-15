@@ -161,7 +161,7 @@ DEP_FIELDS_MISSED = {
         "py": [],
         "toml": [],
         "cfg": [],
-        "txt": ["lang_ver", "pkg_name", "pkg_ver", "pkg_lic"],
+        "txt": ["import_name", "lang_ver", "pkg_name", "pkg_ver", "pkg_lic"],
     }
 }
 # PYPI_LIC = [

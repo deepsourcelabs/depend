@@ -22,7 +22,7 @@ class Helpers:
             "items": {
                 "type": "object",
                 "patternProperties": {
-                    r"^[\S]+$": {
+                    r"^$|^[\S]+$": {
                         "description": "pkg_name",
                         "type": "object",
                         "properties": {
@@ -37,22 +37,22 @@ class Helpers:
                                                 "type": "string"
                                             },
                                             "lang_ver": {
-                                                "type": ["string", "array"],
+                                                "type": "array",
                                                 "items": {
                                                     "type": "string"
                                                 }
                                             },
                                             "pkg_lic": {
-                                                "type": ["string", "array"],
+                                                "type": "array",
                                                 "items": {
                                                     "type": "string"
                                                 }
                                             },
                                             "pkg_err": {
-                                                "type": ["string", "object"]
+                                                "type": "object"
                                             },
                                             "pkg_dep": {
-                                                "type": ["string", "array"],
+                                                "type": "array",
                                                 "items": {
                                                     "type": "string"
                                                 }
@@ -174,7 +174,6 @@ def test_requirements_txt(json_schema, config_file):
         host=None,
         config=config_file
     )
-    assert result == ""
     assert json_schema.is_valid(result)
 
 
@@ -187,7 +186,6 @@ def test_setup_py(json_schema, config_file):
         host=None,
         config=config_file
     )
-    assert result == ""
     assert json_schema.is_valid(result)
 
 
@@ -200,7 +198,6 @@ def test_setup_cfg(json_schema, config_file):
         host=None,
         config=config_file
     )
-    assert result == ""
     assert json_schema.is_valid(result)
 
 
@@ -213,7 +210,6 @@ def test_pyproject_toml(json_schema, config_file):
         host=None,
         config=config_file
     )
-    assert result == ""
     assert json_schema.is_valid(result)
 
 
@@ -226,7 +222,6 @@ def test_poetry_toml(json_schema, config_file):
         host=None,
         config=config_file
     )
-    assert result == ""
     assert json_schema.is_valid(result)
 
 
@@ -242,5 +237,4 @@ def test_unsupported():
             deep_search=False,
             config=None
         )
-        assert result == ""
         assert json_schema.is_valid(result)

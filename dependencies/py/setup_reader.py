@@ -46,10 +46,10 @@ def handle_classifiers(classifiers, res):
             r'Programming Language :: Python :: ([^"\n]+)',
             classifiers
         )
-        res["lang_ver"] = ";".join(lang)
-    if not res["pkg_lic"] or res["pkg_lic"] == "Other":
+        res["lang_ver"] = lang
+    if not res["pkg_lic"] or res["pkg_lic"][0] == "Other":
         lic = re.findall(r'License :: ([^"\n]+)', classifiers)
-        res["pkg_lic"] = ";".join(lic)
+        res["pkg_lic"] = lic
 
 
 class LaxSetupReader(SetupReader):
@@ -68,11 +68,11 @@ class LaxSetupReader(SetupReader):
         """
         res = {
             "import_name": "",
-            "lang_ver": "",
+            "lang_ver": [],
             "pkg_name": "",
             "pkg_ver": "",
-            "pkg_lic": "",
-            "pkg_err": "",
+            "pkg_lic": ["Other"],
+            "pkg_err": {},
             "pkg_dep": [],
             'timestamp': datetime.utcnow().isoformat()
         }
@@ -92,14 +92,14 @@ class LaxSetupReader(SetupReader):
         res["pkg_ver"] = self._find_single_string(
             setup_call, body, "version"
         )
-        res["pkg_lic"] = self._find_single_string(
+        if pkg_lic := self._find_single_string(
             setup_call, body, "license"
-        )
-        lang_ver = self._find_single_string(
-            setup_call, body, "python_requires"
-        )
-        if lang_ver:
-            res["lang_ver"] = lang_ver.replace(",", ";")
+        ):
+            res["pkg_lic"] = [pkg_lic]
+        if lang_ver := self._find_single_string(
+                setup_call, body, "python_requires"
+            ):
+            res["lang_ver"] = lang_ver.split(",")
         pkg_dep = self._find_install_requires(
             setup_call, body
         )
@@ -166,18 +166,18 @@ class LaxSetupReader(SetupReader):
             return ""
 
         if isinstance(value, ast.Str):
-            return value.s
+            return value.s or ""
         if isinstance(value, ast.List):
             out = ""
             for subnode in value.elts:
                 if isinstance(subnode, ast.Str):
                     out = out + subnode.s + "\n"
-            return out
+            return out or ""
         elif isinstance(value, ast.Name):
             variable = self._find_variable_in_body(body, value.id)
 
             if variable is not None and isinstance(variable, ast.Str):
-                return variable.s
+                return variable.s or ""
 
     # noinspection PyUnresolvedReferences
     def _find_install_requires(
@@ -285,31 +285,29 @@ class LaxSetupReader(SetupReader):
         :return: filtered metadata
         """
         res = {
-            "lang_ver": "",
+            "lang_ver": [],
             "pkg_name": "",
             "pkg_ver": "",
-            "pkg_lic": "",
-            "pkg_err": "",
+            "pkg_lic": ["Other"],
+            "pkg_err": {},
             "pkg_dep": [],
             'timestamp': datetime.utcnow().isoformat()
         }
         parser = ConfigParser()
         parser.read_string(content)
-        res["pkg_name"] = parser.get("metadata", "name", fallback=None)
-        res["pkg_lic"] = parser.get("metadata", "license", fallback=None)
+        res["pkg_name"] = parser.get("metadata", "name", fallback="")
+        res["pkg_lic"] = [parser.get("metadata", "license", fallback="Other")]
         classifiers = parser.get("metadata", "classifiers", fallback=None)
         try:
             res["pkg_ver"] = Version.parse(parser.get("metadata", "version", fallback="")).text
         except exceptions.ParseVersionError:
             res["pkg_ver"] = ""
-        res["pkg_dep"] = [
-            dep.strip() for dep
-            in parser.get("options", "install_requires", fallback="").split("\n")
-            if dep
-        ]
+        res["pkg_dep"] = py_worker.handle_requirements_txt(
+            parser.get("options", "install_requires", fallback="")
+        ).get("pkg_dep")
         res["lang_ver"] = parser.get(
             "options", "python_requires", fallback=""
-        ).replace(",", ";")
+        ).split(",")
         if classifiers:
             handle_classifiers(classifiers, res)
         return res

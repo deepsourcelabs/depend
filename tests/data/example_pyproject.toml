@@ -28,14 +28,14 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Application Frameworks",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-#dependencies = [
-#    "numpy>=1.18.5",
-#]
-
-[package.dependencies]
-runtime = []  # This is an optimization, it means pip
-              # won't need to run setup.py egg_info to
-              # get dependencies
+dependencies = [
+    "numpy>=1.18.5",
+]
+#
+#[package.dependencies]
+#runtime = []  # This is an optimization, it means pip
+#              # won't need to run setup.py egg_info to
+#              # get dependencies
 
 [package.build]
 dependencies = [
