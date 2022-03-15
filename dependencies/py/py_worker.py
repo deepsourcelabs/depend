@@ -44,7 +44,7 @@ def handle_setup_py(req_file_data: str, gh_token: str = None) -> dict:
     :return: dict containing dependency info and specs
     """
     parser = LaxSetupReader()
-    return parser.read_setup_py(req_file_data, gh_token)
+    return parser.auth_read_setup_py(req_file_data, gh_token)
 
 
 def handle_setup_cfg(req_file_data: str) -> dict:

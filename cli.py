@@ -82,16 +82,12 @@ def main(
             os.path.basename(dep_file), dep_file.read_text(), gh_token
         )
         payload[lang] = dep_content.get("pkg_dep")
-        # pkg_name = dep_content.get("pkg_name")
-        # pkg_ver = dep_content.get("pkg_ver")
         result.append(parse_dep_response([dep_content]))
         if not deep_search:
             logging.info(result)
             return result
     else:
         payload[lang] = packages
-        # pkg_name = ""
-        # pkg_ver = ""
     if lang not in ["go", "python", "javascript"]:
         logging.error("Please specify a supported language!")
         raise typer.Exit(code=-1)
@@ -113,10 +109,6 @@ def main(
         try:
 
             if dep_list:
-                # if pkg_name:
-                # result[pkg_name]["versions"][pkg_ver]["pkg_dep"] = make_multiple_requests(
-                #     es, language, dep_list, gh_token
-                # )
                 result.extend(make_multiple_requests(
                     es, language, dep_list, gh_token
                 ))

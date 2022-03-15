@@ -57,7 +57,7 @@ class LaxSetupReader(SetupReader):
     Class that reads a setup.py file without executing it.
     """
 
-    def read_setup_py(
+    def auth_read_setup_py(
             self, content: str, gh_token: str = None
     ) -> Dict[str, Union[List, Dict]]:
         """
@@ -93,12 +93,12 @@ class LaxSetupReader(SetupReader):
             setup_call, body, "version"
         )
         if pkg_lic := self._find_single_string(
-            setup_call, body, "license"
+                setup_call, body, "license"
         ):
             res["pkg_lic"] = [pkg_lic]
         if lang_ver := self._find_single_string(
                 setup_call, body, "python_requires"
-            ):
+        ):
             res["lang_ver"] = lang_ver.split(",")
         pkg_dep = self._find_install_requires(
             setup_call, body
