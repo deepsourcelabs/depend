@@ -8,16 +8,17 @@ import logging
 import re
 from configparser import ConfigParser
 from datetime import datetime
-from typing import Any, Match
-from typing import Dict
-from typing import Iterable
-from typing import List
-from typing import Optional
-from typing import Union
-
+from typing import (
+    Any,
+    Match,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Union,
+)
 import github
-from poetry.core.semver import Version
-from poetry.core.semver import exceptions
+from poetry.core.semver import Version, exceptions
 from poetry.utils.setup_reader import SetupReader
 
 from dependencies.py import py_worker
@@ -54,17 +55,25 @@ def handle_classifiers(classifiers, res):
 
 class LaxSetupReader(SetupReader):
     """
-    Class that reads a setup.py file without executing it.
+    Read the setup.py file without executing it.
     """
 
     def auth_read_setup_py(
             self, content: str, gh_token: str = None
     ) -> Dict[str, Union[List, Dict]]:
         """
-        Directly reads setup.py content and returns key info
+        Directly read setup.py content
         :param gh_token: GitHub token
         :param content: content of setup.py
-        :return: info required by dependency inspector
+        :return: {
+            "name": package name,
+            "version": package version,
+            "install_requires": list of packages required
+                or a string with file to be read from repo
+            "python_requires": python versions,
+            "classifiers": data provided for indexing,
+            "license": list of licenses found
+        }
         """
         res = {
             "import_name": "",
@@ -80,7 +89,7 @@ class LaxSetupReader(SetupReader):
         repo_identifier = find_github(content)
         setup_call, body = self._find_setup_call(body)
         if not setup_call:
-            return self.DEFAULT
+            return res
 
         # Inspecting keyword arguments
         res["pkg_name"] = self._find_single_string(
@@ -183,6 +192,12 @@ class LaxSetupReader(SetupReader):
     def _find_install_requires(
             self, call: ast.Call, body: Iterable[Any]
     ) -> Union[List[str], str]:
+        """
+        Analyze setup.py and find dependencies
+        :param call: setup function in setup.py
+        :param body: body for variable definitions
+        :return: package dependencies list or file to query
+        """
         install_requires = []
         value = self._find_in_call(call, "install_requires")
         if value is None:
