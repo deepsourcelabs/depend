@@ -1,4 +1,4 @@
-"""Functions to handle Python files"""
+"""Functions to handle Python dependency files."""
 import toml
 from pkg_resources import parse_requirements
 

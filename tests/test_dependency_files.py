@@ -36,6 +36,7 @@ def test_poetry_toml():
     with open("tests/data/example_pyproject_poetry.toml") as f:
         pyproject = f.read()
     result = dependencies.py.py_worker.handle_toml(pyproject)
+    assert result
 
 
 def test_package_json():
