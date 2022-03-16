@@ -1,5 +1,4 @@
 """Test cli and overall pipeline for dependency-inspector"""
-import logging
 from pathlib import Path
 
 import pytest
@@ -7,8 +6,6 @@ from jsonschema import validate
 
 from cli import main
 from error import FileNotSupportedError
-
-LOGGER = logging.getLogger(__name__)
 
 
 class Helpers:
@@ -126,43 +123,40 @@ def test_npm_shrinkwrap_json(json_schema, config_file):
     assert json_schema.is_valid(result)
 
 
-# def test_package_lock_json(json_schema, config_file):
-#     """Check package lock file output"""
-#     result = main(
-#         lang="javascript",
-#         dep_file=Path("tests/data/example_package_lock.json"),
-#         deep_search=True,
-#         host=None,
-#         config=config_file
-#     )
-#     assert result == ""
-#     assert json_schema.is_valid(result)
-#
-#
-# def test_yarn_v1_lock(json_schema, config_file):
-#     """Check yarn.lock v1 file output"""
-#     result = main(
-#         lang="javascript",
-#         dep_file=Path("tests/data/example_v1_yarn.lock"),
-#         deep_search=True,
-#         host=None,
-#         config=config_file
-#     )
-#     assert result == ""
-#     assert json_schema.is_valid(result)
-#
-#
-# def test_yarn_v2_lock(json_schema, config_file):
-#     """Check yarn.lock v2 file output"""
-#     result = main(
-#         lang="javascript",
-#         dep_file=Path("tests/data/example_v2_yarn.lock"),
-#         deep_search=True,
-#         host=None,
-#         config=config_file
-#     )
-#     assert result == ""
-#     assert json_schema.is_valid(result)
+def test_package_lock_json(json_schema, config_file):
+    """Check package lock file output"""
+    result = main(
+        lang="javascript",
+        dep_file=Path("tests/data/example_package_lock.json"),
+        deep_search=True,
+        host=None,
+        config=config_file
+    )
+    assert json_schema.is_valid(result)
+
+
+def test_yarn_v1_lock(json_schema, config_file):
+    """Check yarn.lock v1 file output"""
+    result = main(
+        lang="javascript",
+        dep_file=Path("tests/data/example_v1_yarn.lock"),
+        deep_search=True,
+        host=None,
+        config=config_file
+    )
+    assert json_schema.is_valid(result)
+
+
+def test_yarn_v2_lock(json_schema, config_file):
+    """Check yarn.lock v2 file output"""
+    result = main(
+        lang="javascript",
+        dep_file=Path("tests/data/example_v2_yarn.lock"),
+        deep_search=True,
+        host=None,
+        config=config_file
+    )
+    assert json_schema.is_valid(result)
 
 
 def test_requirements_txt(json_schema, config_file):

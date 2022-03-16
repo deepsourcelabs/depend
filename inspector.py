@@ -196,7 +196,7 @@ def make_multiple_requests(
     result = []
 
     for package in packages:
-        name_ver = package.replace("@", ";").split(";")
+        name_ver = (package[0]+package[1:].replace("@", ";")).rsplit(';', 1)
         if len(name_ver) == 1:
             dep_resp = make_single_request(es, language, package, gh_token=gh_token)
         else:

@@ -43,6 +43,7 @@ def handle_go_mod(req_file_data: str) -> dict:
     data_available["pkg_err"] = {
         'pkg_dep': d.get("ModDeprecated", "")
     }
-    data_available["pkg_lic"] = "Other"
+    data_available["lang_ver"] = data_available.get("lang_ver", "").split(",")
+    data_available["pkg_lic"] = ["Other"]
     data_available['timestamp'] = datetime.utcnow().isoformat()
     return data_available
