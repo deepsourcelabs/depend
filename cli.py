@@ -9,11 +9,13 @@ from error import LanguageNotSupportedError, VCSNotSupportedError
 from helper import parse_dep_response, handle_dep_file
 import configparser
 import logging
+from dotenv import load_dotenv
 
 from inspector import make_multiple_requests
 
 app = typer.Typer(add_completion=False)
 configfile = configparser.ConfigParser()
+load_dotenv()
 
 
 @app.callback(invoke_without_command=True)
@@ -61,7 +63,9 @@ def main(
     """
     payload = {}
     result = []
-    if config is not None:
+    if "GITHUB_TOKEN" in os.environ:
+        gh_token = os.environ.get("GITHUB_TOKEN")
+    elif config is not None:
         if not config.is_file():
             logging.error("Configuration file not found")
             raise typer.Exit(code=-1)

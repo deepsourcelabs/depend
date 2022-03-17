@@ -1,6 +1,7 @@
 **/*_cache.sqlite
 /venv/
 .idea
+.env
 coverage.xml
 .coverage
 /.pytest_cache/
