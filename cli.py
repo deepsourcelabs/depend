@@ -9,11 +9,13 @@ from error import LanguageNotSupportedError, VCSNotSupportedError
 from helper import handle_dep_file
 import configparser
 import logging
+from dotenv import load_dotenv
 
 from inspector import make_multiple_requests
 
 app = typer.Typer(add_completion=False)
 configfile = configparser.ConfigParser()
+load_dotenv()
 
 
 @app.callback(invoke_without_command=True)
@@ -60,14 +62,17 @@ def main(
     :param gh_token: GitHub token to authorize VCS and bypass rate limit
     """
     payload = {}
-    if config is not None:
+    result = []
+    if "GITHUB_TOKEN" in os.environ:
+        gh_token = os.environ.get("GITHUB_TOKEN")
+    elif config is not None:
         if not config.is_file():
             logging.error("Configuration file not found")
             raise typer.Exit(code=-1)
         configfile.read(config)
-        es_uid = es_uid or configfile.get("secrets", "es_uid", fallback=None)
-        es_pass = es_pass or configfile.get("secrets", "es_pass", fallback=None)
-        gh_token = gh_token or configfile.get("secrets", "gh_token", fallback=None)
+        es_uid = configfile.get("secrets", "es_uid", fallback=None) or es_uid
+        es_pass = configfile.get("secrets", "es_pass", fallback=None) or es_pass
+        gh_token = configfile.get("secrets", "gh_token", fallback=None) or gh_token
         if not configfile.has_section("dependencies"):
             logging.error("dependencies section missing from config file")
             raise typer.Exit(code=-1)
