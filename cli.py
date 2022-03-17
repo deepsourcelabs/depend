@@ -62,7 +62,6 @@ def main(
     :param gh_token: GitHub token to authorize VCS and bypass rate limit
     """
     payload = {}
-    result = []
     if "GITHUB_TOKEN" in os.environ:
         gh_token = os.environ.get("GITHUB_TOKEN")
     elif config is not None:
