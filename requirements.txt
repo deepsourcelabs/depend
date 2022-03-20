@@ -15,3 +15,4 @@ PyYAML==6.0
 tldextract==3.2.0
 jsonschema==4.4.0
 python-dotenv==0.19.2
+dparse2==0.6.0
