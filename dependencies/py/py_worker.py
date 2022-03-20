@@ -5,7 +5,7 @@ import toml
 from pkg_resources import parse_requirements
 
 from dependencies.py.setup_reader import LaxSetupReader, handle_classifiers
-
+import dparse2
 
 def handle_requirements_txt(req_file_data: str) -> dict:
     """
@@ -35,15 +35,14 @@ def handle_requirements_txt(req_file_data: str) -> dict:
     return res
 
 
-def handle_setup_py(req_file_data: str, gh_token: str = None) -> dict:
+def handle_setup_py(req_file_data: str) -> dict:
     """
     Parse setup.py
-    :param gh_token: GitHub token
     :param req_file_data: Content of setup.py
     :return: dict containing dependency info and specs
     """
     parser = LaxSetupReader()
-    return parser.auth_read_setup_py(req_file_data, gh_token)
+    return parser.auth_read_setup_py(req_file_data)
 
 
 def handle_setup_cfg(req_file_data: str) -> dict:
@@ -100,3 +99,29 @@ def handle_toml(file_data: str) -> dict:
     if classifiers:
         handle_classifiers(classifiers, res)
     return res
+
+def handle_otherpy(file_data: str, file_name:str)->dict:
+    """
+    Parses conda.yml tox.ini and Pipfiles
+    this function returns only dependencies
+    slated for removal once individual cases are handled
+    """
+    res = {
+        "lang_ver": [],
+        "pkg_name": "",
+        "pkg_ver": "",
+        "pkg_lic": ["Other"],
+        "pkg_err": {},
+        "pkg_dep": [],
+        'timestamp': datetime.utcnow().isoformat()
+    }
+    df = dparse2.parse(
+        file_data,
+        file_name=file_name
+    )
+    for dep in df.dependencies:
+        res["pkg_dep"].append(
+            dep.name + ";" + str(dep.specs)
+        )
+    return res
+

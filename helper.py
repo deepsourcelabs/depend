@@ -41,11 +41,9 @@ def parse_license(license_file: str, license_dict: dict) -> str:
 def handle_dep_file(
         file_name: str,
         file_content: str,
-        gh_token: str
 ) -> dict:
     """
     Parses contents of requirement file and returns useful insights
-    :param gh_token: GitHub token
     :param file_name: name of requirement file
     :param file_content: content of the file
     :return: key features for dependency-inspector
@@ -56,6 +54,8 @@ def handle_dep_file(
             return go_worker.handle_go_mod(file_content)
         case 'json':
             return js_worker.handle_json(file_content)
+        case ["conda.yml", "tox.ini", "Pipfile", "Pipfile.lock"]:
+            return py_worker.handle_otherpy(file_content, file_name)
         case 'lock':
             return js_worker.handle_yarn_lock(file_content)
         case 'txt':
@@ -63,7 +63,7 @@ def handle_dep_file(
         case 'toml':
             return py_worker.handle_toml(file_content)
         case 'py':
-            return py_worker.handle_setup_py(file_content, gh_token)
+            return py_worker.handle_setup_py(file_content)
         case 'cfg':
             return py_worker.handle_setup_cfg(file_content)
         case _:

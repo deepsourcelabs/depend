@@ -4,11 +4,13 @@ import datetime
 import logging
 import re
 import time
-from typing import Optional, Literal
+from typing import Literal
+
 import github.GithubException
-from github import Github
+
 import constants
 from helper import parse_license, Result, handle_dep_file
+from handle_env import get_github
 
 
 def verify_run(language, result, file_extension="git") -> list[str]:
@@ -34,21 +36,16 @@ def handle_github(
         language: str,
         dependency: str,
         result: Result,
-        gh_token: Optional[str],
 ):
     """VCS fallthrough for GitHub based GO"""
     if retrievable_keys := verify_run(language, result):
-
-        if not gh_token:
-            gh_token = None
-            logging.warning("Proceeding without GitHub Authentication")
-        g = Github(gh_token)
+        g = get_github()
         rl = g.get_rate_limit()
         if rl.core.remaining == 0:
             logging.error("GitHub API limit exhausted - Sleeping")
             time.sleep(
                 (
-                        rl.core.reset - datetime.datetime.now()
+                    datetime.datetime.now() - rl.core.reset
                 ).total_seconds()
             )
 
@@ -119,7 +116,7 @@ def handle_github(
                     except github.GithubException:
                         continue
                     dep_resp = handle_dep_file(
-                        req_filename, dep_file, gh_token
+                        req_filename, dep_file
                     )
                     for key in retrievable_keys:
                         key: Literal[

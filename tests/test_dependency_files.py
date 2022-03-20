@@ -143,3 +143,13 @@ def test_poetry_toml(json_schema):
         pyproject = f.read()
     result = dependencies.py.py_worker.handle_toml(pyproject)
     assert json_schema.is_valid(result)
+
+
+def test_other_py(json_schema):
+    """
+    Parses conda.yml tox.ini and Pipfiles
+    """
+    with open("tests/data/example_pipfile") as f:
+        pyproject = f.read()
+    result = dependencies.py.py_worker.handle_otherpy(pyproject, "Pipfile")
+    assert json_schema.is_valid(result)

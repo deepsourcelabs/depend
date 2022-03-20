@@ -1,35 +1,34 @@
 """License & Version Extractor"""
 
-import constants
-import tldextract
-import requests
-from datetime import datetime, timedelta
 import logging
-from typing import List, Optional
 import re
+from datetime import datetime, timedelta
+from typing import List, Dict
 
-from vcs.github_worker import handle_github
+import requests
+import tldextract
+
+import constants
+from constants import REGISTRY
+from error import LanguageNotSupportedError, VCSNotSupportedError
 from helper import Result, handle_pypi, handle_npmjs, scrape_go, parse_dep_response
 from helper import go_versions, js_versions, py_versions
-from error import LanguageNotSupportedError, VCSNotSupportedError
-from constants import REGISTRY
+from vcs.github_worker import handle_github
 
 
 def handle_vcs(
         language: str,
         dependency: str,
         result: Result,
-        gh_token: str = "",
 ):
     """
     Fall through to VCS check for a go namespace (only due to go.mod check)
     :param language: primary language of the package
-    :param gh_token: auth token for vcs requests
     :param dependency: package not found in other repositories
     :param result: object with name version license and dependencies
     """
     if "github.com" in dependency:
-        handle_github(language, dependency, result, gh_token)
+        handle_github(language, dependency, result)
     else:
         raise VCSNotSupportedError(dependency)
 
@@ -88,15 +87,15 @@ def make_single_request(
         language: str,
         package: str,
         version: str = "",
-        gh_token: Optional[str] = None
-) -> dict:
+        force_schema: bool = True
+) -> Dict | list[Result]:
     """
     Obtain package license and dependency information.
     :param es: ElasticSearch Instance
     :param language: python, javascript or go
     :param package: as imported
     :param version: check for specific version
-    :param gh_token: GitHub token for authentication
+    :param force_schema: returns schema compliant response if true
     :return: result object with name version license and dependencies
     """
     result_list = []
@@ -127,7 +126,8 @@ def make_single_request(
                 vers = go_versions(url, queries)
     else:
         vers = [version]
-
+    if not vers:
+        vers = [""]
     for ver in vers:
         url = make_url(language, package, ver)
         logging.info(url)
@@ -166,7 +166,7 @@ def make_single_request(
             if tldextract.extract(str(repo)).domain not in supported_domains:
                 repo = find_github(response.text)
             if repo:
-                handle_vcs(language, repo, result, gh_token)
+                handle_vcs(language, repo, result)
         if es is not None:
             es.index(
                 index=language,
@@ -176,21 +176,22 @@ def make_single_request(
         # handle vers into format
         # parse_dep_response
         result_list.append(result)
-    return parse_dep_response(result_list)
+    if force_schema:
+        return parse_dep_response(result_list)
+    else:
+        return result_list
 
 
 def make_multiple_requests(
         es: any,
         language: str,
         packages: List[str],
-        gh_token: Optional[str] = None
 ) -> list:
     """
     Obtain license and dependency information for list of packages.
     :param es: ElasticSearch Instance
     :param language: python, javascript or go
     :param packages: a list of dependencies in each language
-    :param gh_token: GitHub token for authentication
     :return: result object with name version license and dependencies
     """
     result = []
@@ -198,10 +199,10 @@ def make_multiple_requests(
     for package in packages:
         name_ver = (package[0]+package[1:].replace("@", ";")).rsplit(';', 1)
         if len(name_ver) == 1:
-            dep_resp = make_single_request(es, language, package, gh_token=gh_token)
+            dep_resp = make_single_request(es, language, package)
         else:
             dep_resp = make_single_request(
-                es, language, name_ver[0], name_ver[1], gh_token
+                es, language, name_ver[0], name_ver[1]
             )
         result.append(dep_resp)
     return result

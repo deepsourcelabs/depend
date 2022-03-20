@@ -22,6 +22,7 @@ from poetry.core.semver import Version, exceptions
 from poetry.utils.setup_reader import SetupReader
 
 from dependencies.py import py_worker
+from handle_env import get_github
 
 
 def find_github(text: str) -> Match[str] | None:
@@ -59,11 +60,10 @@ class LaxSetupReader(SetupReader):
     """
 
     def auth_read_setup_py(
-            self, content: str, gh_token: str = None
+            self, content: str
     ) -> Dict[str, Union[List, Dict]]:
         """
         Directly read setup.py content
-        :param gh_token: GitHub token
         :param content: content of setup.py
         :return: {
             "name": package name,
@@ -113,7 +113,7 @@ class LaxSetupReader(SetupReader):
             setup_call, body
         )
         if isinstance(pkg_dep, str) and repo_identifier:
-            g = github.Github(gh_token)
+            g = get_github()
             repo = g.get_repo(repo_identifier.group(1) + "/" + repo_identifier.group(2))
             commit_branch_tag = repo_identifier.group(3) or repo.default_branch
             try:

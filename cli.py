@@ -9,13 +9,11 @@ from error import LanguageNotSupportedError, VCSNotSupportedError
 from helper import parse_dep_response, handle_dep_file
 import configparser
 import logging
-from dotenv import load_dotenv
 
 from inspector import make_multiple_requests
 
 app = typer.Typer(add_completion=False)
 configfile = configparser.ConfigParser()
-load_dotenv()
 
 
 @app.callback(invoke_without_command=True)
@@ -25,7 +23,6 @@ def main(
         dep_file: Optional[Path] = typer.Option(None),
         deep_search: Optional[bool] = typer.Option(False),
         config: Optional[Path] = typer.Option(None),
-        gh_token: Optional[str] = typer.Option(None),
         host: Optional[str] = typer.Option(None),
         port: Optional[int] = typer.Option(None),
         es_uid: Optional[str] = typer.Option(None),
@@ -59,20 +56,14 @@ def main(
 
     :param es_pass: Password to authenticate Elastic
 
-    :param gh_token: GitHub token to authorize VCS and bypass rate limit
     """
     payload = {}
     result = []
-    if "GITHUB_TOKEN" in os.environ:
-        gh_token = os.environ.get("GITHUB_TOKEN")
-    elif config is not None:
+    if config is not None:
         if not config.is_file():
             logging.error("Configuration file not found")
             raise typer.Exit(code=-1)
         configfile.read(config)
-        es_uid = configfile.get("secrets", "es_uid", fallback=None) or es_uid
-        es_pass = configfile.get("secrets", "es_pass", fallback=None) or es_pass
-        gh_token = configfile.get("secrets", "gh_token", fallback=None) or gh_token
         if not configfile.has_section("dependencies"):
             logging.error("dependencies section missing from config file")
             raise typer.Exit(code=-1)
@@ -83,7 +74,7 @@ def main(
             logging.error("Dependency file cannot be read")
             raise typer.Exit(code=-1)
         dep_content = handle_dep_file(
-            os.path.basename(dep_file), dep_file.read_text(), gh_token
+            os.path.basename(dep_file), dep_file.read_text()
         )
         payload[lang] = dep_content.get("pkg_dep")
         result.append(parse_dep_response([dep_content]))
@@ -114,7 +105,7 @@ def main(
 
             if dep_list:
                 result.extend(make_multiple_requests(
-                    es, language, dep_list, gh_token
+                    es, language, dep_list
                 ))
 
                 logging.info(
