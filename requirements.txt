@@ -1,5 +1,4 @@
 beautifulsoup4==4.10.0
-elasticsearch==7.16.3
 PyGithub==1.55
 requests==2.27.1
 requests-cache==0.9.1
