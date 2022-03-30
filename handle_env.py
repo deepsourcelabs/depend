@@ -18,12 +18,12 @@ github_object = Github(gh_token)
 
 
 conn = None
-if "HOSTNAME" in os.environ:
-    HOSTNAME    = os.environ.get("HOSTNAME")
-    DATABASE    = os.environ.get("DATABASE")
-    USERNAME    = os.environ.get("USERNAME")
-    PWD         = os.environ.get("PWD")
-    PORT_ID     = os.environ.get("PORT_ID")
+if "PG_HOSTNAME" in os.environ:
+    HOSTNAME    = os.environ.get("PG_HOSTNAME")
+    DATABASE    = os.environ.get("PG_DATABASE")
+    USERNAME    = os.environ.get("PG_USERNAME")
+    PWD         = os.environ.get("PG_PWD")
+    PORT_ID     = os.environ.get("PG_PORT_ID")
     try:
         conn = psycopg2.connect(
             host = HOSTNAME,
