@@ -21,12 +21,12 @@ def add_data(
     """
     try:
         with psql as conn:
-            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+            with conn.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor) as cur:
                 if force:
                     cur.execute(f'DROP TABLE IF EXISTS {db_name}')
                 create_script = f''' 
                 CREATE TABLE IF NOT EXISTS {db_name} (
-                    ID          int NOT NULL PRIMARY KEY,
+                    ID          BIGINT NOT NULL PRIMARY KEY,
                     LANGUAGE    varchar NOT NULL,
                     PKG_NAME    varchar NOT NULL,
                     PKG_VER     varchar NOT NULL,
@@ -71,15 +71,14 @@ def get_data(
     pkg_id = hash(language + pkg_name + pkg_ver)
     try:
         with psql as conn:
-            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+            with conn.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor) as cur:
                 read_script = f'SELECT * FROM {db_name} WHERE ID = %s'
                 read_record = (pkg_id,)
                 cur.execute(read_script, read_record)
-                return [ro for ro in cur.fetchall()]
+                return cur.fetchone()
     except Exception as error:
         print(error)
-    finally:
-        return []
+        return None
 
 
 def del_data(

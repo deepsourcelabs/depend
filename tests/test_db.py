@@ -32,7 +32,7 @@ def test_run_db(psql):
     """
     add_data(
         psql,
-        "MURDOCK_TEST",
+        "murdock_test",
         "test",
         "murdock",
         "0.0.1",
@@ -45,14 +45,14 @@ def test_run_db(psql):
     )
     data = get_data(
         psql,
-        "MURDOCK_TEST",
+        "murdock_test",
         "test",
         "murdock",
         "0.0.1"
     )
-    assert data[0]["PKG_LIC"] == "GPL"
+    assert data.pkg_lic == ["MIT"]
 
-
+@pytest.mark.dependency(depends=['test_run_db'])
 @pytest.mark.skip_status(None)
 def test_check_db(psql):
     """
@@ -60,7 +60,7 @@ def test_check_db(psql):
     """
     upd_data(
         psql,
-        "MURDOCK_TEST",
+        "murdock_test",
         "test",
         "murdock",
         "0.0.1",
@@ -72,9 +72,9 @@ def test_check_db(psql):
     )
     data = get_data(
         psql,
-        "MURDOCK_TEST",
+        "murdock_test",
         "test",
         "murdock",
         "0.0.1"
     )
-    assert data[0]["PKG_LIC"] == "GPL"
+    assert data.pkg_lic == ["GPL"]
