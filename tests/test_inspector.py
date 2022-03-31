@@ -83,6 +83,7 @@ def test_make_single_request_py(psql):
     """Test version and license for python"""
     result = inspector.make_single_request(
         psql,
+        "murdock",
         "python",
         "aiohttp",
         "3.7.2",
@@ -98,6 +99,7 @@ def test_make_single_request_js(psql):
     """Test version and license for javascript"""
     result = inspector.make_single_request(
         psql,
+        "murdock",
         "javascript",
         "react",
         "17.0.2",
@@ -113,6 +115,7 @@ def test_make_single_request_go(psql):
     """Test version and license for go"""
     result = inspector.make_single_request(
         psql,
+        "murdock",
         "go",
         "github.com/getsentry/sentry-go",
         "v0.12.0",
@@ -128,6 +131,7 @@ def test_make_single_request_go_redirect(psql):
     """Test version and license for go on redirects"""
     result = inspector.make_single_request(
         psql,
+        "murdock",
         "go",
         "http",
         "go1.16.13",
@@ -142,6 +146,7 @@ def test_make_single_request_go_github(psql):
     """Test version and license for go GitHub fallthrough"""
     result = inspector.make_single_request(
         psql,
+        "murdock",
         "go",
         "https://github.com/go-yaml/yaml",
         force_schema=False
@@ -154,7 +159,7 @@ def test_make_single_request_go_github(psql):
 def test_make_multiple_requests(dependency_payload, psql):
     """Multiple package requests for JavaScript NPM and Go"""
     result = [
-        inspector.make_multiple_requests(psql, lang, dependencies)
+        inspector.make_multiple_requests(psql, "murdock", lang, dependencies)
         for lang, dependencies
         in dependency_payload.items()
     ]

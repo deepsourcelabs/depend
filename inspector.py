@@ -3,14 +3,13 @@
 import logging
 import re
 import time
-from datetime import datetime, timedelta
-from typing import Any, List, Optional, Tuple
+from datetime import datetime
+from typing import Any, List, Tuple
 
 import requests
-from elasticsearch import Elasticsearch
 from tldextract import extract
 
-from constants import REGISTRY
+from constants import REGISTRY, CACHE_EXPIRY
 from db.postgres_worker import add_data, get_data
 from dep_types import Result
 from dependencies.helper import (
@@ -102,7 +101,6 @@ def make_single_request(
         db_name: str,
         language: str,
         package: str,
-        expiry_time: float,
         version: str = "",
         force_schema: bool = True
 ) -> dict | Result | List[Result]:
@@ -113,7 +111,6 @@ def make_single_request(
     :param language: python, javascript or go
     :param package: as imported
     :param version: check for specific version
-    :param expiry_time: time after which db entry is invalid
     :param force_schema: returns schema compliant response if true
     :return: result object with name version license and dependencies
     """
@@ -149,7 +146,7 @@ def make_single_request(
                     '%Y-%m-%d %H:%M:%S.%f'
                 )
                 if time.mktime(db_time.timetuple()) - \
-                        time.mktime(datetime.utcnow().timetuple()) < expiry_time:
+                        time.mktime(datetime.utcnow().timetuple()) < CACHE_EXPIRY:
                     logging.info("Using " + package + " found in Postgres Database")
                     return db_data
         url = make_url(language, package, ver)
@@ -215,7 +212,6 @@ def make_multiple_requests(
         db_name: str,
         language: str,
         packages: List[str],
-        expiry_time: float
 ) -> List[Any]:
     """
     Obtain license and dependency information for list of packages.
@@ -224,7 +220,6 @@ def make_multiple_requests(
     :param language: python, javascript or go
     :param packages: a list of dependencies in each language
     :return: result object with name version license and dependencies
-    :param expiry_time: time after which db entry is invalid
     """
     result = []
 
@@ -232,11 +227,11 @@ def make_multiple_requests(
         name_ver = (package[0] + package[1:].replace("@", ";")).rsplit(";", 1)
         if len(name_ver) == 1:
             dep_resp = make_single_request(
-                psql, db_name, language, package, expiry_time=expiry_time
+                psql, db_name, language, package
             )
         else:
             dep_resp = make_single_request(
-                psql, db_name, language, name_ver[0], name_ver[1], expiry_time=expiry_time
+                psql, db_name, language, name_ver[0], name_ver[1]
             )
         result.append(dep_resp)
     return result
