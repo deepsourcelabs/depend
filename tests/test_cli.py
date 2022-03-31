@@ -74,8 +74,7 @@ def test_go_mod(json_schema):
         lang="go",
         dep_file=Path("tests/data/example_go.mod"),
         deep_search=True,
-        host=None,
-        config=None,
+        db_name="murdock"
     )
     assert json_schema.is_valid(result)
 
@@ -86,8 +85,7 @@ def test_package_json(json_schema):
         lang="javascript",
         dep_file=Path("tests/data/example_package.json"),
         deep_search=True,
-        host=None,
-        config=None,
+        db_name="murdock"
     )
     assert json_schema.is_valid(result)
 
@@ -98,8 +96,7 @@ def test_npm_shrinkwrap_json(json_schema):
         lang="javascript",
         dep_file=Path("tests/data/example_npm_shrinkwrap.json"),
         deep_search=True,
-        host=None,
-        config=None,
+        db_name="murdock"
     )
     assert json_schema.is_valid(result)
 
@@ -110,8 +107,7 @@ def test_package_lock_json(json_schema):
         lang="javascript",
         dep_file=Path("tests/data/example_package_lock.json"),
         deep_search=True,
-        host=None,
-        config=None,
+        db_name="murdock"
     )
     assert json_schema.is_valid(result)
 
@@ -122,8 +118,7 @@ def test_yarn_v1_lock(json_schema):
         lang="javascript",
         dep_file=Path("tests/data/example_v1_yarn.lock"),
         deep_search=True,
-        host=None,
-        config=None,
+        db_name="murdock"
     )
     assert json_schema.is_valid(result)
 
@@ -134,8 +129,7 @@ def test_yarn_v2_lock(json_schema):
         lang="javascript",
         dep_file=Path("tests/data/example_v2_yarn.lock"),
         deep_search=True,
-        host=None,
-        config=None,
+        db_name="murdock"
     )
     assert json_schema.is_valid(result)
 
@@ -146,8 +140,7 @@ def test_requirements_txt(json_schema):
         lang="python",
         dep_file=Path("tests/data/example_requirements.txt"),
         deep_search=True,
-        host=None,
-        config=None,
+        db_name="murdock"
     )
     assert json_schema.is_valid(result)
 
@@ -158,8 +151,7 @@ def test_setup_py(json_schema):
         lang="python",
         dep_file=Path("tests/data/example_setup.py"),
         deep_search=True,
-        host=None,
-        config=None,
+        db_name="murdock"
     )
     assert json_schema.is_valid(result)
 
@@ -170,8 +162,7 @@ def test_setup_cfg(json_schema):
         lang="python",
         dep_file=Path("tests/data/example_setup.cfg"),
         deep_search=True,
-        host=None,
-        config=None,
+        db_name="murdock"
     )
     assert json_schema.is_valid(result)
 
@@ -182,8 +173,7 @@ def test_pyproject_toml(json_schema):
         lang="python",
         dep_file=Path("tests/data/example_pyproject.toml"),
         deep_search=True,
-        host=None,
-        config=None,
+        db_name="murdock"
     )
     assert json_schema.is_valid(result)
 
@@ -194,8 +184,7 @@ def test_poetry_toml(json_schema):
         lang="python",
         dep_file=Path("tests/data/example_pyproject_poetry.toml"),
         deep_search=True,
-        host=None,
-        config=None,
+        db_name="murdock"
     )
     assert json_schema.is_valid(result)
 
@@ -207,6 +196,6 @@ def test_unsupported(json_schema):
             lang="python",
             dep_file=Path("tests/data/example_pipfile"),
             deep_search=False,
-            config=None,
+            db_name="murdock"
         )
         assert json_schema.is_valid(result)

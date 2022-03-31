@@ -2,6 +2,7 @@
 
 import logging
 import re
+import time
 from datetime import datetime, timedelta
 from typing import Any, List, Optional, Tuple
 
@@ -9,8 +10,8 @@ import requests
 from elasticsearch import Elasticsearch
 from tldextract import extract
 
-import constants
 from constants import REGISTRY
+from db.postgres_worker import add_data, get_data
 from dep_types import Result
 from dependencies.helper import (
     go_versions,
@@ -97,35 +98,26 @@ def find_github(text: str) -> str:
 
 
 def make_single_request(
-    es: Optional[Elasticsearch],
-    language: str,
-    package: str,
-    version: str = "",
-    force_schema: bool = True,
+        psql: any,
+        db_name: str,
+        language: str,
+        package: str,
+        expiry_time: float,
+        version: str = "",
+        force_schema: bool = True
 ) -> dict | Result | List[Result]:
     """
     Obtain package license and dependency information.
-    :param es: ElasticSearch Instance
+    :param psql: Postgres connection
+    :param db_name: Postgres database to be used
     :param language: python, javascript or go
     :param package: as imported
     :param version: check for specific version
+    :param expiry_time: time after which db entry is invalid
     :param force_schema: returns schema compliant response if true
     :return: result object with name version license and dependencies
     """
     result_list = []
-    package_version = package
-    if es is not None:
-        ESresult: dict[str, Any] = es.get(
-            index=language, id=package_version, ignore=404
-        )
-        if ESresult.get("found"):
-            db_time = datetime.fromisoformat(
-                ESresult["_source"]["timestamp"],
-            )
-            if db_time - datetime.utcnow() < timedelta(seconds=constants.CACHE_EXPIRY):
-                logging.info("Using " + package + " found in ES Database")
-                return ESresult["_source"]
-
     if not version:
         vers = []
         url = make_url(language, package, version)
@@ -143,6 +135,23 @@ def make_single_request(
     if not vers:
         vers = [""]
     for ver in vers:
+        if not psql:
+            db_data = get_data(
+                psql,
+                db_name,
+                language,
+                package,
+                ver
+            )
+            if db_data:
+                db_time = datetime.strptime(
+                    db_data.timestamp,
+                    '%Y-%m-%d %H:%M:%S.%f'
+                )
+                if time.mktime(db_time.timetuple()) - \
+                        time.mktime(datetime.utcnow().timetuple()) < expiry_time:
+                    logging.info("Using " + package + " found in Postgres Database")
+                    return db_data
         url = make_url(language, package, ver)
         logging.info(url)
         response = requests.get(url)
@@ -181,10 +190,19 @@ def make_single_request(
                 repo = find_github(response.text)
             if repo:
                 handle_vcs(language, repo, result)
-        if es is not None:
-            es.index(index=language, id=package_version, document=result)
-        # handle vers into format
-        # parse_dep_response
+        if psql is not None:
+            add_data(
+                psql,
+                db_name,
+                language,
+                result.get("pkg_name"),
+                result.get("pkg_ver"),
+                result.get("import_name"),
+                result.get("lang_ver"),
+                result.get("pkg_lic"),
+                result.get("pkg_err"),
+                result.get("pkg_dep"),
+            )
         result_list.append(result)
     if force_schema:
         return parse_dep_response(result_list)
@@ -193,24 +211,32 @@ def make_single_request(
 
 
 def make_multiple_requests(
-    es: Optional[Elasticsearch],
-    language: str,
-    packages: List[str],
+        psql: any,
+        db_name: str,
+        language: str,
+        packages: List[str],
+        expiry_time: float
 ) -> List[Any]:
     """
     Obtain license and dependency information for list of packages.
-    :param es: ElasticSearch Instance
+    :param psql: Postgres connection
+    :param db_name: Postgres database to be used
     :param language: python, javascript or go
     :param packages: a list of dependencies in each language
     :return: result object with name version license and dependencies
+    :param expiry_time: time after which db entry is invalid
     """
     result = []
 
     for package in packages:
         name_ver = (package[0] + package[1:].replace("@", ";")).rsplit(";", 1)
         if len(name_ver) == 1:
-            dep_resp = make_single_request(es, language, package)
+            dep_resp = make_single_request(
+                psql, db_name, language, package, expiry_time=expiry_time
+            )
         else:
-            dep_resp = make_single_request(es, language, name_ver[0], name_ver[1])
+            dep_resp = make_single_request(
+                psql, db_name, language, name_ver[0], name_ver[1], expiry_time=expiry_time
+            )
         result.append(dep_resp)
     return result

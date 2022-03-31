@@ -49,7 +49,7 @@ def handle_toml(file_data: str) -> Result:
     package_data = toml_parsed.get("package")
     if not package_data:
         package_data = toml_parsed.get("tool", {}).get("poetry", {})
-        # 'es-core-news-sm', {'url': ''} ignored
+        # 'psql-core-news-sm', {'url': ''} ignored
         package_dep = [
             ";".join(dep)
             for dep in package_data.get("dependencies", {}).items()

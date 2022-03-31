@@ -23,7 +23,7 @@ class Result(TypedDict):
 def handle_yarn_lock(req_file_data: str) -> Result:
     """
     Parse yarn lock file
-    :param req_file_data: Content of yarn.lock
+    :param req_file_data: Content of yarn lockfile
     :return: list of requirement and specs
     """
     res: Result = {
