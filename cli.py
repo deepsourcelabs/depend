@@ -21,7 +21,6 @@ def main(
         dep_file: Optional[Path] = typer.Option(None),
         db_name: Optional[str] = typer.Option(None),
         deep_search: Optional[bool] = typer.Option(False),
-        expiry_time: Optional[float] = typer.Option(1800.0)
 ) -> list:
     """
     Dependency Inspector
@@ -42,8 +41,6 @@ def main(
     :param db_name: Postgres database to be used
 
     :param deep_search: when true populating all fields is attempted
-
-    :param expiry_time: time after which db entry is invalid
 
     """
     payload = {}
@@ -85,7 +82,7 @@ def main(
 
             if dep_list:
                 result.extend(make_multiple_requests(
-                    psql, db_name, language, dep_list, expiry_time=expiry_time
+                    psql, db_name, language, dep_list
                 ))
 
                 logging.info(
