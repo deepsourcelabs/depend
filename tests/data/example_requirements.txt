@@ -22,5 +22,4 @@ idna==2.7
 lxml==4.2.5
 requests==2.20.1
 selenium==3.141.0
-urllib3==1.24.1
-foo>5, <5.7
+urllib3==1.24.1           # foo>5, <5.7
