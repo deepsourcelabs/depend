@@ -35,7 +35,7 @@ def add_data(
                     PKG_LIC     text[],
                     PKG_ERR     json,
                     PKG_DEP     text[],
-                    timestamp timestamp default current_timestamp
+                    timestamp   timestamptz default current_timestamp
                 )                        
                 '''
                 cur.execute(create_script)

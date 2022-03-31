@@ -1,32 +1,27 @@
 """CLI for dependency-inspector."""
+
 import json
 import os.path
 from pathlib import Path
 from typing import Optional
 import typer
-from db.elastic_worker import connect_elasticsearch
 from error import LanguageNotSupportedError, VCSNotSupportedError
+from handle_env import get_db
 from helper import parse_dep_response, handle_dep_file
-import configparser
 import logging
 
 from inspector import make_multiple_requests
 
 app = typer.Typer(add_completion=False)
-configfile = configparser.ConfigParser()
-
 
 @app.callback(invoke_without_command=True)
 def main(
         lang: Optional[str] = typer.Option(None),
         packages: Optional[str] = typer.Option(None),
         dep_file: Optional[Path] = typer.Option(None),
+        db_name: Optional[str] = typer.Option(None),
         deep_search: Optional[bool] = typer.Option(False),
-        config: Optional[Path] = typer.Option(None),
-        host: Optional[str] = typer.Option(None),
-        port: Optional[int] = typer.Option(None),
-        es_uid: Optional[str] = typer.Option(None),
-        es_pass: Optional[str] = typer.Option(None)
+        expiry_time: Optional[float] = typer.Option(1800.0)
 ) -> list:
     """
     Dependency Inspector
@@ -44,31 +39,16 @@ def main(
 
     :param dep_file: location of file to parse for packages
 
+    :param db_name: Postgres database to be used
+
     :param deep_search: when true populating all fields is attempted
 
-    :param config: Specify location of a .ini file | refer config.ini sample
-
-    :param host: Host info for Elastic server
-
-    :param port: Port info for Elastic server
-
-    :param es_uid: Username for authenticating Elastic
-
-    :param es_pass: Password to authenticate Elastic
+    :param expiry_time: time after which db entry is invalid
 
     """
     payload = {}
     result = []
-    if config is not None:
-        if not config.is_file():
-            logging.error("Configuration file not found")
-            raise typer.Exit(code=-1)
-        configfile.read(config)
-        if not configfile.has_section("dependencies"):
-            logging.error("dependencies section missing from config file")
-            raise typer.Exit(code=-1)
-        payload = configfile["dependencies"]
-    if dep_file is not None:
+    if dep_file:
         payload = {}
         if not dep_file.is_file():
             logging.error("Dependency file cannot be read")
@@ -86,11 +66,11 @@ def main(
     if lang not in ["go", "python", "javascript"]:
         logging.error("Please specify a supported language!")
         raise typer.Exit(code=-1)
-    if host and port:
-        es = connect_elasticsearch({'host': host, 'port': port}, (es_uid, es_pass))
-    else:
-        logging.warning("Elastic not connected")
-        es = None
+    if psql := get_db():
+        if not db_name:
+            logging.error("Please specify DB Name!")
+            raise typer.Exit(code=-1)
+        logging.info("Postgres DB connected")
     for language, dependencies in payload.items():
         if isinstance(dependencies, str):
             dep_list = dependencies.replace(',', '\n').split('\n')
@@ -105,7 +85,7 @@ def main(
 
             if dep_list:
                 result.extend(make_multiple_requests(
-                    es, language, dep_list
+                    psql, db_name, language, dep_list, expiry_time=expiry_time
                 ))
 
                 logging.info(

@@ -1,41 +1,19 @@
 """Tests for all functions in inspector."""
 
-import configparser
 from datetime import datetime
 import pytest
 import inspector
-from db.elastic_worker import connect_elasticsearch
 from error import LanguageNotSupportedError, VCSNotSupportedError
+from handle_env import get_db
 from helper import Result
 
 
 @pytest.fixture
-def es():
-    """Return ES object"""
-    configfile = configparser.ConfigParser()
-    configfile.read("./data/config.ini")
-    es = connect_elasticsearch(
-        {
-            'host': configfile.get("secrets", "host", fallback="localhost"),
-            'port': configfile.get("secrets", "port", fallback=9200),
-        },
-        (
-            configfile.get("secrets", "es_uid", fallback=""),
-            configfile.get("secrets", "es_pass", fallback="")
-        )
-    )
-    return es
-
-
-@pytest.fixture(autouse=True)
-def skip_by_status(request: pytest.FixtureRequest, es: any):
+def psql():
     """
-    :param request: pytest request
-    :param es: database object
+    Returns DB connection if available
     """
-    if request.node.get_closest_marker('skip_status') and \
-            request.node.get_closest_marker('skip_status').args[0] == es:
-        pytest.skip('Skipped as es connection status: {}'.format(es))
+    return get_db()
 
 
 @pytest.fixture
@@ -119,10 +97,10 @@ def test_make_url_without_version():
     ) == 'https://pkg.go.dev/bufio'
 
 
-def test_make_single_request_py(es):
+def test_make_single_request_py(psql):
     """Test version and license for python"""
     result = inspector.make_single_request(
-        es,
+        psql,
         "python",
         "aiohttp",
         "3.7.2",
@@ -134,10 +112,10 @@ def test_make_single_request_py(es):
     assert result['pkg_dep']
 
 
-def test_make_single_request_js(es):
+def test_make_single_request_js(psql):
     """Test version and license for javascript"""
     result = inspector.make_single_request(
-        es,
+        psql,
         "javascript",
         "react",
         "17.0.2",
@@ -149,10 +127,10 @@ def test_make_single_request_js(es):
     assert result['pkg_dep']
 
 
-def test_make_single_request_go(es):
+def test_make_single_request_go(psql):
     """Test version and license for go"""
     result = inspector.make_single_request(
-        es,
+        psql,
         "go",
         "github.com/getsentry/sentry-go",
         "v0.12.0",
@@ -164,10 +142,10 @@ def test_make_single_request_go(es):
     assert result['pkg_dep']
 
 
-def test_make_single_request_go_redirect(es):
+def test_make_single_request_go_redirect(psql):
     """Test version and license for go on redirects"""
     result = inspector.make_single_request(
-        es,
+        psql,
         "go",
         "http",
         "go1.16.13",
@@ -178,10 +156,10 @@ def test_make_single_request_go_redirect(es):
     assert result['pkg_lic'][0] == 'BSD-3-Clause'
 
 
-def test_make_single_request_go_github(es):
+def test_make_single_request_go_github(psql):
     """Test version and license for go GitHub fallthrough"""
     result = inspector.make_single_request(
-        es,
+        psql,
         "go",
         "https://github.com/go-yaml/yaml",
         force_schema=False
@@ -192,10 +170,10 @@ def test_make_single_request_go_github(es):
     assert result['pkg_dep']
 
 
-def test_make_multiple_requests(dependency_payload, es):
+def test_make_multiple_requests(dependency_payload, psql):
     """Multiple package requests for JavaScript NPM and Go"""
     result = [
-        inspector.make_multiple_requests(es, lang, dependencies)
+        inspector.make_multiple_requests(psql, lang, dependencies)
         for lang, dependencies
         in dependency_payload.items()
     ]
