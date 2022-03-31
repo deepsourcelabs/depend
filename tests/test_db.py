@@ -25,6 +25,7 @@ def skip_by_status(request, psql):
         pytest.skip('Skipped as Postgres connection status: {}'.format(psql))
 
 
+@pytest.mark.dependency()
 @pytest.mark.skip_status(None)
 def test_run_db(psql):
     """
