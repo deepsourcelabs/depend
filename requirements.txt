@@ -16,3 +16,4 @@ jsonschema==4.4.0
 python-dotenv==0.19.2
 dparse2==0.6.0
 psycopg2==2.9.3
+pytest-dependency==0.5.1
