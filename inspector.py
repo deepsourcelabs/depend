@@ -129,6 +129,7 @@ def make_single_request(
                 ver
             )
             if db_data:
+                run_flag = "update"
                 db_time = datetime.strptime(
                     db_data.timestamp,
                     '%Y-%m-%d %H:%M:%S.%f'
@@ -137,8 +138,6 @@ def make_single_request(
                         time.mktime(datetime.utcnow().timetuple()) < CACHE_EXPIRY:
                     logging.info("Using " + package + " found in Postgres Database")
                     return db_data
-                else:
-                    run_flag = "update"
         url = make_url(language, package, ver)
         logging.info(url)
         response = requests.get(url)
@@ -178,7 +177,7 @@ def make_single_request(
             if repo:
                 handle_vcs(language, repo, result)
         if psql:
-            if run_flag is "new":
+            if run_flag == "new":
                 add_data(
                     psql,
                     db_name,
