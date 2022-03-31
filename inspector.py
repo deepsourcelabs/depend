@@ -10,7 +10,7 @@ import requests
 from tldextract import extract
 
 from constants import REGISTRY, CACHE_EXPIRY
-from db.postgres_worker import add_data, get_data
+from db.postgres_worker import add_data, get_data, upd_data
 from dep_types import Result
 from dependencies.helper import (
     go_versions,
@@ -132,7 +132,8 @@ def make_single_request(
     if not vers:
         vers = [""]
     for ver in vers:
-        if not psql:
+        run_flag = "new"
+        if psql:
             db_data = get_data(
                 psql,
                 db_name,
@@ -149,6 +150,8 @@ def make_single_request(
                         time.mktime(datetime.utcnow().timetuple()) < CACHE_EXPIRY:
                     logging.info("Using " + package + " found in Postgres Database")
                     return db_data
+                else:
+                    run_flag = "update"
         url = make_url(language, package, ver)
         logging.info(url)
         response = requests.get(url)
@@ -187,19 +190,33 @@ def make_single_request(
                 repo = find_github(response.text)
             if repo:
                 handle_vcs(language, repo, result)
-        if psql is not None:
-            add_data(
-                psql,
-                db_name,
-                language,
-                result.get("pkg_name"),
-                result.get("pkg_ver"),
-                result.get("import_name"),
-                result.get("lang_ver"),
-                result.get("pkg_lic"),
-                result.get("pkg_err"),
-                result.get("pkg_dep"),
-            )
+        if psql:
+            if run_flag is "new":
+                add_data(
+                    psql,
+                    db_name,
+                    language,
+                    result.get("pkg_name"),
+                    result.get("pkg_ver"),
+                    result.get("import_name"),
+                    result.get("lang_ver"),
+                    result.get("pkg_lic"),
+                    result.get("pkg_err"),
+                    result.get("pkg_dep"),
+                )
+            else:
+                upd_data(
+                    psql,
+                    db_name,
+                    language,
+                    result.get("pkg_name"),
+                    result.get("pkg_ver"),
+                    result.get("import_name"),
+                    result.get("lang_ver"),
+                    result.get("pkg_lic"),
+                    result.get("pkg_err"),
+                    result.get("pkg_dep"),
+                )
         result_list.append(result)
     if force_schema:
         return parse_dep_response(result_list)
