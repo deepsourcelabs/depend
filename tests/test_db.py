@@ -52,6 +52,7 @@ def test_run_db(psql):
     )
     assert data.pkg_lic == ["MIT"]
 
+
 @pytest.mark.dependency(depends=['test_run_db'])
 @pytest.mark.skip_status(None)
 def test_check_db(psql):

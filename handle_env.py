@@ -4,8 +4,10 @@ import logging
 import os
 
 from dotenv import load_dotenv
-from github import Github
-import psycopg2.extras
+from psycopg2 import (
+    connect,
+    OperationalError
+)
 
 load_dotenv()
 
@@ -37,13 +39,13 @@ def get_db():
         PWD = os.environ.get("PG_PWD")
         PORT_ID = os.environ.get("PG_PORT_ID")
         try:
-            conn = psycopg2.connect(
+            conn = connect(
                 host=HOSTNAME,
                 dbname=DATABASE,
                 user=USERNAME,
                 password=PWD,
                 port=PORT_ID
             )
-        except Exception as error:
+        except OperationalError  as error:
             logging.error(error)
     return conn
