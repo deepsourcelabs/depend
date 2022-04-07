@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 from dependencies.go import go_worker
 from dependencies.js import js_worker
 from dependencies.py import py_worker
+from dependencies.java import java_worker
 from error import FileNotSupportedError
 
 
@@ -157,6 +158,28 @@ def handle_npmjs(api_response: requests.Response, queries: dict, result: Result)
     repo = repo_q.search(data) or ""
     return repo
 
+def handle_maven(api_response: requests.Response, queries: dict, result: Result):
+    """
+    Take maven central repo response and updates results object
+    :param api_response: response from requests get
+    :param queries: compiled jmespath queries
+    :param result: object to mutate
+    """
+    version_q: jmespath.parser.ParsedResult = queries['version']
+    # license_q: jmespath.parser.ParsedResult = queries['license']
+    # dependencies_q: jmespath.parser.ParsedResult = queries['dependency']
+    # repo_q: jmespath.parser.ParsedResult = queries['repo']
+    if api_response.status_code == 404:
+        return ""
+    data = api_response.json()
+    result['pkg_ver'] = version_q.search(data) or ""
+    # result['pkg_lic'] = [license_q.search(data) or "Other"]
+    # req_file_data = "\n".join(dependencies_q.search(data) or "")
+    # result['pkg_dep'] = java_worker.handle_pom_xml(
+    #     req_file_data/
+    # ).get("pkg_dep")
+    # repo = repo_q.search(data) or ""
+    # return repo
 
 def scrape_go(response: requests.Response, queries: dict, result: Result, url: str):
     """
@@ -222,7 +245,7 @@ def go_versions(url: str, queries: dict) -> list:
     return releases
 
 
-def js_versions(api_response: requests.Response, queries: dict) -> list:
+def api_versions(api_response: requests.Response, queries: dict) -> list:
     """
     Get list of all versions for js package
     :param queries: compiled jmespath queries
@@ -232,24 +255,7 @@ def js_versions(api_response: requests.Response, queries: dict) -> list:
     if api_response.status_code == 404:
         return []
     data = api_response.json()
-    versions_q: jmespath.parser.ParsedResult = queries['repo']
-    versions = versions_q.search(data)
-    if not versions:
-        return []
-    return versions
-
-
-def py_versions(api_response: requests.Response, queries: dict) -> list:
-    """
-    Get list of all versions for py package
-    :param queries: compiled jmespath queries
-    :param api_response: registry response
-    :return: list of versions
-    """
-    if api_response.status_code == 404:
-        return []
-    data = api_response.json()
-    versions_q: jmespath.parser.ParsedResult = queries['repo']
+    versions_q: jmespath.parser.ParsedResult = queries['versions']
     versions = versions_q.search(data)
     if not versions:
         return []

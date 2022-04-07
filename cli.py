@@ -60,7 +60,7 @@ def main(
             return result
     else:
         payload[lang] = packages
-    if lang not in ["go", "python", "javascript"]:
+    if lang not in ["go", "python", "javascript", "java"]:
         logging.error("Please specify a supported language!")
         raise typer.Exit(code=-1)
     if psql := get_db():

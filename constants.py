@@ -8,7 +8,7 @@ REGISTRY = {
             'registry': 'PyPI',
             'url': 'https://pypi.org/pypi',
             'name': jc('info.name'),
-            'versions': 'releases."{}"',
+            'versions': jc('releases.keys(@)'),
             'version': jc('info.version'),
             'license': jc('info.license'),
             'dependency': jc('info.requires_dist'),
@@ -20,7 +20,7 @@ REGISTRY = {
             'url': 'https://registry.npmjs.org',
             'name': jc('name'),
             'latest': jc('"dist-tags".latest'),
-            'versions': 'versions."{}"',
+            'versions': jc('versions.keys(@)'),
             'version': jc('version'),
             'license': jc('[license,licenses|[?type!=null].type][]'),
             'dependency': jc('dependencies||__dependencies'),
@@ -36,6 +36,15 @@ REGISTRY = {
             'version': 'Version',
             'license': 'License',
             'dependency': 'dependencies',
+        },
+    'java':
+        {
+            'registry': 'maven',
+            'url': 'https://search.maven.org/solrsearch/select?q=',
+            'g': jc('response.docs[0].g'),
+            'a': jc('response.docs[0].a'),
+            'v': jc('response.docs[0].v'),
+            'versions': jc('response.docs[@].v'),
         }
 }
 LICENSE_FILES = [

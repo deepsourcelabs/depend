@@ -12,8 +12,11 @@ import tldextract
 from constants import REGISTRY, CACHE_EXPIRY
 from db.postgres_worker import add_data, get_data, upd_data
 from error import LanguageNotSupportedError, VCSNotSupportedError
-from helper import Result, handle_pypi, handle_npmjs, scrape_go, parse_dep_response
-from helper import go_versions, js_versions, py_versions
+from helper import (
+    Result, scrape_go, parse_dep_response,
+    handle_pypi, handle_npmjs, handle_maven,
+    api_versions, go_versions
+)
 from vcs.github_worker import handle_github
 
 
@@ -62,6 +65,14 @@ def make_url(
                 url_elements = (REGISTRY[language]['url'], package + "@" + version)
             else:
                 url_elements = (REGISTRY[language]['url'], package)
+        case "java":
+            jpack = package.split(":")
+            if version:
+                query = f'g:{jpack[0]}+AND+a:{jpack[1]}+AND+v:{version}'
+            else:
+                query = f'g:{jpack[0]}+AND+a:{jpack[1]}'
+            url_elements = (REGISTRY[language]['url'], query, '&core=gav&wt=json')
+
         case _:
             raise LanguageNotSupportedError(language)
     return "/".join(url_elements).rstrip("/")
@@ -108,10 +119,8 @@ def make_single_request(
         response = requests.get(url)
         queries = REGISTRY[language]
         match language:
-            case "python":
-                vers = py_versions(response, queries)
-            case "javascript":
-                vers = js_versions(response, queries)
+            case "python" | "javascript" | "java":
+                vers = api_versions(response, queries)
             case "go":
                 vers = go_versions(url, queries)
     else:
@@ -168,6 +177,8 @@ def make_single_request(
                     scrape_go(response, queries, result, url)
                 else:
                     repo = package
+            case "java":
+                handle_maven(response, queries, result)
         supported_domains = [
             "github",
         ]
