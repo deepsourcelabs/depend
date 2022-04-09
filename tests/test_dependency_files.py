@@ -163,5 +163,4 @@ def test_pom_xml(json_schema):
     with open("tests/data/example_pom.xml") as f:
         jproject = f.read()
     result = dependencies.java.java_worker.handle_pom_xml(jproject)
-    assert result == ""
     assert json_schema.is_valid(result)
