@@ -67,6 +67,8 @@ def handle_dep_file(
             return py_worker.handle_setup_py(file_content)
         case 'cfg':
             return py_worker.handle_setup_cfg(file_content)
+        case 'xml':
+            return java_worker.handle_pom_xml(file_content)
         case _:
             raise FileNotSupportedError(file_name)
 

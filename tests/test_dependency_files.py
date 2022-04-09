@@ -2,6 +2,7 @@
 import dependencies.go.go_worker
 import dependencies.js.js_worker
 import dependencies.py.py_worker
+import dependencies.java.java_worker
 
 import pytest
 from jsonschema import validate
@@ -152,4 +153,15 @@ def test_other_py(json_schema):
     with open("tests/data/example_pipfile") as f:
         pyproject = f.read()
     result = dependencies.py.py_worker.handle_otherpy(pyproject, "Pipfile")
+    assert json_schema.is_valid(result)
+
+
+def test_pom_xml(json_schema):
+    """
+    Parses conda.yml tox.ini and Pipfiles
+    """
+    with open("tests/data/example_pom.xml") as f:
+        jproject = f.read()
+    result = dependencies.java.java_worker.handle_pom_xml(jproject)
+    assert result == ""
     assert json_schema.is_valid(result)
