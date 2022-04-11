@@ -115,16 +115,6 @@ def make_single_request(
     :return: result object with name version license and dependencies
     """
     result_list = []
-    result: Result = {
-        "import_name": "",
-        "lang_ver": [],
-        "pkg_name": package,
-        "pkg_ver": "",
-        "pkg_lic": ["Other"],
-        "pkg_err": {},
-        "pkg_dep": [],
-        "timestamp": datetime.utcnow().isoformat(),
-    }
     if not version:
         vers = []
         url = make_url(language, package, version)
@@ -164,6 +154,16 @@ def make_single_request(
             logging.info(url)
             response = requests.get(url)
             queries = REGISTRY[language]
+            result: Result = {
+                "import_name": "",
+                "lang_ver": [],
+                "pkg_name": package,
+                "pkg_ver": "",
+                "pkg_lic": ["Other"],
+                "pkg_err": {},
+                "pkg_dep": [],
+                "timestamp": datetime.utcnow().isoformat(),
+            }
             repo = ""
             match language:
                 case "python":
