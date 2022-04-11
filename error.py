@@ -24,3 +24,10 @@ class VCSNotSupportedError(UnsupportedError):
 
     def __init__(self, package):
         self.msg = f"VCS used by {package} is not supported"
+
+
+class FileNotSupportedError(UnsupportedError):
+    """Raised when file to be parsed is not supported"""
+
+    def __init__(self, file):
+        self.msg = f"{file} is currently not supported"
