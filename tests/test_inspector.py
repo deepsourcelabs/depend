@@ -154,8 +154,11 @@ def test_make_vcs_request(result_payload):
 
 def test_unsupported_language_fails():
     """Checks if exception is raised for unsupported language"""
-    with pytest.raises(LanguageNotSupportedError, match="java"):
-        inspector.make_url("java", "foo")
+    with pytest.raises(
+        LanguageNotSupportedError,
+        match="bhailang"
+    ):
+        inspector.make_url("bhailang", "foo")
 
 
 def test_unsupported_vcs_fails(result_payload):
