@@ -139,10 +139,7 @@ def make_single_request(
             )
             if db_data:
                 run_flag = "update"
-                db_time = datetime.strptime(
-                    db_data.timestamp,
-                    '%Y-%m-%d %H:%M:%S.%f'
-                )
+                db_time: datetime = db_data.timestamp
                 if time.mktime(db_time.timetuple()) - \
                         time.mktime(datetime.utcnow().timetuple()) < CACHE_EXPIRY:
                     logging.info("Using " + package + " found in Postgres Database")
@@ -180,10 +177,11 @@ def make_single_request(
             case "java":
                 handle_maven(response, queries, result)
         supported_domains = [
-            "github",
+            "github.com",
         ]
         if repo:
-            if tldextract.extract(str(repo)).domain not in supported_domains:
+            c_domain = tldextract.extract(str(repo)).domain + "." + tldextract.extract(str(repo)).suffix
+            if c_domain not in supported_domains or tldextract.extract(str(repo)).subdomain:
                 repo = find_github(response.text)
             if repo:
                 handle_vcs(language, repo, result)
