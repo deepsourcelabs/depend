@@ -141,6 +141,30 @@ def handle_npmjs(api_response: requests.Response, queries: dict, result: Result)
     return repo
 
 
+def handle_rust(api_response: requests.Response, queries: dict, result: Result):
+    """
+    Take api response and return required results object
+    :param api_response: response from requests get
+    :param queries: compiled jmespath queries
+    :param result: object to mutate
+    """
+    version_q: jmespath.parser.ParsedResult = queries['version']
+    license_q: jmespath.parser.ParsedResult = queries['license']
+    dependencies_q: jmespath.parser.ParsedResult = queries['dependency']
+    repo_q: jmespath.parser.ParsedResult = queries['repo']
+    if api_response.status_code == 404:
+        return ""
+    data = api_response.json()
+    result['pkg_ver'] = version_q.search(data) or ""
+    result['pkg_lic'] = [license_q.search(data) or "Other"]
+    req_file_data = "\n".join(dependencies_q.search(data) or "")
+    result['pkg_dep'] = py_worker.handle_requirements_txt(
+        req_file_data
+    ).get("pkg_dep")
+    repo = repo_q.search(data) or ""
+    return repo
+
+
 def scrape_go(response: requests.Response, queries: dict, result: Result, url: str):
     """
     Take api response and return required results object

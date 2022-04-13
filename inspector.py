@@ -16,6 +16,7 @@ from dependencies.helper import (
     go_versions,
     handle_npmjs,
     handle_pypi,
+    handle_rust,
     js_versions,
     parse_dep_response,
     py_versions,
@@ -72,6 +73,11 @@ def make_url(language: str, package: str, version: str = "") -> str:
                 url_elements = (str(REGISTRY[language]["url"]), package + "@" + version)
             else:
                 url_elements = (str(REGISTRY[language]["url"]), package)
+        case "rust":
+            if version:
+                url_elements = (REGISTRY[language]['url'], package, version)
+            else:
+                url_elements = (REGISTRY[language]['url'], package, "versions")
         case _:
             raise LanguageNotSupportedError(language)
     return "/".join(url_elements).rstrip("/")
@@ -170,6 +176,8 @@ def make_single_request(
                     repo = handle_pypi(response, queries, result)
                 case "javascript":
                     repo = handle_npmjs(response, queries, result)
+                case "rust":
+                    repo = handle_rust(response, queries, result)
                 case "go":
                     if response.status_code == 200:
                         # Handle 302: Redirection
