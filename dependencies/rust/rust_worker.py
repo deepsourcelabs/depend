@@ -35,7 +35,7 @@ def handle_toml(file_data: str) -> dict:
             )
         elif isinstance(spec, dict):
             if git_url:=spec.get("git", None):
-                git_branch = git_url + spec.get("branch", "")
+                git_branch = git_url +"||"+ spec.get("branch", "")
                 res["pkg_dep"].append(
                     ir + ";" + git_branch
                 )

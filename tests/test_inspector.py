@@ -137,6 +137,18 @@ def test_make_single_request_go_github(psql):
     assert len(result["pkg_dep"]) != 0
 
 
+def test_make_single_request_rust(psql):
+    """Test version and license for javascript"""
+    result = inspector.make_single_request(
+        psql,
+        "murdock",
+        "rust",
+        "reqrnpdno",
+        force_schema=False
+    )[0]
+    assert result['pkg_dep']
+
+
 def test_make_multiple_requests(dependency_payload, psql):
     """Multiple package requests for JavaScript NPM and Go"""
     result = [

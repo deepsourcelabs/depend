@@ -19,6 +19,7 @@ from dependencies.helper import (
     handle_rust,
     js_versions,
     parse_dep_response,
+    rust_versions,
     py_versions,
     scrape_go,
 )
@@ -121,6 +122,16 @@ def make_single_request(
     :return: result object with name version license and dependencies
     """
     result_list = []
+    result: Result = {
+        'import_name': '',
+        'lang_ver': [],
+        'pkg_name': package,
+        'pkg_ver': '',
+        'pkg_lic': ["Other"],
+        'pkg_err': {},
+        'pkg_dep': [],
+        'timestamp': datetime.utcnow().isoformat()
+    }
     if not version:
         vers = []
         url = make_url(language, package, version)
@@ -134,6 +145,9 @@ def make_single_request(
                 vers = js_versions(response, queries)
             case "go":
                 vers = go_versions(url, queries)
+            case "rust":
+                response = requests.get(url)
+                vers = rust_versions(response, queries)
     else:
         vers = [version]
     if not vers:
@@ -160,16 +174,6 @@ def make_single_request(
             logging.info(url)
             response = requests.get(url)
             queries = REGISTRY[language]
-            result: Result = {
-                "import_name": "",
-                "lang_ver": [],
-                "pkg_name": package,
-                "pkg_ver": "",
-                "pkg_lic": ["Other"],
-                "pkg_err": {},
-                "pkg_dep": [],
-                "timestamp": datetime.utcnow().isoformat(),
-            }
             repo = ""
             match language:
                 case "python":
@@ -177,7 +181,7 @@ def make_single_request(
                 case "javascript":
                     repo = handle_npmjs(response, queries, result)
                 case "rust":
-                    repo = handle_rust(response, queries, result)
+                    handle_rust(response, queries, result, url)
                 case "go":
                     if response.status_code == 200:
                         # Handle 302: Redirection
@@ -196,7 +200,7 @@ def make_single_request(
                     repo = find_github(response.text)
                 if repo:
                     handle_vcs(language, repo, result)
-        if psql and db_name:
+        if psql:
             if run_flag == "new":
                 add_data(
                     psql,
