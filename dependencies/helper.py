@@ -13,6 +13,7 @@ from .go.go_worker import handle_go_mod
 from .js.js_worker import handle_json, handle_yarn_lock
 from .py.py_helper import handle_requirements_txt
 from .py.py_worker import handle_otherpy, handle_setup_cfg, handle_setup_py, handle_toml
+from .rust.rust_worker import handle_lock
 
 
 def parse_license(license_file: str, license_dict: dict) -> List[str]:
@@ -39,18 +40,22 @@ def handle_dep_file(
     :return: key features for murdock
     """
     file_extension = file_name.split(".")[-1]
+    if file_name in ["conda.yml", "tox.ini", "Pipfile", "Pipfile.lock"]:
+        return handle_otherpy(file_content, file_name)
     match file_extension:
         case "mod":
             return handle_go_mod(file_content)
         case "json":
             return handle_json(file_content)
-        case ["conda.yml", "tox.ini", "Pipfile", "Pipfile.lock"]:
-            return handle_otherpy(file_content, file_name)
         case "lock":
+            if file_name == "Cargo.lock":
+                return handle_lock(file_content)
             return handle_yarn_lock(file_content)
-        case "txt":
+        case 'txt':
             return handle_requirements_txt(file_content)
-        case "toml":
+        case 'toml':
+            if file_name == "Cargo.toml":
+                return handle_toml(file_content)
             return handle_toml(file_content)
         case "py":
             return handle_setup_py(file_content)

@@ -149,6 +149,32 @@ def test_make_single_request_rust(psql):
     assert result['pkg_dep']
 
 
+def test_make_single_request_rust_ver(psql):
+    """Test version and license for javascript"""
+    result = inspector.make_single_request(
+        psql,
+        "murdock",
+        "rust",
+        "picnic-sys",
+        "3.0.14",
+        force_schema=False
+    )[0]
+    assert result['pkg_dep']
+
+
+def test_make_single_request_rust_git(psql):
+    """Test version and license for javascript"""
+    result = inspector.make_single_request(
+        psql,
+        "murdock",
+        "rust",
+        "sciter-rs",
+        "https://github.com/open-trade/rust-sciter||dyn",
+        force_schema=False
+    )[0]
+    assert result['pkg_dep']
+
+
 def test_make_multiple_requests(dependency_payload, psql):
     """Multiple package requests for JavaScript NPM and Go"""
     result = [
