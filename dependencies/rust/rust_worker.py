@@ -3,10 +3,6 @@ import re
 from datetime import datetime
 
 import toml
-from pkg_resources import parse_requirements
-
-from dependencies.py.setup_reader import LaxSetupReader, handle_classifiers
-import dparse2
 
 
 def handle_toml(file_data: str) -> dict:
@@ -44,7 +40,7 @@ def handle_toml(file_data: str) -> dict:
     res["pkg_lic"] = [package_data.get("license", "Other")]
     return res
 
-def handle_lock(file_data: str, file_name:str)->dict:
+def handle_lock(file_data: str)->dict:
     """
     Parses conda.yml tox.ini and Pipfiles
     this function returns only dependencies
