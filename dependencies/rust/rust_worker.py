@@ -1,4 +1,5 @@
 """Functions to handle Rust dependency files."""
+import re
 from datetime import datetime
 
 import toml
@@ -26,19 +27,21 @@ def handle_toml(file_data: str) -> dict:
     package_data = toml_parsed.get("package")
     package_dep = toml_parsed.get("dependencies")
     for (ir, spec) in package_dep.items():
+        # https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html
+        # ignores tilde, wildcard, comparison, multiple - TODO with python
         if isinstance(spec, str):
             res["pkg_dep"].append(
-                ir + ";" + spec
+                ir + ";" + spec.split(",")[0]
             )
-        else:
-            #     TODO handle dict cases
-            pass
+        elif isinstance(spec, dict):
+            if git_url:=spec.get("git", None):
+                git_branch = git_url + spec.get("branch", "")
+                res["pkg_dep"].append(
+                    ir + ";" + git_branch
+                )
     res["pkg_name"] = package_data.get("name", "")
     res["pkg_ver"] = package_data.get("version", "")
     res["pkg_lic"] = [package_data.get("license", "Other")]
-    classifiers = "\n".join(package_data.get("classifiers", []))
-    if classifiers:
-        handle_classifiers(classifiers, res)
     return res
 
 def handle_lock(file_data: str, file_name:str)->dict:
@@ -56,13 +59,11 @@ def handle_lock(file_data: str, file_name:str)->dict:
         "pkg_dep": [],
         'timestamp': datetime.utcnow().isoformat()
     }
-    df = dparse2.parse(
-        file_data,
-        file_name=file_name
-    )
-    for dep in df.dependencies:
+    regex = re.compile(r'name = \"([^"]+)\"[\n\r]version = \"([^"]+)\"', re.MULTILINE)
+    matches = [m.groups() for m in regex.finditer(file_data)]
+    for name, specs in matches:
         res["pkg_dep"].append(
-            dep.name + ";" + str(dep.specs)
+            name + ";" + str(specs)
         )
     return res
 
