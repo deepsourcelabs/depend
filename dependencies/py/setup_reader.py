@@ -7,14 +7,15 @@ import ast
 import re
 from configparser import ConfigParser
 from datetime import datetime
-from typing import Any
-from typing import Dict
-from typing import Iterable
-from typing import List
-from typing import Optional
-from typing import Union
-from poetry.core.semver import Version
-from poetry.core.semver import exceptions
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Union,
+)
+from poetry.core.semver import Version, exceptions
 from poetry.utils.setup_reader import SetupReader
 
 
@@ -46,7 +47,15 @@ class LaxSetupReader(SetupReader):
         """
         Directly reads setup.py content and returns key info
         :param content: content of setup.py
-        :return: info required by dependency inspector
+        :return: {
+            "name": package name,
+            "version": package version,
+            "install_requires": list of packages required
+                or a string with file to be read from repo
+            "python_requires": python versions,
+            "classifiers": data provided for indexing,
+            "license": list of licenses found
+        }
         """
         res = {
             "lang_ver": "",
@@ -128,6 +137,12 @@ class LaxSetupReader(SetupReader):
     def _find_install_requires(
             self, call: ast.Call, body: Iterable[Any]
     ) -> Union[List[str], str]:
+        """
+        Analyze setup.py and find dependencies
+        :param call: setup function in setup.py
+        :param body: body for variable definitions
+        :return: package dependencies list or file to query
+        """
         install_requires = []
         value = self._find_in_call(call, "install_requires")
         if value is None:
