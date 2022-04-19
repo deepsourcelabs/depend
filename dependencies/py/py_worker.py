@@ -1,9 +1,8 @@
-"""Functions to handle Python files"""
+"""Functions to handle Python dependency files."""
 import toml
 from pkg_resources import parse_requirements
 
-from dependencies.py.setup_reader import LaxSetupReader
-from dependencies.py.setup_reader import handle_classifiers
+from dependencies.py.setup_reader import LaxSetupReader, handle_classifiers
 
 
 def handle_requirements_txt(req_file_data: str) -> dict:

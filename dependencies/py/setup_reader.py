@@ -6,37 +6,21 @@ https://github.com/python-poetry/poetry/blob/master/src/poetry/utils/setup_reade
 import ast
 import re
 from configparser import ConfigParser
-from typing import Any
-from typing import Dict
-from typing import Iterable
-from typing import List
-from typing import Optional
-from typing import Union
-from poetry.core.semver import Version
-from poetry.core.semver import exceptions
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Union,
+)
+from poetry.core.semver import Version, exceptions
 from poetry.utils.setup_reader import SetupReader
-
-
-def handle_classifiers(classifiers, res):
-    """
-    Obtains missing info from classifiers
-    :param classifiers: content used for indexing in pypi
-    :param res: dict to modify
-    """
-    if not res["lang_ver"]:
-        lang = re.findall(
-            r'Programming Language :: Python :: ([^"\n]+)',
-            classifiers
-        )
-        res["lang_ver"] = ";".join(lang)
-    if not res["pkg_lic"] or res["pkg_lic"] == "Other":
-        lic = re.findall(r'License :: ([^"\n]+)', classifiers)
-        res["pkg_lic"] = ";".join(lic)
 
 
 class LaxSetupReader(SetupReader):
     """
-    Class that reads a setup.py file without executing it.
+    Read the setup.py file without executing it.
     """
 
     def read_setup_py(
@@ -45,16 +29,18 @@ class LaxSetupReader(SetupReader):
         """
         Directly reads setup.py content and returns key info
         :param content: content of setup.py
-        :return: info required by dependency inspector
-        """
-        res = {
-            "lang_ver": "",
-            "pkg_name": "",
-            "pkg_ver": "",
-            "pkg_lic": "",
-            "pkg_err": "",
-            "pkg_dep": [],
+        :return: {
+            "name": package name,
+            "version": package version,
+            "install_requires": list of packages required
+                or a string with file to be read from repo
+            "python_requires": python versions,
+            "classifiers": data provided for indexing,
+            "license": list of licenses found
         }
+        """
+        result = {}
+
         body = ast.parse(content).body
 
         setup_call, body = self._find_setup_call(body)
@@ -121,10 +107,17 @@ class LaxSetupReader(SetupReader):
 
             if variable is not None and isinstance(variable, ast.Str):
                 return variable.s
+              
 
     def _find_install_requires(
             self, call: ast.Call, body: Iterable[Any]
     ) -> Union[List[str], str]:
+        """
+        Analyze setup.py and find dependencies
+        :param call: setup function in setup.py
+        :param body: body for variable definitions
+        :return: package dependencies list or file to query
+        """
         install_requires = []
         value = self._find_in_call(call, "install_requires")
         if value is None:
