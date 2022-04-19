@@ -14,9 +14,7 @@ def handle_yarn_lock(req_file_data: str) -> dict:
     res = {}
     if "lockfile v1" in req_file_data:
         parsed_lockfile = lockfile.Lockfile.from_str(req_file_data)
-        unfiltered_content: dict = json.loads(
-            parsed_lockfile.to_json()
-        )
+        unfiltered_content: dict = json.loads(parsed_lockfile.to_json())
     else:
         unfiltered_content = yaml.safe_load(req_file_data)
     keys = ["resolution", "dependencies"]
@@ -26,10 +24,7 @@ def handle_yarn_lock(req_file_data: str) -> dict:
         for k in gen:
             if isinstance(obj[k], dict):
                 flat[k] = list(
-                    map(
-                        lambda x: str(x[0]) + ";" + str(x[1]),
-                        obj[k].items()
-                    )
+                    map(lambda x: str(x[0]) + ";" + str(x[1]), obj[k].items())
                 )
             else:
                 flat[k] = obj[k]
@@ -49,18 +44,16 @@ def handle_json(req_file_data: str) -> dict:
         "version": "",
         "license": "",
         "dependencies": {},
-        "engines": {}
+        "engines": {},
     }
     for k, v in package_data.items():
         if k in filter_dict:
             filter_dict[k] = v
     filtered_dep = filter_dict.get("dependencies")
-    if any(
-            isinstance(i, dict) for i in
-            filtered_dep.values()
-    ):
+    if any(isinstance(i, dict) for i in filtered_dep.values()):
         dependency_data = {
-            k: v.get("version", "") for k, v in filtered_dep.items()
+            k: v.get("version", "")
+            for k, v in filtered_dep.items()
             if isinstance(v, dict)
         }
         filter_dict["dependencies"] = dependency_data

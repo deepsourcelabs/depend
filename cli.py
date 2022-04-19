@@ -1,13 +1,14 @@
 """CLI for dependency-inspector."""
+import configparser
 import json
+import logging
 from pathlib import Path
 from typing import Optional
+
 import typer
+
 from db.elastic_worker import connect_elasticsearch
 from error import LanguageNotSupportedError, VCSNotSupportedError
-import configparser
-import logging
-
 from inspector import make_multiple_requests
 
 app = typer.Typer(add_completion=False)
@@ -16,14 +17,14 @@ configfile = configparser.ConfigParser()
 
 @app.callback(invoke_without_command=True)
 def main(
-        lang: Optional[str] = typer.Option(None),
-        packages: Optional[str] = typer.Option(None),
-        config: Optional[Path] = typer.Option(None),
-        gh_token: Optional[str] = typer.Option(None),
-        host: Optional[str] = typer.Option(None),
-        port: Optional[int] = typer.Option(None),
-        es_uid: Optional[str] = typer.Option(None),
-        es_pass: Optional[str] = typer.Option(None)
+    lang: Optional[str] = typer.Option(None),
+    packages: Optional[str] = typer.Option(None),
+    config: Optional[Path] = typer.Option(None),
+    gh_token: Optional[str] = typer.Option(None),
+    host: Optional[str] = typer.Option(None),
+    port: Optional[int] = typer.Option(None),
+    es_uid: Optional[str] = typer.Option(None),
+    es_pass: Optional[str] = typer.Option(None),
 ):
     """
     Dependency Inspector
@@ -70,21 +71,19 @@ def main(
             raise typer.Exit(code=-1)
         payload[lang] = packages
     if host and port:
-        es = connect_elasticsearch({'host': host, 'port': port}, (es_uid, es_pass))
+        es = connect_elasticsearch({"host": host, "port": port}, (es_uid, es_pass))
     else:
         logging.warning("Elastic not connected")
         es = None
     for language, dependencies in payload.items():
-        dep_list = dependencies.replace(',', '\n').split('\n')
+        dep_list = dependencies.replace(",", "\n").split("\n")
         dep_list = list(filter(None, dep_list))
         try:
             if dep_list:
                 logging.info(
                     json.dumps(
-                        make_multiple_requests(
-                            es, language, dep_list, gh_token
-                        ),
-                        indent=3
+                        make_multiple_requests(es, language, dep_list, gh_token),
+                        indent=3,
                     )
                 )
         except (LanguageNotSupportedError, VCSNotSupportedError) as e:
