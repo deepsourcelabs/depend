@@ -31,11 +31,6 @@ classifiers = [
 dependencies = [
     "numpy>=1.18.5",
 ]
-#
-#[package.dependencies]
-#runtime = []  # This is an optimization, it means pip
-#              # won't need to run setup.py egg_info to
-#              # get dependencies
 
 [package.build]
 dependencies = [

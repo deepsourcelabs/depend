@@ -7,6 +7,7 @@ from pkg_resources import parse_requirements
 from dependencies.py.setup_reader import LaxSetupReader, handle_classifiers
 import dparse2
 
+
 def handle_requirements_txt(req_file_data: str) -> dict:
     """
     Parse requirements file
@@ -124,4 +125,3 @@ def handle_otherpy(file_data: str, file_name:str)->dict:
             dep.name + ";" + str(dep.specs)
         )
     return res
-

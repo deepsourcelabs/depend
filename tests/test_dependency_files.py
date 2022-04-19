@@ -1,4 +1,5 @@
 """Tests output obtained by parsing dependency files"""
+
 import dependencies.go.go_worker
 import dependencies.js.js_worker
 import dependencies.py.py_worker
