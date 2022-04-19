@@ -18,6 +18,23 @@ from poetry.core.semver import Version, exceptions
 from poetry.utils.setup_reader import SetupReader
 
 
+def handle_classifiers(classifiers, res):
+    """
+    Obtains missing info from classifiers
+    :param classifiers: content used for indexing in pypi
+    :param res: dict to modify
+    """
+    if not res["lang_ver"]:
+        lang = re.findall(
+            r'Programming Language :: Python :: ([^"\n]+)',
+            classifiers
+        )
+        res["lang_ver"] = ";".join(lang)
+    if not res["pkg_lic"] or res["pkg_lic"] == "Other":
+        lic = re.findall(r'License :: ([^"\n]+)', classifiers)
+        res["pkg_lic"] = ";".join(lic)
+
+
 class LaxSetupReader(SetupReader):
     """
     Read the setup.py file without executing it.
@@ -39,8 +56,14 @@ class LaxSetupReader(SetupReader):
             "license": list of licenses found
         }
         """
-        result = {}
-
+        res = {
+            "lang_ver": "",
+            "pkg_name": "",
+            "pkg_ver": "",
+            "pkg_lic": "",
+            "pkg_err": "",
+            "pkg_dep": [],
+        }
         body = ast.parse(content).body
 
         setup_call, body = self._find_setup_call(body)
