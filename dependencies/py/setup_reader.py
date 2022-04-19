@@ -66,6 +66,7 @@ class LaxSetupReader(SetupReader):
             "pkg_dep": [],
             'timestamp': datetime.utcnow().isoformat()
         }
+
         body = ast.parse(content).body
 
         setup_call, body = self._find_setup_call(body)
