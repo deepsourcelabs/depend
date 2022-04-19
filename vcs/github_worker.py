@@ -9,8 +9,8 @@ from typing import Literal
 import github.GithubException
 
 import constants
-from helper import parse_license, Result, handle_dep_file
 from handle_env import get_github
+from helper import Result, handle_dep_file, parse_license
 
 
 def verify_run(language, result, file_extension="git") -> list[str]:
@@ -20,12 +20,11 @@ def verify_run(language, result, file_extension="git") -> list[str]:
     :param result: current version of result dict
     :param file_extension: optional filetype being checked
     """
-    unavailable_keys = constants.DEP_FIELDS_MISSED.get(
-        language, {}
-    ).get(file_extension, [])
+    unavailable_keys = constants.DEP_FIELDS_MISSED.get(language, {}).get(
+        file_extension, []
+    )
     retrievable_keys = [
-        k for k, v in result.items()
-        if not v and k not in unavailable_keys
+        k for k, v in result.items() if not v and k not in unavailable_keys
     ]
     if result["pkg_lic"][0] == "Other" and "pkg_lic" not in unavailable_keys:
         retrievable_keys.append("pkg_lic")
@@ -33,9 +32,9 @@ def verify_run(language, result, file_extension="git") -> list[str]:
 
 
 def handle_github(
-        language: str,
-        dependency: str,
-        result: Result,
+    language: str,
+    dependency: str,
+    result: Result,
 ):
     """VCS fallthrough for GitHub based GO"""
     if retrievable_keys := verify_run(language, result):
@@ -43,15 +42,11 @@ def handle_github(
         rl = g.get_rate_limit()
         if rl.core.remaining == 0:
             logging.error("GitHub API limit exhausted - Sleeping")
-            time.sleep(
-                (
-                    datetime.datetime.now() - rl.core.reset
-                ).total_seconds()
-            )
+            time.sleep((datetime.datetime.now() - rl.core.reset).total_seconds())
 
         repo_identifier = re.search(
             r"github.com/([^/]+)/([^/\\\r\n\s]+)(?:/tree/|)?([^/.\\\r\n\s]+)?",
-            dependency
+            dependency,
         )
         try:
             repo = g.get_repo(repo_identifier.group(1) + "/" + repo_identifier.group(2))
@@ -74,15 +69,11 @@ def handle_github(
                         break
                 try:
                     lic_file = repo.get_contents(
-                        license_filename,
-                        ref=commit_branch_tag
+                        license_filename, ref=commit_branch_tag
                     ).decoded_content.decode()
                 except github.GithubException:
                     lic_file = ""
-                repo_lic = parse_license(
-                    lic_file,
-                    constants.LICENSE_DICT
-                )
+                repo_lic = parse_license(lic_file, constants.LICENSE_DICT)
                 if repo_lic == "Other":
                     try:
                         if r_lic := repo.get_license():
@@ -90,10 +81,10 @@ def handle_github(
                     except github.GithubException:
                         repo_lic = "Other"
 
-                result['pkg_lic'] = [repo_lic]
+                result["pkg_lic"] = [repo_lic]
 
             if "pkg_name" in retrievable_keys:
-                result['pkg_name'] = dependency
+                result["pkg_name"] = dependency
 
             if "pkg_ver" in retrievable_keys:
                 releases = [release.tag_name for release in repo.get_releases()]
@@ -101,7 +92,7 @@ def handle_github(
                     logging.error("No releases found, defaulting to tags")
                     releases = [tag.name for tag in repo.get_tags()]
                 logging.info(releases)
-                result['pkg_ver'] = commit_branch_tag or releases[0]
+                result["pkg_ver"] = commit_branch_tag or releases[0]
 
             req_files = constants.REQ_FILES[language]
             for f in set(files).intersection(req_files):
@@ -110,20 +101,20 @@ def handle_github(
                 if retrievable_keys := verify_run(language, result, file_extension):
                     try:
                         dep_file = repo.get_contents(
-                            req_filename,
-                            ref=commit_branch_tag
+                            req_filename, ref=commit_branch_tag
                         ).decoded_content.decode()
                     except github.GithubException:
                         continue
-                    dep_resp = handle_dep_file(
-                        req_filename, dep_file
-                    )
+                    dep_resp = handle_dep_file(req_filename, dep_file)
                     for key in retrievable_keys:
                         key: Literal[
                             "import_name",
-                            "lang_ver", "pkg_name",
-                            "pkg_ver", "pkg_lic",
-                            "pkg_err", "pkg_dep",
-                            'timestamp'
+                            "lang_ver",
+                            "pkg_name",
+                            "pkg_ver",
+                            "pkg_lic",
+                            "pkg_err",
+                            "pkg_dep",
+                            "timestamp",
                         ]
                         result[key] = dep_resp.get(key)

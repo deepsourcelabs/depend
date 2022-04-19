@@ -1,11 +1,11 @@
 """Tests output obtained by parsing dependency files"""
 
+import pytest
+from jsonschema import validate
+
 import dependencies.go.go_worker
 import dependencies.js.js_worker
 import dependencies.py.py_worker
-
-import pytest
-from jsonschema import validate
 
 
 class Helpers:
@@ -17,37 +17,15 @@ class Helpers:
         j_schema = {
             "type": "object",
             "properties": {
-                "lang_ver": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "pkg_name": {
-                    "type": "string"
-                },
-                "pkg_ver": {
-                    "type": "string"
-                },
-                "pkg_dep": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "pkg_err": {
-                    "type": "object"
-                },
-                "pkg_lic": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "timestamp": {
-                    "type": "string"
-                }
-            }}
+                "lang_ver": {"type": "array", "items": {"type": "string"}},
+                "pkg_name": {"type": "string"},
+                "pkg_ver": {"type": "string"},
+                "pkg_dep": {"type": "array", "items": {"type": "string"}},
+                "pkg_err": {"type": "object"},
+                "pkg_lic": {"type": "array", "items": {"type": "string"}},
+                "timestamp": {"type": "string"},
+            },
+        }
         validate(instance=json_list, schema=j_schema)
         return True
 

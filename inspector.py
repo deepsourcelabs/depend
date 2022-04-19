@@ -3,7 +3,7 @@
 import logging
 import re
 from datetime import datetime, timedelta
-from typing import List, Dict
+from typing import Dict, List
 
 import requests
 import tldextract
@@ -11,15 +11,15 @@ import tldextract
 import constants
 from constants import REGISTRY
 from error import LanguageNotSupportedError, VCSNotSupportedError
-from helper import Result, handle_pypi, handle_npmjs, scrape_go, parse_dep_response
-from helper import go_versions, js_versions, py_versions
+from helper import (Result, go_versions, handle_npmjs, handle_pypi,
+                    js_versions, parse_dep_response, py_versions, scrape_go)
 from vcs.github_worker import handle_github
 
 
 def handle_vcs(
-        language: str,
-        dependency: str,
-        result: Result,
+    language: str,
+    dependency: str,
+    result: Result,
 ):
     """
     Fall through to VCS check for a go namespace (only due to go.mod check)
@@ -33,11 +33,7 @@ def handle_vcs(
         raise VCSNotSupportedError(dependency)
 
 
-def make_url(
-        language: str,
-        package: str,
-        version: str = ""
-) -> str:
+def make_url(language: str, package: str, version: str = "") -> str:
     """
     Construct the API JSON request URL or web URL to scrape
     :param language: lowercase: python, javascript or go
@@ -48,19 +44,19 @@ def make_url(
     match language:
         case "python":
             if version:
-                url_elements = (REGISTRY[language]['url'], package, version, 'json')
+                url_elements = (REGISTRY[language]["url"], package, version, "json")
             else:
-                url_elements = (REGISTRY[language]['url'], package, 'json')
+                url_elements = (REGISTRY[language]["url"], package, "json")
         case "javascript":
             if version:
-                url_elements = (REGISTRY[language]['url'], package, version)
+                url_elements = (REGISTRY[language]["url"], package, version)
             else:
-                url_elements = (REGISTRY[language]['url'], package)
+                url_elements = (REGISTRY[language]["url"], package)
         case "go":
             if version:
-                url_elements = (REGISTRY[language]['url'], package + "@" + version)
+                url_elements = (REGISTRY[language]["url"], package + "@" + version)
             else:
-                url_elements = (REGISTRY[language]['url'], package)
+                url_elements = (REGISTRY[language]["url"], package)
         case _:
             raise LanguageNotSupportedError(language)
     return "/".join(url_elements).rstrip("/")
@@ -72,22 +68,21 @@ def find_github(text: str) -> str:
     :param text: string to check
     """
     repo_identifier = re.search(
-        r"github.com/([^/]+)/([^/.\r\n]+)(?:/tree/|)?([^/.\r\n]+)?",
-        text
+        r"github.com/([^/]+)/([^/.\r\n]+)(?:/tree/|)?([^/.\r\n]+)?", text
     )
     if repo_identifier:
-        return "https://github.com/" + \
-               repo_identifier.group(1) + "/" + repo_identifier.group(2)
+        return (
+            "https://github.com/"
+            + repo_identifier.group(1)
+            + "/"
+            + repo_identifier.group(2)
+        )
     else:
         return ""
 
 
 def make_single_request(
-        es: any,
-        language: str,
-        package: str,
-        version: str = "",
-        force_schema: bool = True
+    es: any, language: str, package: str, version: str = "", force_schema: bool = True
 ) -> Dict | list[Result]:
     """
     Obtain package license and dependency information.
@@ -106,9 +101,7 @@ def make_single_request(
             db_time = datetime.fromisoformat(
                 ESresult["_source"]["timestamp"],
             )
-            if db_time - datetime.utcnow() < timedelta(
-                    seconds=constants.CACHE_EXPIRY
-            ):
+            if db_time - datetime.utcnow() < timedelta(seconds=constants.CACHE_EXPIRY):
                 logging.info("Using " + package + " found in ES Database")
                 return ESresult["_source"]
 
@@ -135,14 +128,14 @@ def make_single_request(
         queries = REGISTRY[language]
 
         result: Result = {
-            'import_name': '',
-            'lang_ver': [],
-            'pkg_name': package,
-            'pkg_ver': '',
-            'pkg_lic': ["Other"],
-            'pkg_err': {},
-            'pkg_dep': [],
-            'timestamp': datetime.utcnow().isoformat()
+            "import_name": "",
+            "lang_ver": [],
+            "pkg_name": package,
+            "pkg_ver": "",
+            "pkg_lic": ["Other"],
+            "pkg_err": {},
+            "pkg_dep": [],
+            "timestamp": datetime.utcnow().isoformat(),
         }
         repo = ""
         match language:
@@ -168,11 +161,7 @@ def make_single_request(
             if repo:
                 handle_vcs(language, repo, result)
         if es is not None:
-            es.index(
-                index=language,
-                id=package_version,
-                document=result
-            )
+            es.index(index=language, id=package_version, document=result)
         # handle vers into format
         # parse_dep_response
         result_list.append(result)
@@ -183,9 +172,9 @@ def make_single_request(
 
 
 def make_multiple_requests(
-        es: any,
-        language: str,
-        packages: List[str],
+    es: any,
+    language: str,
+    packages: List[str],
 ) -> list:
     """
     Obtain license and dependency information for list of packages.
@@ -197,12 +186,10 @@ def make_multiple_requests(
     result = []
 
     for package in packages:
-        name_ver = (package[0]+package[1:].replace("@", ";")).rsplit(';', 1)
+        name_ver = (package[0] + package[1:].replace("@", ";")).rsplit(";", 1)
         if len(name_ver) == 1:
             dep_resp = make_single_request(es, language, package)
         else:
-            dep_resp = make_single_request(
-                es, language, name_ver[0], name_ver[1]
-            )
+            dep_resp = make_single_request(es, language, name_ver[0], name_ver[1])
         result.append(dep_resp)
     return result

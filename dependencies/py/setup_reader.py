@@ -8,15 +8,7 @@ import logging
 import re
 from configparser import ConfigParser
 from datetime import datetime
-from typing import (
-    Any,
-    Match,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Union,
-)
+from typing import Any, Dict, Iterable, List, Match, Optional, Union
 
 import github
 from poetry.core.semver import Version, exceptions
@@ -32,8 +24,7 @@ def find_github(text: str) -> Match[str] | None:
     :param text: string to check
     """
     repo_identifier = re.search(
-        r"github.com/([^/]+)/([^/.\r\n]+)(?:/tree/|)?([^/.\r\n]+)?",
-        text
+        r"github.com/([^/]+)/([^/.\r\n]+)(?:/tree/|)?([^/.\r\n]+)?", text
     )
     return repo_identifier
 
@@ -45,10 +36,7 @@ def handle_classifiers(classifiers, res):
     :param res: dict to modify
     """
     if not res["lang_ver"]:
-        lang = re.findall(
-            r'Programming Language :: Python :: ([^"\n]+)',
-            classifiers
-        )
+        lang = re.findall(r'Programming Language :: Python :: ([^"\n]+)', classifiers)
         res["lang_ver"] = lang
     if not res["pkg_lic"] or res["pkg_lic"][0] == "Other":
         lic = re.findall(r'License :: ([^"\n]+)', classifiers)
@@ -60,9 +48,7 @@ class LaxSetupReader(SetupReader):
     Read the setup.py file without executing it.
     """
 
-    def auth_read_setup_py(
-            self, content: str
-    ) -> Dict[str, Union[List, Dict]]:
+    def auth_read_setup_py(self, content: str) -> Dict[str, Union[List, Dict]]:
         """
         Directly read setup.py content
         :param content: content of setup.py
@@ -84,7 +70,7 @@ class LaxSetupReader(SetupReader):
             "pkg_lic": ["Other"],
             "pkg_err": {},
             "pkg_dep": [],
-            'timestamp': datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
         body = ast.parse(content).body
         repo_identifier = find_github(content)
@@ -93,47 +79,32 @@ class LaxSetupReader(SetupReader):
             return res
 
         # Inspecting keyword arguments
-        res["pkg_name"] = self._find_single_string(
-            setup_call, body, "name"
-        )
-        import_options = self._find_single_string(
-            setup_call, body, "packages"
-        )
-        res["pkg_ver"] = self._find_single_string(
-            setup_call, body, "version"
-        )
-        if pkg_lic := self._find_single_string(
-                setup_call, body, "license"
-        ):
+        res["pkg_name"] = self._find_single_string(setup_call, body, "name")
+        import_options = self._find_single_string(setup_call, body, "packages")
+        res["pkg_ver"] = self._find_single_string(setup_call, body, "version")
+        if pkg_lic := self._find_single_string(setup_call, body, "license"):
             res["pkg_lic"] = [pkg_lic]
-        if lang_ver := self._find_single_string(
-                setup_call, body, "python_requires"
-        ):
+        if lang_ver := self._find_single_string(setup_call, body, "python_requires"):
             res["lang_ver"] = lang_ver.split(",")
-        pkg_dep = self._find_install_requires(
-            setup_call, body
-        )
+        pkg_dep = self._find_install_requires(setup_call, body)
         if isinstance(pkg_dep, str) and repo_identifier:
             g = get_github()
             repo = g.get_repo(repo_identifier.group(1) + "/" + repo_identifier.group(2))
             commit_branch_tag = repo_identifier.group(3) or repo.default_branch
             try:
                 dep_file = repo.get_contents(
-                    pkg_dep,
-                    ref=commit_branch_tag
+                    pkg_dep, ref=commit_branch_tag
                 ).decoded_content.decode()
-                res["pkg_dep"] = py_worker.handle_requirements_txt(
-                    dep_file
-                ).get("pkg_dep")
+                res["pkg_dep"] = py_worker.handle_requirements_txt(dep_file).get(
+                    "pkg_dep"
+                )
             except github.GithubException as e:
                 logging.error(e)
         else:
-            res["pkg_dep"] = py_worker.handle_requirements_txt(
-                "\n".join(pkg_dep)
-            ).get("pkg_dep")
-        classifiers = self._find_single_string(
-            setup_call, body, "classifiers"
-        )
+            res["pkg_dep"] = py_worker.handle_requirements_txt("\n".join(pkg_dep)).get(
+                "pkg_dep"
+            )
+        classifiers = self._find_single_string(setup_call, body, "classifiers")
         if classifiers:
             handle_classifiers(classifiers, res)
         if import_options:
@@ -145,10 +116,7 @@ class LaxSetupReader(SetupReader):
             if isinstance(key, ast.Str) and key.s == name:
                 return val
 
-    def _find_single_string(
-            self, call: ast.Call,
-            body: List[Any], name: str
-    ) -> str:
+    def _find_single_string(self, call: ast.Call, body: List[Any], name: str) -> str:
         value = self._find_in_call(call, name)
         if value is None:
             # Trying to find in kwargs
@@ -191,7 +159,7 @@ class LaxSetupReader(SetupReader):
 
     # noinspection PyUnresolvedReferences
     def _find_install_requires(
-            self, call: ast.Call, body: Iterable[Any]
+        self, call: ast.Call, body: Iterable[Any]
     ) -> Union[List[str], str]:
         """
         Analyze setup.py and find dependencies
@@ -251,9 +219,7 @@ class LaxSetupReader(SetupReader):
 
         return install_requires
 
-    def find_variable_in_body(
-            self, body: Iterable[Any], name: str
-    ) -> Optional[Any]:
+    def find_variable_in_body(self, body: Iterable[Any], name: str) -> Optional[Any]:
         """
         Considers with body as well
         :param body: ast body to search in
@@ -266,7 +232,10 @@ class LaxSetupReader(SetupReader):
                 break
 
             # checks if filename is found in with
-            if isinstance(elem, ast.With) and self.find_variable_in_body(elem.body, name) is not None:
+            if (
+                isinstance(elem, ast.With)
+                and self.find_variable_in_body(elem.body, name) is not None
+            ):
                 for item in elem.items:
                     if not isinstance(item, ast.withitem):
                         continue
@@ -274,8 +243,7 @@ class LaxSetupReader(SetupReader):
                     if not isinstance(cont, ast.Call):
                         continue
                     func = cont.func
-                    if not (isinstance(func, ast.Name)
-                            and func.id == "open"):
+                    if not (isinstance(func, ast.Name) and func.id == "open"):
                         continue
                     for arg in cont.args:
                         if not (isinstance(arg, ast.Constant)):
@@ -292,9 +260,7 @@ class LaxSetupReader(SetupReader):
                 if target.id == name:
                     return elem.value
 
-    def read_setup_cfg(
-            self, content: str
-    ) -> Dict[str, Union[List, Dict]]:
+    def read_setup_cfg(self, content: str) -> Dict[str, Union[List, Dict]]:
         """
         Analyzes content of setup.cfg
         :param content: file content
@@ -307,7 +273,7 @@ class LaxSetupReader(SetupReader):
             "pkg_lic": ["Other"],
             "pkg_err": {},
             "pkg_dep": [],
-            'timestamp': datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
         parser = ConfigParser()
         parser.read_string(content)
@@ -315,15 +281,17 @@ class LaxSetupReader(SetupReader):
         res["pkg_lic"] = [parser.get("metadata", "license", fallback="Other")]
         classifiers = parser.get("metadata", "classifiers", fallback=None)
         try:
-            res["pkg_ver"] = Version.parse(parser.get("metadata", "version", fallback="")).text
+            res["pkg_ver"] = Version.parse(
+                parser.get("metadata", "version", fallback="")
+            ).text
         except exceptions.ParseVersionError:
             res["pkg_ver"] = ""
         res["pkg_dep"] = py_worker.handle_requirements_txt(
             parser.get("options", "install_requires", fallback="")
         ).get("pkg_dep")
-        res["lang_ver"] = parser.get(
-            "options", "python_requires", fallback=""
-        ).split(",")
+        res["lang_ver"] = parser.get("options", "python_requires", fallback="").split(
+            ","
+        )
         if classifiers:
             handle_classifiers(classifiers, res)
         return res

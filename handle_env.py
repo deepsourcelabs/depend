@@ -1,8 +1,10 @@
 """Functions that require environment variables to be defined"""
 
-import  os, logging
-from github import Github
+import logging
+import os
+
 from dotenv import load_dotenv
+from github import Github
 
 load_dotenv()
 

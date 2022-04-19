@@ -1,11 +1,11 @@
 """Functions to handle Python dependency files."""
 from datetime import datetime
 
+import dparse2
 import toml
 from pkg_resources import parse_requirements
 
 from dependencies.py.setup_reader import LaxSetupReader, handle_classifiers
-import dparse2
 
 
 def handle_requirements_txt(req_file_data: str) -> dict:
@@ -21,15 +21,13 @@ def handle_requirements_txt(req_file_data: str) -> dict:
         "pkg_lic": ["Other"],
         "pkg_err": {},
         "pkg_dep": [],
-        'timestamp': datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
     }
     install_reqs = parse_requirements(req_file_data)
     for ir in install_reqs:
         for spec in ir.specs:
             if "=" in str(spec[0]):
-                res["pkg_dep"].append(
-                    str(ir.key) + ";" + str(spec[1])
-                )
+                res["pkg_dep"].append(str(ir.key) + ";" + str(spec[1]))
             else:
                 # ! Handle each case properly
                 res["pkg_dep"].append(str(ir.key))
@@ -68,7 +66,7 @@ def handle_toml(file_data: str) -> dict:
         "pkg_lic": ["Other"],
         "pkg_err": {},
         "pkg_dep": [],
-        'timestamp': datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
     }
     toml_parsed = dict(toml.loads(file_data))
     package_data = toml_parsed.get("package")
@@ -76,8 +74,8 @@ def handle_toml(file_data: str) -> dict:
         package_data = toml_parsed.get("tool", {}).get("poetry", {})
         # 'es-core-news-sm', {'url': ''} ignored
         package_dep = [
-            ";".join(dep) for dep
-            in package_data.get("dependencies", {}).items()
+            ";".join(dep)
+            for dep in package_data.get("dependencies", {}).items()
             if isinstance(dep[-1], str)
         ]
         res["pkg_dep"] = package_dep
@@ -90,8 +88,7 @@ def handle_toml(file_data: str) -> dict:
             for ir in install_reqs:
                 for spec in ir.specs:
                     res["pkg_dep"].append(
-                        str(ir.key) + ";" +
-                        str(spec[1]) + ";" + str(spec[0])
+                        str(ir.key) + ";" + str(spec[1]) + ";" + str(spec[0])
                     )
     res["pkg_name"] = package_data.get("name", "")
     res["pkg_ver"] = package_data.get("version", "")
@@ -101,7 +98,8 @@ def handle_toml(file_data: str) -> dict:
         handle_classifiers(classifiers, res)
     return res
 
-def handle_otherpy(file_data: str, file_name:str)->dict:
+
+def handle_otherpy(file_data: str, file_name: str) -> dict:
     """
     Parses conda.yml tox.ini and Pipfiles
     this function returns only dependencies
@@ -114,14 +112,9 @@ def handle_otherpy(file_data: str, file_name:str)->dict:
         "pkg_lic": ["Other"],
         "pkg_err": {},
         "pkg_dep": [],
-        'timestamp': datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
     }
-    df = dparse2.parse(
-        file_data,
-        file_name=file_name
-    )
+    df = dparse2.parse(file_data, file_name=file_name)
     for dep in df.dependencies:
-        res["pkg_dep"].append(
-            dep.name + ";" + str(dep.specs)
-        )
+        res["pkg_dep"].append(dep.name + ";" + str(dep.specs))
     return res

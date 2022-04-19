@@ -1,8 +1,8 @@
 """Functions to handle Go files"""
 import json
 import logging
-from ctypes import cdll, c_char_p, c_void_p, string_at
 import platform
+from ctypes import c_char_p, c_void_p, cdll, string_at
 from datetime import datetime
 
 match platform.system():
@@ -27,23 +27,19 @@ def handle_go_mod(req_file_data: str) -> dict:
     :param req_file_data: Content of go.mod
     :return: list of requirement and specs
     """
-    ptr = getDepVer(
-        req_file_data.encode('utf-8')
-    )
-    out = string_at(ptr).decode('utf-8')
+    ptr = getDepVer(req_file_data.encode("utf-8"))
+    out = string_at(ptr).decode("utf-8")
     free(ptr)
     d = json.loads(out)
     m = {
-        'Min_go_ver': 'lang_ver',
-        'ModPath': 'pkg_name',
-        'ModVer': 'pkg_ver',
-        'Dep_ver': 'pkg_dep'
+        "Min_go_ver": "lang_ver",
+        "ModPath": "pkg_name",
+        "ModVer": "pkg_ver",
+        "Dep_ver": "pkg_dep",
     }
     data_available = {m[k]: d[k] for k in d if k in m}
-    data_available["pkg_err"] = {
-        'pkg_dep': d.get("ModDeprecated", "")
-    }
+    data_available["pkg_err"] = {"pkg_dep": d.get("ModDeprecated", "")}
     data_available["lang_ver"] = data_available.get("lang_ver", "").split(",")
     data_available["pkg_lic"] = ["Other"]
-    data_available['timestamp'] = datetime.utcnow().isoformat()
+    data_available["timestamp"] = datetime.utcnow().isoformat()
     return data_available

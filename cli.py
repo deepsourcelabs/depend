@@ -1,15 +1,16 @@
 """CLI for dependency-inspector."""
+import configparser
 import json
+import logging
 import os.path
 from pathlib import Path
 from typing import Optional
+
 import typer
+
 from db.elastic_worker import connect_elasticsearch
 from error import LanguageNotSupportedError, VCSNotSupportedError
-from helper import parse_dep_response, handle_dep_file
-import configparser
-import logging
-
+from helper import handle_dep_file, parse_dep_response
 from inspector import make_multiple_requests
 
 app = typer.Typer(add_completion=False)
@@ -18,15 +19,15 @@ configfile = configparser.ConfigParser()
 
 @app.callback(invoke_without_command=True)
 def main(
-        lang: Optional[str] = typer.Option(None),
-        packages: Optional[str] = typer.Option(None),
-        dep_file: Optional[Path] = typer.Option(None),
-        deep_search: Optional[bool] = typer.Option(False),
-        config: Optional[Path] = typer.Option(None),
-        host: Optional[str] = typer.Option(None),
-        port: Optional[int] = typer.Option(None),
-        es_uid: Optional[str] = typer.Option(None),
-        es_pass: Optional[str] = typer.Option(None)
+    lang: Optional[str] = typer.Option(None),
+    packages: Optional[str] = typer.Option(None),
+    dep_file: Optional[Path] = typer.Option(None),
+    deep_search: Optional[bool] = typer.Option(False),
+    config: Optional[Path] = typer.Option(None),
+    host: Optional[str] = typer.Option(None),
+    port: Optional[int] = typer.Option(None),
+    es_uid: Optional[str] = typer.Option(None),
+    es_pass: Optional[str] = typer.Option(None),
 ) -> list:
     """
     Dependency Inspector
@@ -73,9 +74,7 @@ def main(
         if not dep_file.is_file():
             logging.error("Dependency file cannot be read")
             raise typer.Exit(code=-1)
-        dep_content = handle_dep_file(
-            os.path.basename(dep_file), dep_file.read_text()
-        )
+        dep_content = handle_dep_file(os.path.basename(dep_file), dep_file.read_text())
         payload[lang] = dep_content.get("pkg_dep")
         result.append(parse_dep_response([dep_content]))
         if not deep_search:
@@ -87,13 +86,13 @@ def main(
         logging.error("Please specify a supported language!")
         raise typer.Exit(code=-1)
     if host and port:
-        es = connect_elasticsearch({'host': host, 'port': port}, (es_uid, es_pass))
+        es = connect_elasticsearch({"host": host, "port": port}, (es_uid, es_pass))
     else:
         logging.warning("Elastic not connected")
         es = None
     for language, dependencies in payload.items():
         if isinstance(dependencies, str):
-            dep_list = dependencies.replace(',', '\n').split('\n')
+            dep_list = dependencies.replace(",", "\n").split("\n")
             dep_list = list(filter(None, dep_list))
         elif isinstance(dependencies, list):
             dep_list = dependencies
@@ -104,16 +103,9 @@ def main(
         try:
 
             if dep_list:
-                result.extend(make_multiple_requests(
-                    es, language, dep_list
-                ))
+                result.extend(make_multiple_requests(es, language, dep_list))
 
-                logging.info(
-                    json.dumps(
-                        result,
-                        indent=3
-                    )
-                )
+                logging.info(json.dumps(result, indent=3))
                 return result
         except (LanguageNotSupportedError, VCSNotSupportedError) as e:
             logging.error(e.msg)

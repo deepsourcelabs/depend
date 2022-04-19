@@ -30,45 +30,33 @@ class Helpers:
                                         "description": "pkg_ver",
                                         "type": "object",
                                         "properties": {
-                                            "import_name": {
-                                                "type": "string"
-                                            },
+                                            "import_name": {"type": "string"},
                                             "lang_ver": {
                                                 "type": "array",
-                                                "items": {
-                                                    "type": "string"
-                                                }
+                                                "items": {"type": "string"},
                                             },
                                             "pkg_lic": {
                                                 "type": "array",
-                                                "items": {
-                                                    "type": "string"
-                                                }
+                                                "items": {"type": "string"},
                                             },
-                                            "pkg_err": {
-                                                "type": "object"
-                                            },
+                                            "pkg_err": {"type": "object"},
                                             "pkg_dep": {
                                                 "type": "array",
-                                                "items": {
-                                                    "type": "string"
-                                                }
+                                                "items": {"type": "string"},
                                             },
-                                            "timestamp": {
-                                                "type": "string"
-                                            }
+                                            "timestamp": {"type": "string"},
                                         },
-                                        "additionalProperties": False
+                                        "additionalProperties": False,
                                     }
-                                }
+                                },
                             },
                         },
-                        "required": ["versions"]
+                        "required": ["versions"],
                     },
                     "additionalProperties": False,
                 },
                 "additionalProperties": False,
-            }
+            },
         }
         validate(instance=json_list, schema=j_schema)
         return True
@@ -88,7 +76,7 @@ def test_go_mod(json_schema):
         deep_search=True,
         host=None,
         config=None,
-        )
+    )
     assert json_schema.is_valid(result)
 
 
@@ -100,7 +88,7 @@ def test_package_json(json_schema):
         deep_search=True,
         host=None,
         config=None,
-        )
+    )
     assert json_schema.is_valid(result)
 
 
@@ -112,7 +100,7 @@ def test_npm_shrinkwrap_json(json_schema):
         deep_search=True,
         host=None,
         config=None,
-        )
+    )
     assert json_schema.is_valid(result)
 
 
@@ -124,7 +112,7 @@ def test_package_lock_json(json_schema):
         deep_search=True,
         host=None,
         config=None,
-        )
+    )
     assert json_schema.is_valid(result)
 
 
@@ -136,7 +124,7 @@ def test_yarn_v1_lock(json_schema):
         deep_search=True,
         host=None,
         config=None,
-        )
+    )
     assert json_schema.is_valid(result)
 
 
@@ -148,7 +136,7 @@ def test_yarn_v2_lock(json_schema):
         deep_search=True,
         host=None,
         config=None,
-        )
+    )
     assert json_schema.is_valid(result)
 
 
@@ -160,7 +148,7 @@ def test_requirements_txt(json_schema):
         deep_search=True,
         host=None,
         config=None,
-        )
+    )
     assert json_schema.is_valid(result)
 
 
@@ -172,7 +160,7 @@ def test_setup_py(json_schema):
         deep_search=True,
         host=None,
         config=None,
-        )
+    )
     assert json_schema.is_valid(result)
 
 
@@ -184,7 +172,7 @@ def test_setup_cfg(json_schema):
         deep_search=True,
         host=None,
         config=None,
-        )
+    )
     assert json_schema.is_valid(result)
 
 
@@ -196,7 +184,7 @@ def test_pyproject_toml(json_schema):
         deep_search=True,
         host=None,
         config=None,
-        )
+    )
     assert json_schema.is_valid(result)
 
 
@@ -208,20 +196,17 @@ def test_poetry_toml(json_schema):
         deep_search=True,
         host=None,
         config=None,
-        )
+    )
     assert json_schema.is_valid(result)
 
 
 def test_unsupported():
     """Check no extension output"""
-    with pytest.raises(
-            FileNotSupportedError,
-            match="example_pipfile"
-    ):
+    with pytest.raises(FileNotSupportedError, match="example_pipfile"):
         result = main(
             lang="python",
             dep_file=Path("tests/data/example_pipfile"),
             deep_search=False,
-            config=None
+            config=None,
         )
         assert json_schema.is_valid(result)
