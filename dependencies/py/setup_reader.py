@@ -5,14 +5,8 @@ https://github.com/python-poetry/poetry/blob/master/src/poetry/utils/setup_reade
 
 import ast
 from configparser import ConfigParser
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Union,
-)
+from typing import Any, Dict, Iterable, List, Optional, Union
+
 from poetry.core.semver import Version, exceptions
 from poetry.utils.setup_reader import SetupReader
 
@@ -22,9 +16,7 @@ class LaxSetupReader(SetupReader):
     Read the setup.py file without executing it.
     """
 
-    def read_setup_py(
-            self, content: str
-    ) -> Dict[str, Union[List, Dict]]:
+    def read_setup_py(self, content: str) -> Dict[str, Union[List, Dict]]:
         """
         Directly read setup.py content
         :param content: content of setup.py
@@ -47,29 +39,21 @@ class LaxSetupReader(SetupReader):
             return result
 
         # Inspecting keyword arguments
-        result["name"] = self._find_single_string(
-            setup_call, body, "name"
-        )
-        result["version"] = self._find_single_string(
-            setup_call, body, "version"
-        )
+        result["name"] = self._find_single_string(setup_call, body, "name")
+        result["version"] = self._find_single_string(setup_call, body, "version")
         result["classifiers"] = self._find_single_string(
             setup_call, body, "classifiers"
         )
-        result["license"] = self._find_single_string(
-            setup_call, body, "license"
-        )
+        result["license"] = self._find_single_string(setup_call, body, "license")
         result["python_requires"] = self._find_single_string(
             setup_call, body, "python_requires"
         )
-        result["install_requires"] = self._find_install_requires(
-            setup_call, body
-        )
+        result["install_requires"] = self._find_install_requires(setup_call, body)
 
         return result
 
     def _find_install_requires(
-            self, call: ast.Call, body: Iterable[Any]
+        self, call: ast.Call, body: Iterable[Any]
     ) -> Union[List[str], str]:
         """
         Analyze setup.py and find dependencies
@@ -119,9 +103,7 @@ class LaxSetupReader(SetupReader):
 
         return install_requires
 
-    def find_variable_in_body(
-            self, body: Iterable[Any], name: str
-    ) -> Optional[Any]:
+    def find_variable_in_body(self, body: Iterable[Any], name: str) -> Optional[Any]:
         """
         Considers with body as well
         :param body: ast body to search in
@@ -134,7 +116,10 @@ class LaxSetupReader(SetupReader):
                 break
 
             # checks if filename is found in with
-            if isinstance(elem, ast.With) and self.find_variable_in_body(elem.body, name) is not None:
+            if (
+                isinstance(elem, ast.With)
+                and self.find_variable_in_body(elem.body, name) is not None
+            ):
                 for item in elem.items:
                     if not isinstance(item, ast.withitem):
                         continue
@@ -142,8 +127,7 @@ class LaxSetupReader(SetupReader):
                     if not isinstance(cont, ast.Call):
                         continue
                     func = cont.func
-                    if not (isinstance(func, ast.Name)
-                            and func.id == "open"):
+                    if not (isinstance(func, ast.Name) and func.id == "open"):
                         continue
                     for arg in cont.args:
                         if not (isinstance(arg, ast.Constant)):
@@ -160,9 +144,7 @@ class LaxSetupReader(SetupReader):
                 if target.id == name:
                     return elem.value
 
-    def read_setup_cfg(
-            self, content: str
-    ) -> Dict[str, Union[List, Dict]]:
+    def read_setup_cfg(self, content: str) -> Dict[str, Union[List, Dict]]:
         """
         Analyzes content of setup.cfg
         :param content: file content
@@ -184,8 +166,10 @@ class LaxSetupReader(SetupReader):
             version = None
 
         install_requires = [
-            dep.strip() for dep
-            in parser.get("options", "install_requires", fallback="").split("\n")
+            dep.strip()
+            for dep in parser.get("options", "install_requires", fallback="").split(
+                "\n"
+            )
             if dep
         ]
 
@@ -197,5 +181,5 @@ class LaxSetupReader(SetupReader):
             "install_requires": install_requires,
             "python_requires": python_requires,
             "classifiers": classifiers,
-            "license": licenses
+            "license": licenses,
         }

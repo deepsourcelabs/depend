@@ -40,17 +40,17 @@
 #                                                                              #
 ################################################################################
 
+import os
 import textwrap
 
 import setuptools
-import os
 from setuptools import setup
 
 version = "1.55"
 
 
 if __name__ == "__main__":
-    with open('requirements.txt') as f:
+    with open("requirements.txt") as f:
         required = f.read().splitlines()
     setuptools.setup(
         name="PyGithub",

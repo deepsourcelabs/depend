@@ -12,12 +12,7 @@ def handle_requirements_txt(req_file_data: str) -> dict:
     :return: list of requirement and specs
     """
     install_reqs = parse_requirements(req_file_data)
-    return {
-        "dependencies": {
-            ir.key: ir.specs
-            for ir in install_reqs
-        }
-    }
+    return {"dependencies": {ir.key: ir.specs for ir in install_reqs}}
 
 
 def handle_setup_py(req_file_data: str) -> dict:
@@ -58,5 +53,5 @@ def handle_toml(file_data: str) -> dict:
         "license": package_data.get("license"),
         "classifiers": package_data.get("classifiers"),
         # get python version info from python = ...
-        "dependencies": package_dep
+        "dependencies": package_dep,
     }

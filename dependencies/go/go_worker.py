@@ -1,8 +1,8 @@
 """Functions to handle Go files"""
 import json
 import logging
-from ctypes import cdll, c_char_p, c_void_p, string_at
 import platform
+from ctypes import c_char_p, c_void_p, cdll, string_at
 
 match platform.system():
     case "Linux":
