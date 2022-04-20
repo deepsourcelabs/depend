@@ -11,7 +11,6 @@ from datetime import datetime
 from typing import Any, Dict, Iterable, List, Match, Optional, Union
 
 import github
-
 from poetry.core.semver import Version, exceptions
 from poetry.utils.setup_reader import SetupReader
 

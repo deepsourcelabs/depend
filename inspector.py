@@ -10,8 +10,16 @@ import tldextract
 import constants
 from constants import REGISTRY
 from error import LanguageNotSupportedError, VCSNotSupportedError
-from helper import (Result, go_versions, handle_npmjs, handle_pypi,
-                    js_versions, parse_dep_response, py_versions, scrape_go)
+from helper import (
+    Result,
+    go_versions,
+    handle_npmjs,
+    handle_pypi,
+    js_versions,
+    parse_dep_response,
+    py_versions,
+    scrape_go,
+)
 from vcs.github_worker import handle_github
 
 
