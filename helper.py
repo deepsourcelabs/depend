@@ -173,6 +173,7 @@ def scrape_go(response: requests.Response, queries: dict, result: Result, url: s
     key_data = re.findall(r"([^ \n:]+): ([- ,.\w]+)", key_element)
     data = dict(key_data)
     dependencies_tag = []
+    dep_res = requests.get(url + "?tab=imports", allow_redirects=False)
     if dep_res.status_code == 200:
         dep_soup = BeautifulSoup(dep_res.text, "html.parser")
         dependencies_tag = [
@@ -194,7 +195,6 @@ def go_versions(url: str, queries: dict) -> list:
     """
     ver_parse = queries["versions"].split(".")
     ver_res = requests.get(url + "?tab=versions", allow_redirects=False)
-    dep_res = requests.get(url + "?tab=imports", allow_redirects=False)
     releases = []
     if ver_res.status_code == 200:
         version_soup = BeautifulSoup(ver_res.text, "html.parser")
