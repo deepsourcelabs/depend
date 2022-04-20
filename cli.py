@@ -99,12 +99,9 @@ def main(
         else:
             dep_list = []
             logging.error("Unknown Response")
-
         try:
-
             if dep_list:
                 result.extend(make_multiple_requests(es, language, dep_list))
-
                 logging.info(json.dumps(result, indent=3))
                 return result
         except (LanguageNotSupportedError, VCSNotSupportedError) as e:

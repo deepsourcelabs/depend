@@ -1,5 +1,4 @@
 """Tests output obtained by parsing dependency files"""
-
 import pytest
 from jsonschema import validate
 

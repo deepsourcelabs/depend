@@ -5,6 +5,7 @@ import platform
 from ctypes import c_char_p, c_void_p, cdll, string_at
 from datetime import datetime
 
+
 match platform.system():
     case "Linux":
         lib_go = cdll.LoadLibrary("dependencies/go/linux/_gomod.so")
