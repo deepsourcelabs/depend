@@ -16,7 +16,7 @@ else:
 github_object = Github(gh_token)
 
 
-def get_github():
+def get_github() -> Github:
     """
     Returns an authenticated GitHub object if env variable is defined
     """

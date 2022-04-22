@@ -3,16 +3,16 @@
 import logging
 import re
 from datetime import datetime, timedelta
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Any
 
 import requests
-import tldextract
+from tldextract import extract
 from elasticsearch import Elasticsearch
 
 import constants
 from constants import REGISTRY
+from dep_types import Result
 from dependencies.helper import (
-    Result,
     go_versions,
     handle_npmjs,
     handle_pypi,
@@ -29,7 +29,7 @@ def handle_vcs(
     language: str,
     dependency: str,
     result: Result,
-):
+) -> None:
     """
     Fall through to VCS check for a go namespace (only due to go.mod check)
     :param language: primary language of the package
@@ -50,23 +50,23 @@ def make_url(language: str, package: str, version: str = "") -> str:
     :param version: optional version specification
     :return: url to fetch
     """
-    url_elements: Tuple
+    url_elements: Tuple[str, ...]
     match language:
         case "python":
             if version:
-                url_elements = (REGISTRY[language]["url"], package, version, "json")
+                url_elements = (str(REGISTRY[language]["url"]), package, version, "json")
             else:
-                url_elements = (REGISTRY[language]["url"], package, "json")
+                url_elements = (str(REGISTRY[language]["url"]), package, "json")
         case "javascript":
             if version:
-                url_elements = (REGISTRY[language]["url"], package, version)
+                url_elements = (str(REGISTRY[language]["url"]), package, version)
             else:
-                url_elements = (REGISTRY[language]["url"], package)
+                url_elements = (str(REGISTRY[language]["url"]), package)
         case "go":
             if version:
-                url_elements = (REGISTRY[language]["url"], package + "@" + version)
+                url_elements = (str(REGISTRY[language]["url"]), package + "@" + version)
             else:
-                url_elements = (REGISTRY[language]["url"], package)
+                url_elements = (str(REGISTRY[language]["url"]), package)
         case _:
             raise LanguageNotSupportedError(language)
     return "/".join(url_elements).rstrip("/")
@@ -97,7 +97,7 @@ def make_single_request(
     package: str,
     version: str = "",
     force_schema: bool = True,
-) -> dict | List[Result]:
+) -> Result | List[Result]:
     """
     Obtain package license and dependency information.
     :param es: ElasticSearch Instance
@@ -110,7 +110,7 @@ def make_single_request(
     result_list = []
     package_version = package
     if es is not None:
-        ESresult: dict = es.get(index=language, id=package_version, ignore=404)
+        ESresult: dict[str, Any] = es.get(index=language, id=package_version, ignore=404)
         if ESresult.get("found"):
             db_time = datetime.fromisoformat(
                 ESresult["_source"]["timestamp"],
@@ -170,7 +170,7 @@ def make_single_request(
             "github",
         ]
         if repo:
-            if tldextract.extract(str(repo)).domain not in supported_domains:
+            if extract(str(repo)).domain not in supported_domains:
                 repo = find_github(response.text)
             if repo:
                 handle_vcs(language, repo, result)
@@ -189,7 +189,7 @@ def make_multiple_requests(
     es: Optional[Elasticsearch],
     language: str,
     packages: List[str],
-) -> list:
+) -> List[Any]:
     """
     Obtain license and dependency information for list of packages.
     :param es: ElasticSearch Instance

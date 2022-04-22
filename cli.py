@@ -4,7 +4,7 @@ import json
 import logging
 import os.path
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Union, Any, List
 
 import typer
 
@@ -28,7 +28,7 @@ def main(
     port: Optional[int] = typer.Option(None),
     es_uid: Optional[str] = typer.Option(None),
     es_pass: Optional[str] = typer.Option(None),
-) -> list:
+) -> List[Any]:
     """
     Dependency Inspector
 
@@ -58,8 +58,8 @@ def main(
     :param es_pass: Password to authenticate Elastic
 
     """
-    payload: Dict[str, Union[None, str, list]] = {}
-    result = []
+    payload: Dict[str, Union[None, str, list[str]]] = {}
+    result: List[Any] = []
     if config is not None:
         if not config.is_file():
             logging.error("Configuration file not found")

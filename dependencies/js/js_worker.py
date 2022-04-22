@@ -1,7 +1,7 @@
 """Functions to handle JavaScript files"""
 import json
 from datetime import datetime
-from typing import Optional, TypedDict
+from typing import Optional, TypedDict, Any
 
 import yaml
 from pyarn import lockfile
@@ -78,7 +78,7 @@ def handle_json(req_file_data: str) -> Result:
     return filter_dict
 
 
-def handle_json_dep(filter_dict, k, v):
+def handle_json_dep(filter_dict: dict, k:str, v:Any) -> None:
     """
     Flattens variants of dependencies to uniform
     :param filter_dict: any dict or list
@@ -91,7 +91,7 @@ def handle_json_dep(filter_dict, k, v):
         filter_dict[k] = [";".join(i) for i in v.items()]
 
 
-def flatten_content(filter_dict, k, v):
+def flatten_content(filter_dict: dict, k: str, v: Any):
     """
     Flattens a dict/list - used to handle deprecated formats
     :param filter_dict: any dict or list

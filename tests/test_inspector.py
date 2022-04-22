@@ -9,7 +9,7 @@ from elasticsearch import Elasticsearch
 
 import inspector
 from db.elastic_worker import connect_elasticsearch
-from dependencies.helper import Result
+from dependencies.dep_types import Result
 from error import LanguageNotSupportedError, VCSNotSupportedError
 
 
