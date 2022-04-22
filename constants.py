@@ -2,7 +2,7 @@
 from jmespath import compile as jc
 
 CACHE_EXPIRY = 1800
-REGISTRY = {
+REGISTRY: dict = {
     "python": {
         "registry": "PyPI",
         "url": "https://pypi.org/pypi",
@@ -74,7 +74,7 @@ REQ_FILES = {
     ],
     "go": ["go.mod"],
 }
-LICENSE_DICT = {
+LICENSE_DICT: dict = {
     "AFL": "Academic Free License",
     "Apache": "Apache Software License",
     "Apple": "Apple Public Source License",
@@ -139,7 +139,7 @@ LICENSE_DICT = {
     "zlib Licenqs": "zlib License",
     "Zope": "Zope Public License",
 }
-DEP_FIELDS_MISSED = {
+DEP_FIELDS_MISSED: dict = {
     "go": {
         "mod": ["import_name", "pkg_lic"],
     },

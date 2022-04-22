@@ -5,36 +5,12 @@ import dparse2
 import toml
 from pkg_resources import parse_requirements
 
-from dependencies.py.setup_reader import LaxSetupReader, handle_classifiers
+from dep_types import Result
+
+from .setup_reader import LaxSetupReader, handle_classifiers
 
 
-def handle_requirements_txt(req_file_data: str) -> dict:
-    """
-    Parse requirements file
-    :param req_file_data: Content of requirements.txt
-    :return: list of requirement and specs
-    """
-    res = {
-        "lang_ver": [],
-        "pkg_name": "",
-        "pkg_ver": "",
-        "pkg_lic": ["Other"],
-        "pkg_err": {},
-        "pkg_dep": [],
-        "timestamp": datetime.utcnow().isoformat(),
-    }
-    install_reqs = parse_requirements(req_file_data)
-    for ir in install_reqs:
-        for spec in ir.specs:
-            if "=" in str(spec[0]):
-                res["pkg_dep"].append(str(ir.key) + ";" + str(spec[1]))
-            else:
-                # ! Handle each case properly
-                res["pkg_dep"].append(str(ir.key))
-    return res
-
-
-def handle_setup_py(req_file_data: str) -> dict:
+def handle_setup_py(req_file_data: str) -> Result:
     """
     Parse setup.py
     :param req_file_data: Content of setup.py
@@ -44,7 +20,7 @@ def handle_setup_py(req_file_data: str) -> dict:
     return parser.auth_read_setup_py(req_file_data)
 
 
-def handle_setup_cfg(req_file_data: str) -> dict:
+def handle_setup_cfg(req_file_data: str) -> Result:
     """
     Parse setup.py
     :param req_file_data: Content of setup.py
@@ -54,12 +30,13 @@ def handle_setup_cfg(req_file_data: str) -> dict:
     return parser.read_setup_cfg(req_file_data)
 
 
-def handle_toml(file_data: str) -> dict:
+def handle_toml(file_data: str) -> Result:
     """
     Parse pyproject or poetry toml files and return required keys
     :param file_data: content of toml
     """
-    res = {
+    res: Result = {
+        "import_name": "",
         "lang_ver": [],
         "pkg_name": "",
         "pkg_ver": "",
@@ -99,13 +76,14 @@ def handle_toml(file_data: str) -> dict:
     return res
 
 
-def handle_otherpy(file_data: str, file_name: str) -> dict:
+def handle_otherpy(file_data: str, file_name: str) -> Result:
     """
     Parses conda.yml tox.ini and Pipfiles
     this function returns only dependencies
     slated for removal once individual cases are handled
     """
-    res = {
+    res: Result = {
+        "import_name": "",
         "lang_ver": [],
         "pkg_name": "",
         "pkg_ver": "",

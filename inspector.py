@@ -3,16 +3,25 @@
 import logging
 import re
 from datetime import datetime, timedelta
-from typing import Dict, List
+from typing import List, Optional, Tuple
 
 import requests
 import tldextract
+from elasticsearch import Elasticsearch
 
 import constants
 from constants import REGISTRY
+from dependencies.helper import (
+    Result,
+    go_versions,
+    handle_npmjs,
+    handle_pypi,
+    js_versions,
+    parse_dep_response,
+    py_versions,
+    scrape_go,
+)
 from error import LanguageNotSupportedError, VCSNotSupportedError
-from helper import (Result, go_versions, handle_npmjs, handle_pypi,
-                    js_versions, parse_dep_response, py_versions, scrape_go)
 from vcs.github_worker import handle_github
 
 
@@ -41,6 +50,7 @@ def make_url(language: str, package: str, version: str = "") -> str:
     :param version: optional version specification
     :return: url to fetch
     """
+    url_elements: Tuple
     match language:
         case "python":
             if version:
@@ -82,8 +92,12 @@ def find_github(text: str) -> str:
 
 
 def make_single_request(
-    es: any, language: str, package: str, version: str = "", force_schema: bool = True
-) -> Dict | list[Result]:
+    es: Optional[Elasticsearch],
+    language: str,
+    package: str,
+    version: str = "",
+    force_schema: bool = True,
+) -> dict | List[Result]:
     """
     Obtain package license and dependency information.
     :param es: ElasticSearch Instance
@@ -172,7 +186,7 @@ def make_single_request(
 
 
 def make_multiple_requests(
-    es: any,
+    es: Optional[Elasticsearch],
     language: str,
     packages: List[str],
 ) -> list:

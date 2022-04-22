@@ -4,13 +4,13 @@ import json
 import logging
 import os.path
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional, Union
 
 import typer
 
 from db.elastic_worker import connect_elasticsearch
+from dependencies.helper import handle_dep_file, parse_dep_response
 from error import LanguageNotSupportedError, VCSNotSupportedError
-from helper import handle_dep_file, parse_dep_response
 from inspector import make_multiple_requests
 
 app = typer.Typer(add_completion=False)
@@ -19,7 +19,7 @@ configfile = configparser.ConfigParser()
 
 @app.callback(invoke_without_command=True)
 def main(
-    lang: Optional[str] = typer.Option(None),
+    lang: str = typer.Option(None),
     packages: Optional[str] = typer.Option(None),
     dep_file: Optional[Path] = typer.Option(None),
     deep_search: Optional[bool] = typer.Option(False),
@@ -28,7 +28,7 @@ def main(
     port: Optional[int] = typer.Option(None),
     es_uid: Optional[str] = typer.Option(None),
     es_pass: Optional[str] = typer.Option(None),
-) -> list:
+):
     """
     Dependency Inspector
 
@@ -58,7 +58,7 @@ def main(
     :param es_pass: Password to authenticate Elastic
 
     """
-    payload = {}
+    payload: Dict[str, Union[None, str, list]] = {}
     result = []
     if config is not None:
         if not config.is_file():
@@ -68,7 +68,7 @@ def main(
         if not configfile.has_section("dependencies"):
             logging.error("dependencies section missing from config file")
             raise typer.Exit(code=-1)
-        payload = configfile["dependencies"]
+        payload = dict(configfile["dependencies"])
     if dep_file is not None:
         payload = {}
         if not dep_file.is_file():
@@ -83,8 +83,7 @@ def main(
     else:
         payload[lang] = packages
     if lang not in ["go", "python", "javascript"]:
-        logging.error("Please specify a supported language!")
-        raise typer.Exit(code=-1)
+        raise LanguageNotSupportedError(lang)
     if host and port:
         es = connect_elasticsearch({"host": host, "port": port}, (es_uid, es_pass))
     else:

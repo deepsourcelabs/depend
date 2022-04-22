@@ -8,13 +8,14 @@ import logging
 import re
 from configparser import ConfigParser
 from datetime import datetime
-from typing import Any, Dict, Iterable, List, Match, Optional, Union
+from typing import Any, Iterable, List, Match, Optional, Union
 
 import github
 from poetry.core.semver import Version, exceptions
 from poetry.utils.setup_reader import SetupReader
 
-from dependencies.py import py_worker
+from dep_types import Result
+from dependencies.py.py_helper import handle_requirements_txt
 from handle_env import get_github
 
 
@@ -48,7 +49,7 @@ class LaxSetupReader(SetupReader):
     Read the setup.py file without executing it.
     """
 
-    def auth_read_setup_py(self, content: str) -> Dict[str, Union[List, Dict]]:
+    def auth_read_setup_py(self, content: str) -> Result:
         """
         Directly read setup.py content
         :param content: content of setup.py
@@ -62,7 +63,7 @@ class LaxSetupReader(SetupReader):
             "license": list of licenses found
         }
         """
-        res = {
+        res: Result = {
             "import_name": "",
             "lang_ver": [],
             "pkg_name": "",
@@ -95,14 +96,12 @@ class LaxSetupReader(SetupReader):
                 dep_file = repo.get_contents(
                     pkg_dep, ref=commit_branch_tag
                 ).decoded_content.decode()
-                res["pkg_dep"] = py_worker.handle_requirements_txt(dep_file).get(
-                    "pkg_dep"
-                )
+                res["pkg_dep"] = handle_requirements_txt(dep_file).get("pkg_dep", [])
             except github.GithubException as e:
                 logging.error(e)
         else:
-            res["pkg_dep"] = py_worker.handle_requirements_txt("\n".join(pkg_dep)).get(
-                "pkg_dep"
+            res["pkg_dep"] = handle_requirements_txt("\n".join(pkg_dep)).get(
+                "pkg_dep", []
             )
         classifiers = self._find_single_string(setup_call, body, "classifiers")
         if classifiers:
@@ -115,6 +114,7 @@ class LaxSetupReader(SetupReader):
         for key, val in zip(dict_.keys, dict_.values):
             if isinstance(key, ast.Str) and key.s == name:
                 return val
+        return None
 
     def _find_single_string(self, call: ast.Call, body: List[Any], name: str) -> str:
         value = self._find_in_call(call, name)
@@ -156,8 +156,8 @@ class LaxSetupReader(SetupReader):
 
             if variable is not None and isinstance(variable, ast.Str):
                 return variable.s or ""
+        return ""
 
-    # noinspection PyUnresolvedReferences
     def _find_install_requires(
         self, call: ast.Call, body: Iterable[Any]
     ) -> Union[List[str], str]:
@@ -167,7 +167,7 @@ class LaxSetupReader(SetupReader):
         :param body: body for variable definitions
         :return: package dependencies list or file to query
         """
-        install_requires = []
+        install_requires: List[str] = []
         value = self._find_in_call(call, "install_requires")
         if value is None:
             # Trying to find in kwargs
@@ -194,25 +194,27 @@ class LaxSetupReader(SetupReader):
         if value is None:
             return install_requires
 
-        if isinstance(value, ast.List):
+        elif isinstance(value, ast.List):
             for el_n in value.elts:
                 if isinstance(el_n, ast.Name):
                     variable = self.find_variable_in_body(body, el_n.id)
 
                     if variable is not None and isinstance(variable, ast.List):
                         for el in variable.elts:
-                            install_requires.append(el.s)
+                            if isinstance(el, ast.Constant):
+                                install_requires.append(el.s)
 
-                    elif variable is not None and isinstance(variable, str):
-                        install_requires.append(el_n.s)
-                else:
-                    install_requires.append(el_n.s)
+                    elif variable is not None and isinstance(variable, ast.Constant):
+                        install_requires.append(variable.s)
+
+                    # ignores other instances possible
         elif isinstance(value, ast.Name):
             variable = self.find_variable_in_body(body, value.id)
 
             if variable is not None and isinstance(variable, ast.List):
                 for el in variable.elts:
-                    install_requires.append(el.s)
+                    if isinstance(el, ast.Constant):
+                        install_requires.append(el.s)
 
             elif variable is not None and isinstance(variable, str):
                 return variable
@@ -226,11 +228,7 @@ class LaxSetupReader(SetupReader):
         :param name: variable being searched for
         :return: variable value
         """
-        found = None
         for elem in body:
-            if found:
-                break
-
             # checks if filename is found in with
             if (
                 isinstance(elem, ast.With)
@@ -259,14 +257,16 @@ class LaxSetupReader(SetupReader):
 
                 if target.id == name:
                     return elem.value
+        return None
 
-    def read_setup_cfg(self, content: str) -> Dict[str, Union[List, Dict]]:
+    def read_setup_cfg(self, content: str) -> Result:
         """
         Analyzes content of setup.cfg
         :param content: file content
         :return: filtered metadata
         """
-        res = {
+        res: Result = {
+            "import_name": "",
             "lang_ver": [],
             "pkg_name": "",
             "pkg_ver": "",
@@ -286,9 +286,9 @@ class LaxSetupReader(SetupReader):
             ).text
         except exceptions.ParseVersionError:
             res["pkg_ver"] = ""
-        res["pkg_dep"] = py_worker.handle_requirements_txt(
+        res["pkg_dep"] = handle_requirements_txt(
             parser.get("options", "install_requires", fallback="")
-        ).get("pkg_dep")
+        ).get("pkg_dep", [])
         res["lang_ver"] = parser.get("options", "python_requires", fallback="").split(
             ","
         )

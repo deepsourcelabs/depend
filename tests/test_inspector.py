@@ -2,13 +2,15 @@
 
 import configparser
 from datetime import datetime
+from typing import Optional
 
 import pytest
+from elasticsearch import Elasticsearch
 
 import inspector
 from db.elastic_worker import connect_elasticsearch
+from dependencies.helper import Result
 from error import LanguageNotSupportedError, VCSNotSupportedError
-from helper import Result
 
 
 @pytest.fixture
@@ -30,7 +32,7 @@ def es():
 
 
 @pytest.fixture(autouse=True)
-def skip_by_status(request: pytest.FixtureRequest, es: any):
+def skip_by_status(request: pytest.FixtureRequest, es: Optional[Elasticsearch]):
     """
     :param request: pytest request
     :param es: database object

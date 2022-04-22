@@ -5,6 +5,7 @@ from jsonschema import validate
 
 import dependencies.go.go_worker
 import dependencies.js.js_worker
+import dependencies.py.py_helper
 import dependencies.py.py_worker
 
 
@@ -88,7 +89,7 @@ def test_requirements_txt(json_schema):
     """Check requirements.txt file output"""
     with open("tests/data/example_requirements.txt") as f:
         txt_content = f.read()
-    result = dependencies.py.py_worker.handle_requirements_txt(txt_content)
+    result = dependencies.py.py_helper.handle_requirements_txt(txt_content)
     assert json_schema.is_valid(result)
 
 

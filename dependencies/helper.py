@@ -1,28 +1,17 @@
 """Helper Functions for Inspector."""
 import re
-from typing import Optional, TypedDict
 
 import jmespath
 import requests
 from bs4 import BeautifulSoup
 
-from dependencies.go import go_worker
-from dependencies.js import js_worker
-from dependencies.py import py_worker
+from dep_types import Result
 from error import FileNotSupportedError
 
-
-class Result(TypedDict):
-    """Type hinting for results"""
-
-    import_name: Optional[str]
-    lang_ver: list[str]
-    pkg_name: str
-    pkg_ver: str
-    pkg_lic: list[str]
-    pkg_err: dict
-    pkg_dep: list[str]
-    timestamp: str
+from .go.go_worker import handle_go_mod
+from .js.js_worker import handle_json, handle_yarn_lock
+from .py.py_helper import handle_requirements_txt
+from .py.py_worker import handle_otherpy, handle_setup_cfg, handle_setup_py, handle_toml
 
 
 def parse_license(license_file: str, license_dict: dict) -> str:
@@ -41,7 +30,7 @@ def parse_license(license_file: str, license_dict: dict) -> str:
 def handle_dep_file(
     file_name: str,
     file_content: str,
-) -> dict:
+) -> Result:
     """
     Parses contents of requirement file and returns useful insights
     :param file_name: name of requirement file
@@ -51,27 +40,27 @@ def handle_dep_file(
     file_extension = file_name.split(".")[-1]
     match file_extension:
         case "mod":
-            return go_worker.handle_go_mod(file_content)
+            return handle_go_mod(file_content)
         case "json":
-            return js_worker.handle_json(file_content)
+            return handle_json(file_content)
         case ["conda.yml", "tox.ini", "Pipfile", "Pipfile.lock"]:
-            return py_worker.handle_otherpy(file_content, file_name)
+            return handle_otherpy(file_content, file_name)
         case "lock":
-            return js_worker.handle_yarn_lock(file_content)
+            return handle_yarn_lock(file_content)
         case "txt":
-            return py_worker.handle_requirements_txt(file_content)
+            return handle_requirements_txt(file_content)
         case "toml":
-            return py_worker.handle_toml(file_content)
+            return handle_toml(file_content)
         case "py":
-            return py_worker.handle_setup_py(file_content)
+            return handle_setup_py(file_content)
         case "cfg":
-            return py_worker.handle_setup_cfg(file_content)
+            return handle_setup_cfg(file_content)
         case _:
             raise FileNotSupportedError(file_name)
 
 
 def parse_dep_response(
-    ecs: list[dict],
+    ecs: list[Result],
 ) -> dict:
     """
     Constructs required schema from extracted fields
@@ -116,7 +105,7 @@ def handle_pypi(api_response: requests.Response, queries: dict, result: Result):
     result["pkg_ver"] = version_q.search(data) or ""
     result["pkg_lic"] = [license_q.search(data) or "Other"]
     req_file_data = "\n".join(dependencies_q.search(data) or "")
-    result["pkg_dep"] = py_worker.handle_requirements_txt(req_file_data).get("pkg_dep")
+    result["pkg_dep"] = handle_requirements_txt(req_file_data).get("pkg_dep", [])
     repo = repo_q.search(data) or ""
     return repo
 

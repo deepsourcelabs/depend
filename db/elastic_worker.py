@@ -1,21 +1,22 @@
 """Functions to work with ElasticSearch."""
 
 import logging
+from typing import Optional
 
 from elasticsearch import Elasticsearch
 
 
-def connect_elasticsearch(target: dict, auth: tuple) -> Elasticsearch:
+def connect_elasticsearch(target: dict, auth: tuple) -> Optional[Elasticsearch]:
     """Connect to local elastic server"""
-    _es = Elasticsearch([target], http_auth=auth)
-    if _es.ping():
+    _es: Optional[Elasticsearch] = Elasticsearch([target], http_auth=auth)
+    if not _es:
+        logging.error("Failed to connect!")
+        _es = None
+    elif _es.ping():
         logging.info("Connected to Elastic")
         create_index(_es, "python")
         create_index(_es, "javascript")
         create_index(_es, "go")
-    else:
-        logging.error("Failed to connect!")
-        _es = None
     return _es
 
 
