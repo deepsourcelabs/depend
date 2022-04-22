@@ -161,8 +161,8 @@ def scrape_go(response: requests.Response, queries: dict, result: Result, url: s
     key_element = soup.find(key_parse[0], class_=key_parse[1]).getText()
     key_data = re.findall(r"([^ \n:]+): ([- ,.\w]+)", key_element)
     data = dict(key_data)
-    dep_res = requests.get(url + "?tab=imports", allow_redirects=False)
     dependencies_tag = []
+    dep_res = requests.get(url + "?tab=imports", allow_redirects=False)
     if dep_res.status_code == 200:
         dep_soup = BeautifulSoup(dep_res.text, "html.parser")
         dependencies_tag = [
