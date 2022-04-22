@@ -3,11 +3,11 @@
 import logging
 import re
 from datetime import datetime, timedelta
-from typing import List, Optional, Tuple, Any
+from typing import Any, List, Optional, Tuple
 
 import requests
-from tldextract import extract
 from elasticsearch import Elasticsearch
+from tldextract import extract
 
 import constants
 from constants import REGISTRY
