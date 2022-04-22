@@ -1,4 +1,4 @@
-"""CLI for dependency-inspector."""
+"""CLI for murdock."""
 import configparser
 import json
 import logging

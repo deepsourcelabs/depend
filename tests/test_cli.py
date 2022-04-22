@@ -1,4 +1,4 @@
-"""Test cli and overall pipeline for dependency-inspector"""
+"""Test cli and overall pipeline for murdock"""
 from pathlib import Path
 
 import pytest

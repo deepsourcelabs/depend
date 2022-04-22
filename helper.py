@@ -46,7 +46,7 @@ def handle_dep_file(
     Parses contents of requirement file and returns useful insights
     :param file_name: name of requirement file
     :param file_content: content of the file
-    :return: key features for dependency-inspector
+    :return: key features for murdock
     """
     file_extension = file_name.split(".")[-1]
     match file_extension:
