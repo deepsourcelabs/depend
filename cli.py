@@ -28,7 +28,7 @@ def main(
     port: Optional[int] = typer.Option(None),
     es_uid: Optional[str] = typer.Option(None),
     es_pass: Optional[str] = typer.Option(None),
-):
+) -> list:
     """
     Dependency Inspector
 
@@ -106,6 +106,7 @@ def main(
         except (LanguageNotSupportedError, VCSNotSupportedError) as e:
             logging.error(e.msg)
             raise typer.Exit(code=-1)
+    return []
 
 
 if __name__ == "__main__":

@@ -200,7 +200,7 @@ def test_poetry_toml(json_schema):
     assert json_schema.is_valid(result)
 
 
-def test_unsupported():
+def test_unsupported(json_schema):
     """Check no extension output"""
     with pytest.raises(FileNotSupportedError, match="example_pipfile"):
         result = main(
