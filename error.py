@@ -17,6 +17,7 @@ class LanguageNotSupportedError(UnsupportedError):
 
     def __init__(self, lang: str):
         self.msg = f"{lang} is not currently supported"
+        super(UnsupportedError, self).__init__(self.msg)
 
 
 class VCSNotSupportedError(UnsupportedError):
@@ -24,6 +25,7 @@ class VCSNotSupportedError(UnsupportedError):
 
     def __init__(self, package: str):
         self.msg = f"VCS used by {package} is not supported"
+        super(UnsupportedError, self).__init__(self.msg)
 
 
 class FileNotSupportedError(UnsupportedError):
@@ -31,3 +33,4 @@ class FileNotSupportedError(UnsupportedError):
 
     def __init__(self, file: str):
         self.msg = f"{file} is currently not supported"
+        super(UnsupportedError, self).__init__(self.msg)

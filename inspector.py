@@ -3,11 +3,11 @@
 import logging
 import re
 from datetime import datetime, timedelta
-from typing import List, Optional, Tuple, Any
+from typing import Any, List, Optional, Tuple
 
 import requests
-from tldextract import extract
 from elasticsearch import Elasticsearch
+from tldextract import extract
 
 import constants
 from constants import REGISTRY
@@ -54,7 +54,12 @@ def make_url(language: str, package: str, version: str = "") -> str:
     match language:
         case "python":
             if version:
-                url_elements = (str(REGISTRY[language]["url"]), package, version, "json")
+                url_elements = (
+                    str(REGISTRY[language]["url"]),
+                    package,
+                    version,
+                    "json",
+                )
             else:
                 url_elements = (str(REGISTRY[language]["url"]), package, "json")
         case "javascript":
@@ -110,7 +115,9 @@ def make_single_request(
     result_list = []
     package_version = package
     if es is not None:
-        ESresult: dict[str, Any] = es.get(index=language, id=package_version, ignore=404)
+        ESresult: dict[str, Any] = es.get(
+            index=language, id=package_version, ignore=404
+        )
         if ESresult.get("found"):
             db_time = datetime.fromisoformat(
                 ESresult["_source"]["timestamp"],

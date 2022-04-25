@@ -4,7 +4,7 @@ import json
 import logging
 import os.path
 from pathlib import Path
-from typing import Dict, Optional, Union, Any, List
+from typing import Any, Dict, List, Optional, Union
 
 import typer
 
