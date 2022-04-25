@@ -4,8 +4,10 @@ import datetime
 import logging
 import re
 import time
+from typing import Iterable
 
 import github.GithubException
+from github.ContentFile import ContentFile
 
 import constants
 from dependencies.helper import Result, handle_dep_file, parse_license
@@ -61,29 +63,36 @@ def handle_github(
                 except github.GithubException:
                     commit_branch_tag = repo.default_branch
                     files = repo.get_contents("", commit_branch_tag)
-                files = [f.name for f in files]
+                if isinstance(files, Iterable):
+                    files_s = [str(f.name) for f in files]
+                else:
+                    files_s = []
 
                 if "pkg_lic" in retrievable_keys:
                     license_filename = "LICENSE"
-                    for f in files:
+                    for f in files_s:
                         if f in constants.LICENSE_FILES:
                             license_filename = f
                             break
                     try:
-                        lic_file = repo.get_contents(
+                        repo_file_content = repo.get_contents(
                             license_filename, ref=commit_branch_tag
-                        ).decoded_content.decode()
+                        )
+                        if isinstance(repo_file_content, ContentFile):
+                            lic_file = repo_file_content.decoded_content.decode()
+                        else:
+                            lic_file = ""
                     except github.GithubException:
                         lic_file = ""
                     repo_lic = parse_license(lic_file, constants.LICENSE_DICT)
-                    if repo_lic == "Other":
+                    if repo_lic[0] == "Other":
                         try:
                             if r_lic := repo.get_license():
-                                repo_lic = r_lic.license.name
+                                repo_lic = [r_lic.license.name]
                         except github.GithubException:
-                            repo_lic = "Other"
+                            repo_lic = ["Other"]
 
-                    result["pkg_lic"] = [repo_lic]
+                    result["pkg_lic"] = repo_lic
 
                 if "pkg_name" in retrievable_keys:
                     result["pkg_name"] = dependency
@@ -97,14 +106,18 @@ def handle_github(
                     result["pkg_ver"] = commit_branch_tag or releases[0]
 
                 req_files = constants.REQ_FILES[language]
-                for f in set(files).intersection(req_files):
+                for f in set(files_s).intersection(req_files):
                     req_filename = f
                     file_extension = req_filename.split(".")[-1]
                     if retrievable_keys := verify_run(language, result, file_extension):
                         try:
-                            dep_file = repo.get_contents(
+                            repo_file_content = repo.get_contents(
                                 req_filename, ref=commit_branch_tag
-                            ).decoded_content.decode()
+                            )
+                            if isinstance(repo_file_content, ContentFile):
+                                dep_file = repo_file_content.decoded_content.decode()
+                            else:
+                                dep_file = ""
                         except github.GithubException:
                             continue
                         dep_resp = handle_dep_file(req_filename, dep_file)

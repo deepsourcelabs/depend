@@ -102,7 +102,7 @@ def make_single_request(
     package: str,
     version: str = "",
     force_schema: bool = True,
-) -> Result | List[Result]:
+) -> dict | Result | List[Result]:
     """
     Obtain package license and dependency information.
     :param es: ElasticSearch Instance

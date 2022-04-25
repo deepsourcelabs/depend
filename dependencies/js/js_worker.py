@@ -78,7 +78,7 @@ def handle_json(req_file_data: str) -> Result:
     return filter_dict
 
 
-def handle_json_dep(filter_dict: dict, k: str, v: Any) -> None:
+def handle_json_dep(filter_dict: Result, k: str, v: Any) -> None:
     """
     Flattens variants of dependencies to uniform
     :param filter_dict: any dict or list
@@ -86,12 +86,12 @@ def handle_json_dep(filter_dict: dict, k: str, v: Any) -> None:
     :param v: associated value
     """
     if any(isinstance(i, dict) for i in v.values()):
-        filter_dict[k] = [i + ";" + v[i].get("version", "") for i in v.keys()]
+        filter_dict[k] = [i + ";" + v[i].get("version", "") for i in v.keys()]  # type: ignore
     else:
-        filter_dict[k] = [";".join(i) for i in v.items()]
+        filter_dict[k] = [";".join(i) for i in v.items()]  # type: ignore
 
 
-def flatten_content(filter_dict: dict, k: str, v: Any):
+def flatten_content(filter_dict: Result, k: str, v: Any):
     """
     Flattens a dict/list - used to handle deprecated formats
     :param filter_dict: any dict or list
@@ -99,12 +99,12 @@ def flatten_content(filter_dict: dict, k: str, v: Any):
     :param v: associated value
     """
     if isinstance(v, dict):
-        filter_dict[k] = ";".join(v.values())
+        filter_dict[k] = ";".join(v.values())  # type: ignore
     elif isinstance(v, list):
         if any(isinstance(i, dict) for i in v):
             temp_list = [";".join(s.values()) for s in v if isinstance(s, dict)]
-            filter_dict[k] = ";".join(temp_list)
+            filter_dict[k] = ";".join(temp_list)  # type: ignore
         else:
-            filter_dict[k] = ";".join(v)
+            filter_dict[k] = ";".join(v)  # type: ignore
     else:
-        filter_dict[k] = str(filter_dict[k])
+        filter_dict[k] = str(filter_dict[k])  # type: ignore

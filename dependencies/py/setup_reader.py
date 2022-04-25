@@ -11,6 +11,7 @@ from datetime import datetime
 from typing import Any, Iterable, List, Match, Optional, Union
 
 import github
+from github.ContentFile import ContentFile
 from poetry.core.semver import Version, exceptions
 from poetry.utils.setup_reader import SetupReader
 
@@ -93,10 +94,12 @@ class LaxSetupReader(SetupReader):
             repo = g.get_repo(repo_identifier.group(1) + "/" + repo_identifier.group(2))
             commit_branch_tag = repo_identifier.group(3) or repo.default_branch
             try:
-                dep_file = repo.get_contents(
-                    pkg_dep, ref=commit_branch_tag
-                ).decoded_content.decode()
-                res["pkg_dep"] = handle_requirements_txt(dep_file).get("pkg_dep", [])
+                repo_file_content = repo.get_contents(pkg_dep, ref=commit_branch_tag)
+                if isinstance(repo_file_content, ContentFile):
+                    dep_file = repo_file_content.decoded_content.decode()
+                    res["pkg_dep"] = handle_requirements_txt(dep_file).get(
+                        "pkg_dep", []
+                    )
             except github.GithubException as e:
                 logging.error(e)
         else:

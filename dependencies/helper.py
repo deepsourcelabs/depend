@@ -1,5 +1,6 @@
 """Helper Functions for Inspector."""
 import re
+from typing import List
 
 import jmespath
 import requests
@@ -14,7 +15,7 @@ from .py.py_helper import handle_requirements_txt
 from .py.py_worker import handle_otherpy, handle_setup_cfg, handle_setup_py, handle_toml
 
 
-def parse_license(license_file: str, license_dict: dict) -> str:
+def parse_license(license_file: str, license_dict: dict) -> List[str]:
     """
     Check license file content and return the possible license type.
     :param license_file: String containing license file content
@@ -24,7 +25,7 @@ def parse_license(license_file: str, license_dict: dict) -> str:
     licenses = [
         license_str for lic, license_str in license_dict.items() if lic in license_file
     ]
-    return ";".join(licenses) or "Other"
+    return licenses or ["Other"]
 
 
 def handle_dep_file(

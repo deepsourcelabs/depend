@@ -113,7 +113,7 @@ def test_make_single_request_py(es):
     assert result["pkg_name"] == "aiohttp"
     assert result["pkg_ver"] == "3.7.2"
     assert result["pkg_lic"][0] == "Apache 2"
-    assert result["pkg_dep"]
+    assert len(result["pkg_dep"]) != 0
 
 
 def test_make_single_request_js(es):
@@ -124,7 +124,7 @@ def test_make_single_request_js(es):
     assert result["pkg_name"] == "react"
     assert result["pkg_ver"] == "17.0.2"
     assert result["pkg_lic"][0] == "MIT"
-    assert result["pkg_dep"]
+    assert len(result["pkg_dep"]) != 0
 
 
 def test_make_single_request_go(es):
@@ -135,7 +135,7 @@ def test_make_single_request_go(es):
     assert result["pkg_name"] == "github.com/getsentry/sentry-go"
     assert result["pkg_ver"] == "v0.12.0"
     assert result["pkg_lic"][0] == "BSD-2-Clause"
-    assert result["pkg_dep"]
+    assert len(result["pkg_dep"]) != 0
 
 
 def test_make_single_request_go_redirect(es):
@@ -154,9 +154,8 @@ def test_make_single_request_go_github(es):
         es, "go", "https://github.com/go-yaml/yaml", force_schema=False
     )[0]
     assert result["pkg_name"] == "https://github.com/go-yaml/yaml"
-    assert result["pkg_ver"]
     assert result["pkg_lic"][0] == "Apache Software License"
-    assert result["pkg_dep"]
+    assert len(result["pkg_dep"]) != 0
 
 
 def test_make_multiple_requests(dependency_payload, es):
