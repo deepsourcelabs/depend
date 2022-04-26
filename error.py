@@ -10,7 +10,6 @@ class UnsupportedError(Exception):
     @abc.abstractmethod
     def __init__(self, msg):
         super().__init__(msg)
-        raise NotImplementedError
 
 
 class LanguageNotSupportedError(UnsupportedError):
