@@ -4,7 +4,7 @@ import logging
 import re
 import time
 from datetime import datetime
-from typing import Any, List, Tuple, Optional
+from typing import Any, List, Optional, Tuple
 
 import psycopg2
 import requests
