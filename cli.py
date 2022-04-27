@@ -1,25 +1,28 @@
 """CLI for murdock."""
 import json
+import logging
 import os.path
+import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
-import typer
-from error import LanguageNotSupportedError, VCSNotSupportedError
-from dependencies.helper import handle_dep_file, parse_dep_response
-from handle_env import get_db
-import logging
 
+import typer
+
+from dependencies.helper import handle_dep_file, parse_dep_response
+from error import LanguageNotSupportedError, VCSNotSupportedError
+from handle_env import get_db
 from inspector import make_multiple_requests
 
 app = typer.Typer(add_completion=False)
 
+
 @app.callback(invoke_without_command=True)
 def main(
-        lang: Optional[str] = typer.Option(None),
-        packages: Optional[str] = typer.Option(None),
-        dep_file: Optional[Path] = typer.Option(None),
-        db_name: Optional[str] = typer.Option(None),
-        deep_search: Optional[bool] = typer.Option(False),
+    lang: str = typer.Option(None),
+    packages: Optional[str] = typer.Option(None),
+    dep_file: Optional[Path] = typer.Option(None),
+    db_name: Optional[str] = typer.Option(None),
+    deep_search: Optional[bool] = typer.Option(False),
 ) -> List[Any]:
     """
     Dependency Inspector
@@ -48,10 +51,8 @@ def main(
         payload = {}
         if not dep_file.is_file():
             logging.error("Dependency file cannot be read")
-            raise typer.Exit(code=-1)
-        dep_content = handle_dep_file(
-            os.path.basename(dep_file), dep_file.read_text()
-        )
+            sys.exit(-1)
+        dep_content = handle_dep_file(os.path.basename(dep_file), dep_file.read_text())
         payload[lang] = dep_content.get("pkg_dep")
         result.append(parse_dep_response([dep_content]))
         if not deep_search:
@@ -64,7 +65,7 @@ def main(
     if psql := get_db():
         if not db_name:
             logging.error("Please specify DB Name!")
-            raise typer.Exit(code=-1)
+            sys.exit(-1)
         logging.info("Postgres DB connected")
     for language, dependencies in payload.items():
         if isinstance(dependencies, str):
@@ -77,20 +78,13 @@ def main(
             logging.error("Unknown Response")
         try:
             if dep_list:
-                result.extend(make_multiple_requests(
-                    psql, db_name, language, dep_list
-                ))
+                result.extend(make_multiple_requests(psql, db_name, language, dep_list))
 
-                logging.info(
-                    json.dumps(
-                        result,
-                        indent=3
-                    )
-                )
+                logging.info(json.dumps(result, indent=3))
                 return result
         except (LanguageNotSupportedError, VCSNotSupportedError) as e:
             logging.error(e.msg)
-            raise typer.Exit(code=-1)
+            sys.exit(-1)
     return []
 
 

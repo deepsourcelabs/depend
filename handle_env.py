@@ -4,10 +4,8 @@ import logging
 import os
 
 from dotenv import load_dotenv
-from psycopg2 import (
-    connect,
-    OperationalError
-)
+from github import Github
+from psycopg2 import OperationalError, connect
 
 load_dotenv()
 
@@ -24,7 +22,6 @@ def get_github():
     Returns an authenticated GitHub object if env variable is defined
     """
     return github_object
-
 
 
 def get_db():
@@ -44,8 +41,8 @@ def get_db():
                 dbname=DATABASE,
                 user=USERNAME,
                 password=PWD,
-                port=PORT_ID
+                port=PORT_ID,
             )
-        except OperationalError  as error:
+        except OperationalError as error:
             logging.error(error)
     return conn

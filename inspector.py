@@ -4,12 +4,13 @@ import logging
 import re
 import time
 from datetime import datetime
-from typing import Any, List, Tuple
+from typing import Any, List, Tuple, Optional
 
+import psycopg2
 import requests
 from tldextract import extract
 
-from constants import REGISTRY, CACHE_EXPIRY
+from constants import CACHE_EXPIRY, REGISTRY
 from db.postgres_worker import add_data, get_data, upd_data
 from dep_types import Result
 from dependencies.helper import (
@@ -97,12 +98,12 @@ def find_github(text: str) -> str:
 
 
 def make_single_request(
-        psql: any,
-        db_name: str,
-        language: str,
-        package: str,
-        version: str = "",
-        force_schema: bool = True
+    psql: Any,
+    db_name: Optional[str],
+    language: str,
+    package: str,
+    version: str = "",
+    force_schema: bool = True,
 ) -> dict | Result | List[Result]:
     """
     Obtain package license and dependency information.
@@ -115,15 +116,26 @@ def make_single_request(
     :return: result object with name version license and dependencies
     """
     result_list = []
+    result: Result = {
+        "import_name": "",
+        "lang_ver": [],
+        "pkg_name": package,
+        "pkg_ver": "",
+        "pkg_lic": ["Other"],
+        "pkg_err": {},
+        "pkg_dep": [],
+        "timestamp": datetime.utcnow().isoformat(),
+    }
     if not version:
         vers = []
         url = make_url(language, package, version)
-        response = requests.get(url)
         queries = REGISTRY[language]
         match language:
             case "python":
+                response = requests.get(url)
                 vers = py_versions(response, queries)
             case "javascript":
+                response = requests.get(url)
                 vers = js_versions(response, queries)
             case "go":
                 vers = go_versions(url, queries)
@@ -133,88 +145,76 @@ def make_single_request(
         vers = [""]
     for ver in vers:
         run_flag = "new"
-        if psql:
-            db_data = get_data(
-                psql,
-                db_name,
-                language,
-                package,
-                ver
-            )
+        if psql and db_name:
+            db_data = get_data(psql, db_name, language, package, ver)
             if db_data:
                 run_flag = "update"
-                db_time = datetime.strptime(
-                    db_data.timestamp,
-                    '%Y-%m-%d %H:%M:%S.%f'
-                )
-                if time.mktime(db_time.timetuple()) - \
-                        time.mktime(datetime.utcnow().timetuple()) < CACHE_EXPIRY:
+                db_time: datetime = db_data.timestamp
+                if (
+                    time.mktime(db_time.timetuple())
+                    - time.mktime(datetime.utcnow().timetuple())
+                    < CACHE_EXPIRY
+                ):
                     logging.info("Using " + package + " found in Postgres Database")
                     return db_data
-        url = make_url(language, package, ver)
-        logging.info(url)
-        response = requests.get(url)
-        queries = REGISTRY[language]
-
-        result: Result = {
-            "import_name": "",
-            "lang_ver": [],
-            "pkg_name": package,
-            "pkg_ver": "",
-            "pkg_lic": ["Other"],
-            "pkg_err": {},
-            "pkg_dep": [],
-            "timestamp": datetime.utcnow().isoformat(),
-        }
-        repo = ""
-        match language:
-            case "python":
-                repo = handle_pypi(response, queries, result)
-            case "javascript":
-                repo = handle_npmjs(response, queries, result)
-            case "go":
-                if response.status_code == 200:
-                    # Handle 302: Redirection
-                    if response.history:
-                        red_url = response.url + "@" + version
-                        response = requests.get(red_url)
-                    scrape_go(response, queries, result, url)
-                else:
-                    repo = package
-        supported_domains = [
-            "github",
-        ]
-        if repo:
-            if extract(str(repo)).domain not in supported_domains:
-                repo = find_github(response.text)
+        if "||" in version:
+            git_url, git_branch = version.split("||")
+            handle_vcs(language, git_url + "/tree/" + git_branch, result)
+        else:
+            url = make_url(language, package, ver)
+            logging.info(url)
+            response = requests.get(url)
+            queries = REGISTRY[language]
+            repo = ""
+            match language:
+                case "python":
+                    repo = handle_pypi(response, queries, result)
+                case "javascript":
+                    repo = handle_npmjs(response, queries, result)
+                case "go":
+                    if response.status_code == 200:
+                        # Handle 302: Redirection
+                        if response.history:
+                            red_url = response.url + "@" + version
+                            response = requests.get(red_url)
+                        scrape_go(response, queries, result, url)
+                    else:
+                        repo = package
+            supported_domains = [
+                "github.com",
+            ]
             if repo:
-                handle_vcs(language, repo, result)
-        if psql:
+                c_domain = extract(str(repo)).domain + "." + extract(str(repo)).suffix
+                if c_domain not in supported_domains or extract(str(repo)).subdomain:
+                    repo = find_github(response.text)
+                if repo:
+                    handle_vcs(language, repo, result)
+        if psql and db_name:
             if run_flag == "new":
                 add_data(
                     psql,
                     db_name,
                     language,
-                    result.get("pkg_name"),
-                    result.get("pkg_ver"),
-                    result.get("import_name"),
-                    result.get("lang_ver"),
-                    result.get("pkg_lic"),
-                    result.get("pkg_err"),
-                    result.get("pkg_dep"),
+                    result.get("pkg_name", ""),
+                    result.get("pkg_ver", ""),
+                    result.get("import_name", ""),
+                    result.get("lang_ver", []),
+                    result.get("pkg_lic", []),
+                    result.get("pkg_err", {}),
+                    result.get("pkg_dep", []),
                 )
             else:
                 upd_data(
                     psql,
                     db_name,
                     language,
-                    result.get("pkg_name"),
-                    result.get("pkg_ver"),
-                    result.get("import_name"),
-                    result.get("lang_ver"),
-                    result.get("pkg_lic"),
-                    result.get("pkg_err"),
-                    result.get("pkg_dep"),
+                    result.get("pkg_name", ""),
+                    result.get("pkg_ver", ""),
+                    result.get("import_name", ""),
+                    result.get("lang_ver", []),
+                    result.get("pkg_lic", []),
+                    result.get("pkg_err", {}),
+                    result.get("pkg_dep", []),
                 )
         result_list.append(result)
     if force_schema:
@@ -224,10 +224,10 @@ def make_single_request(
 
 
 def make_multiple_requests(
-        psql: any,
-        db_name: str,
-        language: str,
-        packages: List[str],
+    psql: Any,
+    db_name: Optional[str],
+    language: str,
+    packages: List[str],
 ) -> List[Any]:
     """
     Obtain license and dependency information for list of packages.
@@ -242,9 +242,7 @@ def make_multiple_requests(
     for package in packages:
         name_ver = (package[0] + package[1:].replace("@", ";")).rsplit(";", 1)
         if len(name_ver) == 1:
-            dep_resp = make_single_request(
-                psql, db_name, language, package
-            )
+            dep_resp = make_single_request(psql, db_name, language, package)
         else:
             dep_resp = make_single_request(
                 psql, db_name, language, name_ver[0], name_ver[1]
