@@ -6,7 +6,6 @@ import time
 from datetime import datetime
 from typing import Any, List, Tuple, Optional
 
-import psycopg2
 import requests
 from tldextract import extract
 
