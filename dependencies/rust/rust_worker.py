@@ -17,7 +17,7 @@ def handle_toml(file_data: str) -> dict:
         "pkg_lic": ["Other"],
         "pkg_err": {},
         "pkg_dep": [],
-        'timestamp': datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
     }
     toml_parsed = dict(toml.loads(file_data))
     package_data = toml_parsed.get("package")
@@ -26,21 +26,18 @@ def handle_toml(file_data: str) -> dict:
         # https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html
         # ignores tilde, wildcard, comparison, multiple - TODO with python
         if isinstance(spec, str):
-            res["pkg_dep"].append(
-                ir + ";" + spec.split(",")[0]
-            )
+            res["pkg_dep"].append(ir + ";" + spec.split(",")[0])
         elif isinstance(spec, dict):
-            if git_url:=spec.get("git", None):
-                git_branch = git_url +"||"+ spec.get("branch", "")
-                res["pkg_dep"].append(
-                    ir + ";" + git_branch
-                )
+            if git_url := spec.get("git", None):
+                git_branch = git_url + "||" + spec.get("branch", "")
+                res["pkg_dep"].append(ir + ";" + git_branch)
     res["pkg_name"] = package_data.get("name", "")
     res["pkg_ver"] = package_data.get("version", "")
     res["pkg_lic"] = [package_data.get("license", "Other")]
     return res
 
-def handle_lock(file_data: str)->dict:
+
+def handle_lock(file_data: str) -> dict:
     """
     Parses conda.yml tox.ini and Pipfiles
     this function returns only dependencies
@@ -53,13 +50,10 @@ def handle_lock(file_data: str)->dict:
         "pkg_lic": ["Other"],
         "pkg_err": {},
         "pkg_dep": [],
-        'timestamp': datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
     }
     regex = re.compile(r'name = \"([^"]+)\"[\n\r]version = \"([^"]+)\"', re.MULTILINE)
     matches = [m.groups() for m in regex.finditer(file_data)]
     for name, specs in matches:
-        res["pkg_dep"].append(
-            name + ";" + str(specs)
-        )
+        res["pkg_dep"].append(name + ";" + str(specs))
     return res
-

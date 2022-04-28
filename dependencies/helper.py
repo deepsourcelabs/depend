@@ -51,9 +51,9 @@ def handle_dep_file(
             if file_name == "Cargo.lock":
                 return handle_lock(file_content)
             return handle_yarn_lock(file_content)
-        case 'txt':
+        case "txt":
             return handle_requirements_txt(file_content)
-        case 'toml':
+        case "toml":
             if file_name == "Cargo.toml":
                 return handle_toml(file_content)
             return handle_toml(file_content)
@@ -146,7 +146,9 @@ def handle_npmjs(api_response: requests.Response, queries: dict, result: Result)
     return repo
 
 
-def handle_rust(api_response: requests.Response, queries: dict, result: Result, url: str):
+def handle_rust(
+    api_response: requests.Response, queries: dict, result: Result, url: str
+):
     """
     Take api response and return required results object
     :param api_response: response from requests get
@@ -156,17 +158,17 @@ def handle_rust(api_response: requests.Response, queries: dict, result: Result, 
     """
     dep_url = url + "/dependencies"
     dep_res = requests.get(dep_url)
-    version_q: jmespath.parser.ParsedResult = queries['version']
-    license_q: jmespath.parser.ParsedResult = queries['license']
-    dependencies_q: jmespath.parser.ParsedResult = queries['dependency']
+    version_q: jmespath.parser.ParsedResult = queries["version"]
+    license_q: jmespath.parser.ParsedResult = queries["license"]
+    dependencies_q: jmespath.parser.ParsedResult = queries["dependency"]
     if api_response.status_code == 404 or dep_res.status_code == 404:
         return ""
     data = api_response.json()
     dep = dep_res.json()
-    result['pkg_ver'] = version_q.search(data) or ""
-    result['pkg_lic'] = [license_q.search(data) or "Other"]
+    result["pkg_ver"] = version_q.search(data) or ""
+    result["pkg_lic"] = [license_q.search(data) or "Other"]
     req_file_data = dependencies_q.search(dep) or []
-    result['pkg_dep'] = req_file_data
+    result["pkg_dep"] = req_file_data
 
 
 def scrape_go(response: requests.Response, queries: dict, result: Result, url: str):
@@ -233,7 +235,7 @@ def rust_versions(api_response: requests.Response, queries: dict) -> list:
     if api_response.status_code == 404:
         return []
     data = api_response.json()
-    versions_q: jmespath.parser.ParsedResult = queries['versions']
+    versions_q: jmespath.parser.ParsedResult = queries["versions"]
     versions = versions_q.search(data)
     if not versions:
         return []
@@ -250,7 +252,7 @@ def js_versions(api_response: requests.Response, queries: dict) -> list:
     if api_response.status_code == 404:
         return []
     data = api_response.json()
-    versions_q: jmespath.parser.ParsedResult = queries['versions']
+    versions_q: jmespath.parser.ParsedResult = queries["versions"]
     versions = versions_q.search(data)
     if not versions:
         return []
@@ -267,7 +269,7 @@ def py_versions(api_response: requests.Response, queries: dict) -> list:
     if api_response.status_code == 404:
         return []
     data = api_response.json()
-    versions_q: jmespath.parser.ParsedResult = queries['versions']
+    versions_q: jmespath.parser.ParsedResult = queries["versions"]
     versions = versions_q.search(data)
     if not versions:
         return []

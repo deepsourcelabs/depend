@@ -19,8 +19,8 @@ from dependencies.helper import (
     handle_rust,
     js_versions,
     parse_dep_response,
-    rust_versions,
     py_versions,
+    rust_versions,
     scrape_go,
 )
 from error import LanguageNotSupportedError, VCSNotSupportedError
@@ -76,9 +76,9 @@ def make_url(language: str, package: str, version: str = "") -> str:
                 url_elements = (str(REGISTRY[language]["url"]), package)
         case "rust":
             if version:
-                url_elements = (REGISTRY[language]['url'], package, version)
+                url_elements = (REGISTRY[language]["url"], package, version)
             else:
-                url_elements = (REGISTRY[language]['url'], package, "versions")
+                url_elements = (REGISTRY[language]["url"], package, "versions")
         case _:
             raise LanguageNotSupportedError(language)
     return "/".join(url_elements).rstrip("/")
@@ -123,14 +123,14 @@ def make_single_request(
     """
     result_list = []
     result: Result = {
-        'import_name': '',
-        'lang_ver': [],
-        'pkg_name': package,
-        'pkg_ver': '',
-        'pkg_lic': ["Other"],
-        'pkg_err': {},
-        'pkg_dep': [],
-        'timestamp': datetime.utcnow().isoformat()
+        "import_name": "",
+        "lang_ver": [],
+        "pkg_name": package,
+        "pkg_ver": "",
+        "pkg_lic": ["Other"],
+        "pkg_err": {},
+        "pkg_dep": [],
+        "timestamp": datetime.utcnow().isoformat(),
     }
     if not version:
         vers = []
