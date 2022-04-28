@@ -139,7 +139,7 @@ def test_cargo_toml(json_schema):
     """Check poetry toml file output"""
     with open("tests/data/example_cargo.toml") as f:
         rust_project = f.read()
-    result = dependencies.rust.rust_worker.handle_toml(rust_project)
+    result = dependencies.rust.rust_worker.handle_c_toml(rust_project)
     assert json_schema.is_valid(result)
 
 
