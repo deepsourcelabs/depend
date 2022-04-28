@@ -20,7 +20,7 @@ def handle_c_json(req_file_data: str) -> Result:
         "pkg_name": package_data.get("name", ""),
         "pkg_ver": package_data.get("version", ""),
         "pkg_lic": package_data.get("license", "Other").split(","),
-        "pkg_dep": [key+";"+value for (key, value) in dep_data.items()],
+        "pkg_dep": [key + ";" + value for (key, value) in dep_data.items()],
         "pkg_err": {},
         "timestamp": datetime.utcnow().isoformat(),
     }

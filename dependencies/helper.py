@@ -173,6 +173,7 @@ def handle_rust(
     req_file_data = dependencies_q.search(dep) or []
     result["pkg_dep"] = req_file_data
 
+
 def handle_php(
     api_response: requests.Response, queries: dict, result: Result, ver: str
 ):
@@ -192,7 +193,7 @@ def handle_php(
     dep_data = ver_data.get(queries["dependency_key"], {})
     lang_ver = dep_data.pop("php", "")
     result["lang_ver"] = lang_ver
-    result["pkg_dep"] = [key+";"+value for (key, value) in dep_data.items()]
+    result["pkg_dep"] = [key + ";" + value for (key, value) in dep_data.items()]
 
 
 def scrape_go(response: requests.Response, queries: dict, result: Result, url: str):

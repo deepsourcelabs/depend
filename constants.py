@@ -57,7 +57,7 @@ REGISTRY = {
         "ver_data": jc("package.versions"),
         "license_key": "license",
         "dependency_key": "require",
-    }
+    },
 }
 LICENSE_FILES = [
     "LICENSE",
@@ -97,7 +97,7 @@ REQ_FILES = {
     ],
     "go": ["go.mod"],
     "rust": ["Cargo.toml", "Cargo.lock"],
-    "php": ["composer.json"]
+    "php": ["composer.json"],
 }
 LICENSE_DICT = {
     "AFL": "Academic Free License",

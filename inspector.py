@@ -15,13 +15,13 @@ from dep_types import Result
 from dependencies.helper import (
     go_versions,
     handle_npmjs,
+    handle_php,
     handle_pypi,
     handle_rust,
-    handle_php,
     js_versions,
     parse_dep_response,
-    py_versions,
     php_versions,
+    py_versions,
     rust_versions,
     scrape_go,
 )
