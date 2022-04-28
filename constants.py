@@ -2,12 +2,12 @@
 from jmespath import compile as jc
 
 CACHE_EXPIRY = 1800.0
-REGISTRY: dict = {
+REGISTRY = {
     "python": {
         "registry": "PyPI",
         "url": "https://pypi.org/pypi",
         "name": jc("info.name"),
-        "versions": 'releases."{}"',
+        "versions": jc("releases.keys(@)"),
         "version": jc("info.version"),
         "license": jc("info.license"),
         "dependency": jc("info.requires_dist"),
@@ -18,7 +18,7 @@ REGISTRY: dict = {
         "url": "https://registry.npmjs.org",
         "name": jc("name"),
         "latest": jc('"dist-tags".latest'),
-        "versions": 'versions."{}"',
+        "versions": jc("versions.keys(@)"),
         "version": jc("version"),
         "license": jc("[license,licenses|[?type!=null].type][]"),
         "dependency": jc("dependencies||__dependencies"),
@@ -34,6 +34,22 @@ REGISTRY: dict = {
         "license": "License",
         "dependency": "dependencies",
     },
+    "java": {
+        "registry": "maven",
+        "url": "https://search.maven.org/solrsearch/select?q=",
+        "g": jc("response.docs[0].g"),
+        "a": jc("response.docs[0].a"),
+        "v": jc("response.docs[0].v"),
+        "versions": jc("response.docs[*].v"),
+    },
+    "rust": {
+        "url": "https://crates.io/api/v1/crates",
+        "name": jc("version.crate"),
+        "versions": jc("versions[].num"),
+        "version": jc("version.num"),
+        "license": jc("version.license"),
+        "dependency": jc("dependencies[]|[].join(`;`, [crate_id, req])"),
+    },
 }
 LICENSE_FILES = [
     "LICENSE",
@@ -41,8 +57,7 @@ LICENSE_FILES = [
     "LICENSE.txt",
     "COPYRIGHT",
     "COPYING",
-    "COPYING.md",
-    "LICENSE.textile",
+    "COPYING.md" "LICENSE.textile",
     "COPYING.textile",
     "LICENSE-MIT",
     "COPYING-MIT",
@@ -74,7 +89,7 @@ REQ_FILES = {
     ],
     "go": ["go.mod"],
 }
-LICENSE_DICT: dict = {
+LICENSE_DICT = {
     "AFL": "Academic Free License",
     "Apache": "Apache Software License",
     "Apple": "Apple Public Source License",
@@ -139,7 +154,7 @@ LICENSE_DICT: dict = {
     "zlib Licenqs": "zlib License",
     "Zope": "Zope Public License",
 }
-DEP_FIELDS_MISSED: dict = {
+DEP_FIELDS_MISSED = {
     "go": {
         "mod": ["import_name", "pkg_lic"],
     },
