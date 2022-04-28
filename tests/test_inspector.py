@@ -197,3 +197,19 @@ def test_unsupported_repo(result_payload):
     """Checks if missing dependency or requirement files are handled"""
     inspector.handle_github("go", "https://github.com/rust-lang/cargo", result_payload)
     assert result_payload["pkg_lic"] == ["Other"]
+
+
+def test_make_single_request_php(psql):
+    """Test version and license for javascript"""
+    result = inspector.make_single_request(
+        psql, "murdock", "php", "folospace/socketio", force_schema=False
+    )[0]
+    assert result["pkg_dep"]
+
+
+def test_make_single_request_php_ver(psql):
+    """Test version and license for javascript"""
+    result = inspector.make_single_request(
+        psql, "murdock", "php", "ajgarlag/psr15-dispatcher", "0.4.1", force_schema=False
+    )[0]
+    assert result["pkg_dep"]
