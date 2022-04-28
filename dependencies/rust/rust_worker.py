@@ -5,7 +5,7 @@ from datetime import datetime
 import toml
 
 
-def handle_toml(file_data: str) -> dict:
+def handle_c_toml(file_data: str) -> dict:
     """
     Parse pyproject or poetry toml files and return required keys
     :param file_data: content of toml

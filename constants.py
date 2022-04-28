@@ -88,6 +88,10 @@ REQ_FILES = {
         "yarn.lock",
     ],
     "go": ["go.mod"],
+    "rust": [
+        "Cargo.toml",
+        "Cargo.lock"
+    ]
 }
 LICENSE_DICT = {
     "AFL": "Academic Free License",
