@@ -5,13 +5,15 @@ import platform
 from ctypes import c_char_p, c_void_p, cdll, string_at
 
 match platform.system():
+    case "Darwin":
+        lib_go = cdll.LoadLibrary("dependencies/go/darwin/libgomod.dylib")
     case "Linux":
-        lib_go = cdll.LoadLibrary("dependencies/go/linux/_gomod.so")
+        lib_go = cdll.LoadLibrary("dependencies/go/linux/libgomod.so")
     case "Windows":
-        lib_go = cdll.LoadLibrary("dependencies/go/win32/_gomod.so")
+        lib_go = cdll.LoadLibrary("dependencies/go/win64/_gomod.dll")
     case _:
         lib_go = None
-        logging.error("Not compiled for Darwin")
+        logging.error("Not supported on current platform")
 
 getDepVer = lib_go.getDepVer
 getDepVer.argtypes = [c_char_p]
