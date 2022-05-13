@@ -2,13 +2,15 @@
 
 import configparser
 from datetime import datetime
+from typing import Optional
 
 import pytest
+from elasticsearch import Elasticsearch
 
 import inspector
 from db.elastic_worker import connect_elasticsearch
+from dependencies.dep_types import Result
 from error import LanguageNotSupportedError, VCSNotSupportedError
-from helper import Result
 
 
 @pytest.fixture
@@ -30,7 +32,7 @@ def es():
 
 
 @pytest.fixture(autouse=True)
-def skip_by_status(request: pytest.FixtureRequest, es: any):
+def skip_by_status(request: pytest.FixtureRequest, es: Optional[Elasticsearch]):
     """
     :param request: pytest request
     :param es: database object
@@ -49,7 +51,7 @@ def dependency_payload():
     :return: List of dependencies with language as key
     """
     return {
-        "javascript": ["react@0.12.0", "react@17.0.2", "jQuery@1.7.4", "jQuery"],
+        "javascript": ["react;0.12.0", "react;17.0.2", "jQuery;1.7.4", "jQuery"],
         "python": ["pygithub"],
         "go": [
             "https://github.com/go-yaml/yaml",
@@ -66,10 +68,13 @@ def result_payload():
     :return: Result object to manipulate
     """
     result: Result = {
-        "name": "",
-        "version": "",
-        "license": "",
-        "dependencies": [],
+        "import_name": "",
+        "lang_ver": [],
+        "pkg_name": "",
+        "pkg_ver": "",
+        "pkg_lic": ["Other"],
+        "pkg_err": {},
+        "pkg_dep": [],
         "timestamp": datetime.utcnow().isoformat(),
     }
     return result
@@ -102,52 +107,55 @@ def test_make_url_without_version():
 
 def test_make_single_request_py(es):
     """Test version and license for python"""
-    result = inspector.make_single_request(es, "python", "aiohttp", "3.7.2")
-    assert result["name"] == "aiohttp"
-    assert result["version"] == "3.7.2"
-    assert result["license"] == "Apache 2"
-    assert result["dependencies"]
+    result = inspector.make_single_request(
+        es, "python", "aiohttp", "3.7.2", force_schema=False
+    )[0]
+    assert result["pkg_name"] == "aiohttp"
+    assert result["pkg_ver"] == "3.7.2"
+    assert result["pkg_lic"][0] == "Apache 2"
+    assert len(result["pkg_dep"]) != 0
 
 
 def test_make_single_request_js(es):
     """Test version and license for javascript"""
-    result = inspector.make_single_request(es, "javascript", "react", "17.0.2")
-    assert result["name"] == "react"
-    assert result["version"] == "17.0.2"
-    assert result["license"] == "MIT"
-    assert result["dependencies"]
+    result = inspector.make_single_request(
+        es, "javascript", "react", "17.0.2", force_schema=False
+    )[0]
+    assert result["pkg_name"] == "react"
+    assert result["pkg_ver"] == "17.0.2"
+    assert result["pkg_lic"][0] == "MIT"
+    assert len(result["pkg_dep"]) != 0
 
 
 def test_make_single_request_go(es):
     """Test version and license for go"""
     result = inspector.make_single_request(
-        es, "go", "github.com/getsentry/sentry-go", "v0.12.0"
-    )
-    assert result["name"] == "github.com/getsentry/sentry-go"
-    assert result["version"] == "v0.12.0"
-    assert result["license"] == "BSD-2-Clause"
-    assert result["dependencies"]
+        es, "go", "github.com/getsentry/sentry-go", "v0.12.0", force_schema=False
+    )[0]
+    assert result["pkg_name"] == "github.com/getsentry/sentry-go"
+    assert result["pkg_ver"] == "v0.12.0"
+    assert result["pkg_lic"][0] == "BSD-2-Clause"
+    assert len(result["pkg_dep"]) != 0
 
 
 def test_make_single_request_go_redirect(es):
     """Test version and license for go on redirects"""
-    result = inspector.make_single_request(es, "go", "http", "go1.16.13")
-    assert result["name"] == "http"
-    assert result["version"] == "go1.16.13"
-    assert result["license"] == "BSD-3-Clause"
+    result = inspector.make_single_request(
+        es, "go", "http", "go1.16.13", force_schema=False
+    )[0]
+    assert result["pkg_name"] == "http"
+    assert result["pkg_ver"] == "go1.16.13"
+    assert result["pkg_lic"][0] == "BSD-3-Clause"
 
 
 def test_make_single_request_go_github(es):
     """Test version and license for go GitHub fallthrough"""
     result = inspector.make_single_request(
-        es,
-        "go",
-        "https://github.com/go-yaml/yaml",
-    )
-    assert result["name"] == "https://github.com/go-yaml/yaml"
-    assert result["version"]
-    assert result["license"] == "Apache Software License"
-    assert result["dependencies"]
+        es, "go", "https://github.com/go-yaml/yaml", force_schema=False
+    )[0]
+    assert result["pkg_name"] == "https://github.com/go-yaml/yaml"
+    assert result["pkg_lic"][0] == "Apache Software License"
+    assert len(result["pkg_dep"]) != 0
 
 
 def test_make_multiple_requests(dependency_payload, es):
@@ -161,8 +169,8 @@ def test_make_multiple_requests(dependency_payload, es):
 
 def test_make_vcs_request(result_payload):
     """Test VCS handler"""
-    inspector.handle_vcs("github.com/getsentry/sentry-go", result_payload)
-    assert result_payload["license"] == 'BSD 2-Clause "Simplified" License'
+    inspector.handle_vcs("go", "github.com/getsentry/sentry-go", result_payload)
+    assert result_payload["pkg_lic"] == ['BSD 2-Clause "Simplified" License']
 
 
 def test_unsupported_language_fails():
@@ -174,11 +182,10 @@ def test_unsupported_language_fails():
 def test_unsupported_vcs_fails(result_payload):
     """Checks if exception is raised for unsupported pattern"""
     with pytest.raises(VCSNotSupportedError, match="gitlab"):
-        inspector.handle_vcs("gitlab.com/secmask/awserver", result_payload)
+        inspector.handle_vcs("go", "gitlab.com/secmask/awserver", result_payload)
 
 
 def test_unsupported_repo(result_payload):
     """Checks if missing dependency or requirement files are handled"""
-    inspector.handle_github("https://github.com/rust-lang/cargo", result_payload, None)
-    assert result_payload["license"] == "Other"
-    assert not result_payload["dependencies"]
+    inspector.handle_github("go", "https://github.com/rust-lang/cargo", result_payload)
+    assert result_payload["pkg_lic"] == ["Other"]

@@ -1,13 +1,15 @@
-"""CLI for dependency-inspector."""
+"""CLI for murdock."""
 import configparser
 import json
 import logging
+import os.path
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, List, Optional, Union
 
 import typer
 
 from db.elastic_worker import connect_elasticsearch
+from dependencies.helper import handle_dep_file, parse_dep_response
 from error import LanguageNotSupportedError, VCSNotSupportedError
 from inspector import make_multiple_requests
 
@@ -17,15 +19,16 @@ configfile = configparser.ConfigParser()
 
 @app.callback(invoke_without_command=True)
 def main(
-    lang: Optional[str] = typer.Option(None),
+    lang: str = typer.Option(None),
     packages: Optional[str] = typer.Option(None),
+    dep_file: Optional[Path] = typer.Option(None),
+    deep_search: Optional[bool] = typer.Option(False),
     config: Optional[Path] = typer.Option(None),
-    gh_token: Optional[str] = typer.Option(None),
     host: Optional[str] = typer.Option(None),
     port: Optional[int] = typer.Option(None),
     es_uid: Optional[str] = typer.Option(None),
     es_pass: Optional[str] = typer.Option(None),
-):
+) -> List[Any]:
     """
     Dependency Inspector
 
@@ -40,6 +43,10 @@ def main(
 
     :param packages: list of packages to check
 
+    :param dep_file: location of file to parse for packages
+
+    :param deep_search: when true populating all fields is attempted
+
     :param config: Specify location of a .ini file | refer config.ini sample
 
     :param host: Host info for Elastic server
@@ -50,45 +57,56 @@ def main(
 
     :param es_pass: Password to authenticate Elastic
 
-    :param gh_token: GitHub token to authorize VCS and bypass rate limit
     """
-    payload = {}
+    payload: Dict[str, Union[None, str, list[str]]] = {}
+    result: List[Any] = []
     if config is not None:
         if not config.is_file():
             logging.error("Configuration file not found")
             raise typer.Exit(code=-1)
         configfile.read(config)
-        es_uid = es_uid or configfile.get("secrets", "es_uid", fallback=None)
-        es_pass = es_pass or configfile.get("secrets", "es_pass", fallback=None)
-        gh_token = gh_token or configfile.get("secrets", "gh_token", fallback=None)
         if not configfile.has_section("dependencies"):
             logging.error("dependencies section missing from config file")
             raise typer.Exit(code=-1)
-        payload = configfile["dependencies"]
-    else:
-        if lang not in ["go", "python", "javascript"]:
-            logging.error("Please specify a supported language!")
+        payload = dict(configfile["dependencies"])
+    if dep_file is not None:
+        payload = {}
+        if not dep_file.is_file():
+            logging.error("Dependency file cannot be read")
             raise typer.Exit(code=-1)
+        dep_content = handle_dep_file(os.path.basename(dep_file), dep_file.read_text())
+        payload[lang] = dep_content.get("pkg_dep")
+        result.append(parse_dep_response([dep_content]))
+        if not deep_search:
+            logging.info(result)
+            return result
+    else:
         payload[lang] = packages
+    if lang not in ["go", "python", "javascript"]:
+        raise LanguageNotSupportedError(lang)
     if host and port:
         es = connect_elasticsearch({"host": host, "port": port}, (es_uid, es_pass))
     else:
         logging.warning("Elastic not connected")
         es = None
     for language, dependencies in payload.items():
-        dep_list = dependencies.replace(",", "\n").split("\n")
-        dep_list = list(filter(None, dep_list))
+        if isinstance(dependencies, str):
+            dep_list = dependencies.replace(",", "\n").split("\n")
+            dep_list = list(filter(None, dep_list))
+        elif isinstance(dependencies, list):
+            dep_list = dependencies
+        else:
+            dep_list = []
+            logging.error("Unknown Response")
         try:
             if dep_list:
-                logging.info(
-                    json.dumps(
-                        make_multiple_requests(es, language, dep_list, gh_token),
-                        indent=3,
-                    )
-                )
+                result.extend(make_multiple_requests(es, language, dep_list))
+                logging.info(json.dumps(result, indent=3))
+                return result
         except (LanguageNotSupportedError, VCSNotSupportedError) as e:
             logging.error(e.msg)
             raise typer.Exit(code=-1)
+    return []
 
 
 if __name__ == "__main__":
