@@ -2,7 +2,11 @@
 import json
 import logging
 import platform
+import sys
 from ctypes import c_char_p, c_void_p, cdll, string_at
+from datetime import datetime
+
+from dep_types import Result
 
 match platform.system():
     case "Linux":
@@ -10,8 +14,8 @@ match platform.system():
     case "Windows":
         lib_go = cdll.LoadLibrary("dependencies/go/win32/_gomod.so")
     case _:
-        lib_go = None
         logging.error("Not compiled for Darwin")
+        sys.exit(-1)
 
 getDepVer = lib_go.getDepVer
 getDepVer.argtypes = [c_char_p]
@@ -20,15 +24,37 @@ free = lib_go.freeCByte
 free.argtypes = [c_void_p]
 
 
-def handle_go_mod(req_file_data: str) -> dict:
+def handle_go_mod(req_file_data: str) -> Result:
     """
     Parse go.mod file
     :param req_file_data: Content of go.mod
     :return: list of requirement and specs
     """
-    ptr = getDepVer(
-        req_file_data.encode('utf-8')
-    )
-    out = string_at(ptr).decode('utf-8')
+    res: Result = {
+        "import_name": "",
+        "lang_ver": [],
+        "pkg_name": "",
+        "pkg_ver": "",
+        "pkg_lic": ["Other"],
+        "pkg_err": {},
+        "pkg_dep": [],
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+    ptr = getDepVer(req_file_data.encode("utf-8"))
+    out = string_at(ptr).decode("utf-8")
     free(ptr)
-    return json.loads(out)
+    d = json.loads(out)
+    m = {
+        "Min_go_ver": "lang_ver",
+        "ModPath": "pkg_name",
+        "ModVer": "pkg_ver",
+        "Dep_ver": "pkg_dep",
+    }
+    for k in d:
+        if k in m:
+            if k == "Min_go_ver":
+                res[m[k]] = d[k].split(",")  # type: ignore
+            else:
+                res[m[k]] = d[k]  # type: ignore
+    res["timestamp"] = datetime.utcnow().isoformat()
+    return res

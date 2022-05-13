@@ -1,31 +1,26 @@
 """Functions to handle Python dependency files."""
+from datetime import datetime
+
+import dparse2
 import toml
 from pkg_resources import parse_requirements
 
-from dependencies.py.setup_reader import LaxSetupReader
+from dep_types import Result
+
+from .setup_reader import LaxSetupReader, handle_classifiers
 
 
-def handle_requirements_txt(req_file_data: str) -> dict:
-    """
-    Parse requirements file
-    :param req_file_data: Content of requirements.txt
-    :return: list of requirement and specs
-    """
-    install_reqs = parse_requirements(req_file_data)
-    return {"dependencies": {ir.key: ir.specs for ir in install_reqs}}
-
-
-def handle_setup_py(req_file_data: str) -> dict:
+def handle_setup_py(req_file_data: str) -> Result:
     """
     Parse setup.py
     :param req_file_data: Content of setup.py
     :return: dict containing dependency info and specs
     """
     parser = LaxSetupReader()
-    return parser.read_setup_py(req_file_data)
+    return parser.auth_read_setup_py(req_file_data)
 
 
-def handle_setup_cfg(req_file_data: str) -> dict:
+def handle_setup_cfg(req_file_data: str) -> Result:
     """
     Parse setup.py
     :param req_file_data: Content of setup.py
@@ -35,23 +30,69 @@ def handle_setup_cfg(req_file_data: str) -> dict:
     return parser.read_setup_cfg(req_file_data)
 
 
-def handle_toml(file_data: str) -> dict:
+def handle_toml(file_data: str) -> Result:
     """
     Parse pyproject or poetry toml files and return required keys
     :param file_data: content of toml
     """
+    res: Result = {
+        "import_name": "",
+        "lang_ver": [],
+        "pkg_name": "",
+        "pkg_ver": "",
+        "pkg_lic": ["Other"],
+        "pkg_err": {},
+        "pkg_dep": [],
+        "timestamp": datetime.utcnow().isoformat(),
+    }
     toml_parsed = dict(toml.loads(file_data))
     package_data = toml_parsed.get("package")
     if not package_data:
-        package_data = toml_parsed.get("tool.poetry", {})
-        package_dep = package_data.get("tool.poetry.dependencies", [])
+        package_data = toml_parsed.get("tool", {}).get("poetry", {})
+        # 'es-core-news-sm', {'url': ''} ignored
+        package_dep = [
+            ";".join(dep)
+            for dep in package_data.get("dependencies", {}).items()
+            if isinstance(dep[-1], str)
+        ]
+        res["pkg_dep"] = package_dep
     else:
         package_dep = package_data.get("dependencies")
-    return {
-        "name": package_data.get("name"),
-        "version": package_data.get("version"),
-        "license": package_data.get("license"),
-        "classifiers": package_data.get("classifiers"),
-        # get python version info from python = ...
-        "dependencies": package_dep,
+        if isinstance(package_dep, dict):
+            res["pkg_dep"] = []
+        else:
+            install_reqs = parse_requirements("\n".join(package_dep))
+            for ir in install_reqs:
+                for spec in ir.specs:
+                    res["pkg_dep"].append(
+                        str(ir.key) + ";" + str(spec[1]) + ";" + str(spec[0])
+                    )
+    res["pkg_name"] = package_data.get("name", "")
+    res["pkg_ver"] = package_data.get("version", "")
+    res["pkg_lic"] = [package_data.get("license", "Other")]
+    classifiers = "\n".join(package_data.get("classifiers", []))
+    if classifiers:
+        handle_classifiers(classifiers, res)
+    return res
+
+
+def handle_otherpy(file_data: str, file_name: str) -> Result:
+    """
+    Parses conda.yml tox.ini and Pipfiles
+    this function returns only dependencies
+    slated for removal once individual cases are handled
+    """
+    res: Result = {
+        "import_name": "",
+        "lang_ver": [],
+        "pkg_name": "",
+        "pkg_ver": "",
+        "pkg_lic": ["Other"],
+        "pkg_err": {},
+        "pkg_dep": [],
+        "timestamp": datetime.utcnow().isoformat(),
     }
+    df = dparse2.parse(file_data, file_name=file_name)
+    for dep in df.dependencies:
+        res["pkg_dep"].append(dep.name + ";" + str(dep.specs))
+    return res
