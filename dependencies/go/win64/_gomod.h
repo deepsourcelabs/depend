@@ -73,7 +73,7 @@ typedef struct { void *data; GoInt len; GoInt cap; } GoSlice;
 extern "C" {
 #endif
 
-extern __declspec(dllexport) char* getDepVer(char* filePtr);
+extern __declspec(dllexport) char* getDepVer(char* fptr);
 extern __declspec(dllexport) void freeCByte(void* b);
 
 #ifdef __cplusplus

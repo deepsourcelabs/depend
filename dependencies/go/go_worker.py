@@ -47,14 +47,14 @@ def handle_go_mod(req_file_data: str) -> Result:
     free(ptr)
     d = json.loads(out)
     m = {
-        "Min_go_ver": "lang_ver",
+        "MinGoVer": "lang_ver",
         "ModPath": "pkg_name",
         "ModVer": "pkg_ver",
-        "Dep_ver": "pkg_dep",
+        "DepVer": "pkg_dep",
     }
     for k in d:
         if k in m:
-            if k == "Min_go_ver":
+            if k == "MinGoVer":
                 res[m[k]] = d[k].split(",")  # type: ignore
             else:
                 res[m[k]] = d[k]  # type: ignore
