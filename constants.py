@@ -145,7 +145,14 @@ DEP_FIELDS_MISSED: dict = {
     },
     "javascript": {
         "json": ["import_name", "pkg_err"],
-        "lock": ["import_name", "lang_ver", "pkg_name", "pkg_ver", "pkg_lic", "pkg_err"],
+        "lock": [
+            "import_name",
+            "lang_ver",
+            "pkg_name",
+            "pkg_ver",
+            "pkg_lic",
+            "pkg_err",
+        ],
     },
     "python": {
         "py": [],
