@@ -144,14 +144,21 @@ DEP_FIELDS_MISSED: dict = {
         "mod": ["import_name", "pkg_lic"],
     },
     "javascript": {
-        "json": ["import_name"],
-        "lock": ["import_name", "lang_ver", "pkg_name", "pkg_ver", "pkg_lic"],
+        "json": ["import_name", "pkg_err"],
+        "lock": [
+            "import_name",
+            "lang_ver",
+            "pkg_name",
+            "pkg_ver",
+            "pkg_lic",
+            "pkg_err",
+        ],
     },
     "python": {
         "py": [],
         "toml": [],
         "cfg": [],
-        "txt": ["import_name", "lang_ver", "pkg_name", "pkg_ver", "pkg_lic"],
+        "txt": ["import_name", "lang_ver", "pkg_name", "pkg_ver", "pkg_lic", "pkg_err"],
     },
 }
 PYPI_LIC = [
