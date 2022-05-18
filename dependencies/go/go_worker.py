@@ -9,12 +9,14 @@ from datetime import datetime
 from dep_types import Result
 
 match platform.system():
+    case "Darwin":
+        lib_go = cdll.LoadLibrary("dependencies/go/darwin/libgomod.dylib")
     case "Linux":
-        lib_go = cdll.LoadLibrary("dependencies/go/linux/_gomod.so")
+        lib_go = cdll.LoadLibrary("dependencies/go/linux/libgomod.so")
     case "Windows":
-        lib_go = cdll.LoadLibrary("dependencies/go/win32/_gomod.so")
+        lib_go = cdll.LoadLibrary("dependencies/go/win64/_gomod.dll")
     case _:
-        logging.error("Not compiled for Darwin")
+        logging.error("Not supported on current platform")
         sys.exit(-1)
 
 getDepVer = lib_go.getDepVer
@@ -45,14 +47,14 @@ def handle_go_mod(req_file_data: str) -> Result:
     free(ptr)
     d = json.loads(out)
     m = {
-        "Min_go_ver": "lang_ver",
+        "MinGoVer": "lang_ver",
         "ModPath": "pkg_name",
         "ModVer": "pkg_ver",
-        "Dep_ver": "pkg_dep",
+        "DepVer": "pkg_dep",
     }
     for k in d:
         if k in m:
-            if k == "Min_go_ver":
+            if k == "MinGoVer":
                 res[m[k]] = d[k].split(",")  # type: ignore
             else:
                 res[m[k]] = d[k]  # type: ignore
