@@ -1,6 +1,6 @@
 """VCS Handler for GitHub"""
 
-import datetime
+import calendar
 import logging
 import re
 import time
@@ -41,9 +41,10 @@ def handle_github(
     if retrievable_keys := verify_run(language, result):
         g = get_github()
         rl = g.get_rate_limit()
+        reset_timestamp = calendar.timegm(rl.core.reset.timetuple())
         if rl.core.remaining == 0:
             logging.error("GitHub API limit exhausted - Sleeping")
-            time.sleep((datetime.datetime.now() - rl.core.reset).total_seconds())
+            time.sleep(reset_timestamp - calendar.timegm(time.gmtime()) + 5)
 
         repo_identifier = re.search(
             r"github.com/([^/]+)/([^/\\\r\n\s]+)(?:/tree/|)?([^/.\\\r\n\s]+)?",
@@ -114,12 +115,17 @@ def handle_github(
                             repo_file_content = repo.get_contents(
                                 req_filename, ref=commit_branch_tag
                             )
-                            if isinstance(repo_file_content, ContentFile):
+                            if (
+                                isinstance(repo_file_content, ContentFile)
+                                and repo_file_content.encoding == "base64"
+                            ):
                                 dep_file = repo_file_content.decoded_content.decode()
                             else:
-                                dep_file = ""
+                                continue
                         except github.GithubException:
                             continue
                         dep_resp = handle_dep_file(req_filename, dep_file)
                         for key in retrievable_keys:
                             result[key] = dep_resp.get(key)  # type: ignore
+                    else:
+                        break
