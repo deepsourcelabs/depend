@@ -2,15 +2,15 @@
 
 import logging
 import re
-from datetime import datetime, timedelta
+import time
+from datetime import datetime
 from typing import Any, List, Optional, Tuple
 
 import requests
-from elasticsearch import Elasticsearch
 from tldextract import extract
 
-import constants
-from constants import REGISTRY
+from constants import CACHE_EXPIRY, REGISTRY
+from db.postgres_worker import add_data, get_data, upd_data
 from dep_types import Result
 from dependencies.helper import (
     go_versions,
@@ -97,7 +97,8 @@ def find_github(text: str) -> str:
 
 
 def make_single_request(
-    es: Optional[Elasticsearch],
+    psql: Any,
+    db_name: Optional[str],
     language: str,
     package: str,
     version: str = "",
@@ -105,7 +106,8 @@ def make_single_request(
 ) -> dict | Result | List[Result]:
     """
     Obtain package license and dependency information.
-    :param es: ElasticSearch Instance
+    :param psql: Postgres connection
+    :param db_name: Postgres database to be used
     :param language: python, javascript or go
     :param package: as imported
     :param version: check for specific version
@@ -113,28 +115,26 @@ def make_single_request(
     :return: result object with name version license and dependencies
     """
     result_list = []
-    package_version = package
-    if es is not None:
-        ESresult: dict[str, Any] = es.get(
-            index=language, id=package_version, ignore=404
-        )
-        if ESresult.get("found"):
-            db_time = datetime.fromisoformat(
-                ESresult["_source"]["timestamp"],
-            )
-            if db_time - datetime.utcnow() < timedelta(seconds=constants.CACHE_EXPIRY):
-                logging.info("Using " + package + " found in ES Database")
-                return ESresult["_source"]
-
+    result: Result = {
+        "import_name": "",
+        "lang_ver": [],
+        "pkg_name": package,
+        "pkg_ver": "",
+        "pkg_lic": ["Other"],
+        "pkg_err": {},
+        "pkg_dep": [],
+        "timestamp": datetime.utcnow().isoformat(),
+    }
     if not version:
         vers = []
         url = make_url(language, package, version)
-        response = requests.get(url)
         queries = REGISTRY[language]
         match language:
             case "python":
+                response = requests.get(url)
                 vers = py_versions(response, queries)
             case "javascript":
+                response = requests.get(url)
                 vers = js_versions(response, queries)
             case "go":
                 vers = go_versions(url, queries)
@@ -143,48 +143,78 @@ def make_single_request(
     if not vers:
         vers = [""]
     for ver in vers:
-        url = make_url(language, package, ver)
-        logging.info(url)
-        response = requests.get(url)
-        queries = REGISTRY[language]
-
-        result: Result = {
-            "import_name": "",
-            "lang_ver": [],
-            "pkg_name": package,
-            "pkg_ver": "",
-            "pkg_lic": ["Other"],
-            "pkg_err": {},
-            "pkg_dep": [],
-            "timestamp": datetime.utcnow().isoformat(),
-        }
-        repo = ""
-        match language:
-            case "python":
-                repo = handle_pypi(response, queries, result)
-            case "javascript":
-                repo = handle_npmjs(response, queries, result)
-            case "go":
-                if response.status_code == 200:
-                    # Handle 302: Redirection
-                    if response.history:
-                        red_url = response.url + "@" + version
-                        response = requests.get(red_url)
-                    scrape_go(response, queries, result, url)
-                else:
-                    repo = package
-        supported_domains = [
-            "github",
-        ]
-        if repo:
-            if extract(str(repo)).domain not in supported_domains:
-                repo = find_github(response.text)
+        run_flag = "new"
+        if psql and db_name:
+            db_data = get_data(psql, db_name, language, package, ver)
+            if db_data:
+                run_flag = "update"
+                db_time: datetime = db_data.timestamp
+                if (
+                    time.mktime(db_time.timetuple())
+                    - time.mktime(datetime.utcnow().timetuple())
+                    < CACHE_EXPIRY
+                ):
+                    logging.info("Using " + package + " found in Postgres Database")
+                    return db_data
+        if "||" in version:
+            git_url, git_branch = version.split("||")
+            handle_vcs(language, git_url + "/tree/" + git_branch, result)
+        else:
+            url = make_url(language, package, ver)
+            logging.info(url)
+            response = requests.get(url)
+            queries = REGISTRY[language]
+            repo = ""
+            match language:
+                case "python":
+                    repo = handle_pypi(response, queries, result)
+                case "javascript":
+                    repo = handle_npmjs(response, queries, result)
+                case "go":
+                    if response.status_code == 200:
+                        # Handle 302: Redirection
+                        if response.history:
+                            red_url = response.url + "@" + version
+                            response = requests.get(red_url)
+                        scrape_go(response, queries, result, url)
+                    else:
+                        repo = package
+            supported_domains = [
+                "github.com",
+            ]
             if repo:
-                handle_vcs(language, repo, result)
-        if es is not None:
-            es.index(index=language, id=package_version, document=result)
-        # handle vers into format
-        # parse_dep_response
+                c_domain = extract(str(repo)).domain + "." + extract(str(repo)).suffix
+                if c_domain not in supported_domains or extract(str(repo)).subdomain:
+                    repo = find_github(response.text)
+                if repo:
+                    handle_vcs(language, repo, result)
+        if psql and db_name:
+            if run_flag == "new":
+                add_data(
+                    psql,
+                    db_name,
+                    language,
+                    result.get("pkg_name", ""),
+                    result.get("pkg_ver", ""),
+                    result.get("import_name", ""),
+                    result.get("lang_ver", []),
+                    result.get("pkg_lic", []),
+                    result.get("pkg_err", {}),
+                    result.get("pkg_dep", []),
+                )
+            else:
+                upd_data(
+                    psql,
+                    db_name,
+                    language,
+                    result.get("pkg_name", ""),
+                    result.get("pkg_ver", ""),
+                    result.get("import_name", ""),
+                    result.get("lang_ver", []),
+                    result.get("pkg_lic", []),
+                    result.get("pkg_err", {}),
+                    result.get("pkg_dep", []),
+                )
         result_list.append(result)
     if force_schema:
         return parse_dep_response(result_list)
@@ -193,13 +223,15 @@ def make_single_request(
 
 
 def make_multiple_requests(
-    es: Optional[Elasticsearch],
+    psql: Any,
+    db_name: Optional[str],
     language: str,
     packages: List[str],
 ) -> List[Any]:
     """
     Obtain license and dependency information for list of packages.
-    :param es: ElasticSearch Instance
+    :param psql: Postgres connection
+    :param db_name: Postgres database to be used
     :param language: python, javascript or go
     :param packages: a list of dependencies in each language
     :return: result object with name version license and dependencies
@@ -209,8 +241,10 @@ def make_multiple_requests(
     for package in packages:
         name_ver = (package[0] + package[1:].replace("@", ";")).rsplit(";", 1)
         if len(name_ver) == 1:
-            dep_resp = make_single_request(es, language, package)
+            dep_resp = make_single_request(psql, db_name, language, package)
         else:
-            dep_resp = make_single_request(es, language, name_ver[0], name_ver[1])
+            dep_resp = make_single_request(
+                psql, db_name, language, name_ver[0], name_ver[1]
+            )
         result.append(dep_resp)
     return result

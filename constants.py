@@ -1,7 +1,7 @@
 """Constants and config to be used by the analyzer."""
 from jmespath import compile as jc
 
-CACHE_EXPIRY = 1800
+CACHE_EXPIRY = 1800.0
 REGISTRY: dict = {
     "python": {
         "registry": "PyPI",

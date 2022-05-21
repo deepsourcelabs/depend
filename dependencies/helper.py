@@ -126,7 +126,7 @@ def handle_npmjs(api_response: requests.Response, queries: dict, result: Result)
     dependencies_q: jmespath.parser.ParsedResult = queries["dependency"]
     repo_q: jmespath.parser.ParsedResult = queries["repo"]
     version = version_q.search(data)
-    if version is not None:
+    if version:
         result["pkg_ver"] = version
     else:
         latest_q: jmespath.parser.ParsedResult = queries["latest"]
