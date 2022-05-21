@@ -60,7 +60,7 @@ def main(
             return result
     else:
         payload[lang] = packages
-    if lang not in ["go", "python", "javascript"]:
+    if lang not in ["go", "python", "javascript", "rust"]:
         raise LanguageNotSupportedError(lang)
     if psql := get_db():
         if not db_name:

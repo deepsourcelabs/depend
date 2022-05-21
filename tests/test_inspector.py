@@ -137,6 +137,35 @@ def test_make_single_request_go_github(psql):
     assert len(result["pkg_dep"]) != 0
 
 
+def test_make_single_request_rust(psql):
+    """Test version and license for javascript"""
+    result = inspector.make_single_request(
+        psql, "murdock", "rust", "reqrnpdno", force_schema=False
+    )[0]
+    assert result["pkg_dep"]
+
+
+def test_make_single_request_rust_ver(psql):
+    """Test version and license for javascript"""
+    result = inspector.make_single_request(
+        psql, "murdock", "rust", "picnic-sys", "3.0.14", force_schema=False
+    )[0]
+    assert result["pkg_dep"]
+
+
+def test_make_single_request_rust_git(psql):
+    """Test version and license for javascript"""
+    result = inspector.make_single_request(
+        psql,
+        "murdock",
+        "rust",
+        "sciter-rs",
+        "https://github.com/open-trade/rust-sciter||dyn",
+        force_schema=False,
+    )[0]
+    assert result["pkg_dep"]
+
+
 def test_make_multiple_requests(dependency_payload, psql):
     """Multiple package requests for JavaScript NPM and Go"""
     result = [
@@ -154,8 +183,8 @@ def test_make_vcs_request(result_payload):
 
 def test_unsupported_language_fails():
     """Checks if exception is raised for unsupported language"""
-    with pytest.raises(LanguageNotSupportedError, match="java"):
-        inspector.make_url("java", "foo")
+    with pytest.raises(LanguageNotSupportedError, match="bhailang"):
+        inspector.make_url("bhailang", "foo")
 
 
 def test_unsupported_vcs_fails(result_payload):
