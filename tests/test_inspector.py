@@ -162,3 +162,19 @@ def test_unsupported_vcs_fails(result_payload):
     """Checks if exception is raised for unsupported pattern"""
     with pytest.raises(VCSNotSupportedError, match="gitlab"):
         inspector.handle_vcs("go", "gitlab.com/secmask/awserver", result_payload)
+
+
+def test_make_single_request_php(psql):
+    """Test version and license for javascript"""
+    result = inspector.make_single_request(
+        psql, "murdock", "php", "folospace/socketio", force_schema=False
+    )[0]
+    assert result["pkg_dep"]
+
+
+def test_make_single_request_php_ver(psql):
+    """Test version and license for javascript"""
+    result = inspector.make_single_request(
+        psql, "murdock", "php", "ajgarlag/psr15-dispatcher", "0.4.1", force_schema=False
+    )[0]
+    assert result["pkg_dep"]
