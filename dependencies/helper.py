@@ -11,6 +11,7 @@ from error import FileNotSupportedError
 
 from .go.go_worker import handle_go_mod
 from .js.js_worker import handle_json, handle_yarn_lock
+from .php.php_worker import handle_c_json
 from .py.py_helper import handle_requirements_txt
 from .py.py_worker import handle_otherpy, handle_setup_cfg, handle_setup_py, handle_toml
 from .rust.rust_worker import handle_c_toml, handle_lock
@@ -46,6 +47,8 @@ def handle_dep_file(
         case "mod":
             return handle_go_mod(file_content)
         case "json":
+            if file_name == "composer.json":
+                return handle_c_json(file_content)
             return handle_json(file_content)
         case ["conda.yml", "tox.ini", "Pipfile", "Pipfile.lock"]:
             return handle_otherpy(file_content, file_name)
@@ -173,6 +176,28 @@ def handle_rust(
     result["pkg_dep"] = req_file_data
 
 
+def handle_php(
+    api_response: requests.Response, queries: dict, result: Result, ver: str
+):
+    """
+    Take api response and return required results object
+    :param api_response: response from requests get
+    :param queries: compiled jmespath queries
+    :param result: object to mutate
+    :param ver: queried versions
+    """
+    data = api_response.json()
+    result["pkg_ver"] = ver
+    versions_q: jmespath.parser.ParsedResult = queries["ver_data"]
+    versions = versions_q.search(data)
+    ver_data = versions.get(ver, {})
+    result["pkg_lic"] = ver_data.get(queries["license_key"], ["Other"])
+    dep_data = ver_data.get(queries["dependency_key"], {})
+    lang_ver = dep_data.pop("php", "")
+    result["lang_ver"] = lang_ver
+    result["pkg_dep"] = [key + ";" + value for (key, value) in dep_data.items()]
+
+
 def scrape_go(response: requests.Response, queries: dict, result: Result, url: str):
     """
     Take api response and return required results object
@@ -264,6 +289,23 @@ def js_versions(api_response: requests.Response, queries: dict) -> list:
 def py_versions(api_response: requests.Response, queries: dict) -> list:
     """
     Get list of all versions for py package
+    :param queries: compiled jmespath queries
+    :param api_response: registry response
+    :return: list of versions
+    """
+    if api_response.status_code == 404:
+        return []
+    data = api_response.json()
+    versions_q: jmespath.parser.ParsedResult = queries["versions"]
+    versions = versions_q.search(data)
+    if not versions:
+        return []
+    return versions
+
+
+def php_versions(api_response: requests.Response, queries: dict) -> list:
+    """
+    Get list of all versions for php package
     :param queries: compiled jmespath queries
     :param api_response: registry response
     :return: list of versions

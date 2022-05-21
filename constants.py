@@ -50,6 +50,14 @@ REGISTRY: dict = {
         "license": jc("version.license"),
         "dependency": jc("dependencies[]|[].join(`;`, [crate_id, req])"),
     },
+    "php": {
+        "url": "https://packagist.org/packages",
+        "name": jc("package.name"),
+        "versions": jc("package.versions.keys(@)"),
+        "ver_data": jc("package.versions"),
+        "license_key": "license",
+        "dependency_key": "require",
+    },
 }
 LICENSE_FILES = [
     "LICENSE",
@@ -90,6 +98,7 @@ REQ_FILES = {
     ],
     "go": ["go.mod"],
     "rust": ["Cargo.toml", "Cargo.lock"],
+    "php": ["composer.json"],
 }
 LICENSE_DICT: dict = {
     "AFL": "Academic Free License",

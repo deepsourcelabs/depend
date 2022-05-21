@@ -15,10 +15,12 @@ from dep_types import Result
 from dependencies.helper import (
     go_versions,
     handle_npmjs,
+    handle_php,
     handle_pypi,
     handle_rust,
     js_versions,
     parse_dep_response,
+    php_versions,
     py_versions,
     rust_versions,
     scrape_go,
@@ -52,6 +54,7 @@ def make_url(language: str, package: str, version: str = "") -> str:
     :param version: optional version specification
     :return: url to fetch
     """
+    suffix = ""
     url_elements: Tuple[str, ...]
     match language:
         case "python":
@@ -79,9 +82,12 @@ def make_url(language: str, package: str, version: str = "") -> str:
                 url_elements = (REGISTRY[language]["url"], package, version)
             else:
                 url_elements = (REGISTRY[language]["url"], package, "versions")
+        case "php":
+            url_elements = (REGISTRY[language]["url"], package)
+            suffix = ".json"
         case _:
             raise LanguageNotSupportedError(language)
-    return "/".join(url_elements).rstrip("/")
+    return "/".join(url_elements).rstrip("/") + suffix
 
 
 def find_github(text: str) -> str:
@@ -148,6 +154,9 @@ def make_single_request(
             case "rust":
                 response = requests.get(url)
                 vers = rust_versions(response, queries)
+            case "php":
+                response = requests.get(url)
+                vers = php_versions(response, queries)
     else:
         vers = [version]
     if not vers:
@@ -182,6 +191,8 @@ def make_single_request(
                     repo = handle_npmjs(response, queries, result)
                 case "rust":
                     handle_rust(response, queries, result, url)
+                case "php":
+                    handle_php(response, queries, result, ver)
                 case "go":
                     if response.status_code == 200:
                         # Handle 302: Redirection
