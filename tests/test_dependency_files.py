@@ -8,6 +8,7 @@ import dependencies.php.php_worker
 import dependencies.py.py_helper
 import dependencies.py.py_worker
 import dependencies.rust.rust_worker
+import dependencies.cs.cs_worker
 
 
 class Helpers:
@@ -137,7 +138,7 @@ def test_other_py(json_schema):
 
 
 def test_cargo_toml(json_schema):
-    """Check poetry toml file output"""
+    """Check cargo toml file output"""
     with open("tests/data/example_cargo.toml") as f:
         rust_project = f.read()
     result = dependencies.rust.rust_worker.handle_c_toml(rust_project)
@@ -145,7 +146,7 @@ def test_cargo_toml(json_schema):
 
 
 def test_cargo_lock(json_schema):
-    """Check poetry toml file output"""
+    """Check cargo lock file output"""
     with open("tests/data/example_cargo.lock") as f:
         rust_project = f.read()
     result = dependencies.rust.rust_worker.handle_lock(rust_project)
@@ -153,8 +154,16 @@ def test_cargo_lock(json_schema):
 
 
 def test_composer_json(json_schema):
-    """Check poetry toml file output"""
+    """Check composer file output"""
     with open("tests/data/example_composer.json") as f:
         php_project = f.read()
     result = dependencies.php.php_worker.handle_c_json(php_project)
+    assert json_schema.is_valid(result)
+
+
+def test_cs_xml(json_schema):
+    """Parses nuspec files"""
+    with open("tests/data/example_package.nuspec") as f:
+        nuspec = f.read()
+    result = dependencies.cs.cs_worker.handle_nuspec(nuspec)
     assert json_schema.is_valid(result)
