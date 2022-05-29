@@ -58,6 +58,15 @@ REGISTRY: dict = {
         "license_key": "license",
         "dependency_key": "require",
     },
+    "cs": {
+        "url": "https://api.nuget.org/v3-flatcontainer",
+        "name": jc("package.metadata.id"),
+        "versions": jc("versions"),
+        "version": jc("package.metadata.version"),
+        "license": jc("package.metadata.license"),
+        "dependency": jc("package.metadata.dependencies"),
+        "repo": jc("package.metadata.repository "),
+    },
 }
 LICENSE_FILES = [
     "LICENSE",
@@ -99,6 +108,7 @@ REQ_FILES = {
     "go": ["go.mod"],
     "rust": ["Cargo.toml", "Cargo.lock"],
     "php": ["composer.json"],
+    "cs": [".nuspec"],
 }
 LICENSE_DICT: dict = {
     "AFL": "Academic Free License",

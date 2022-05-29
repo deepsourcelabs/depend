@@ -14,11 +14,13 @@ from db.postgres_worker import add_data, get_data, upd_data
 from dep_types import Result
 from dependencies.helper import (
     go_versions,
+    handle_cs,
     handle_npmjs,
     handle_php,
     handle_pypi,
     handle_rust,
     js_versions,
+    nuget_versions,
     parse_dep_response,
     php_versions,
     py_versions,
@@ -85,6 +87,16 @@ def make_url(language: str, package: str, version: str = "") -> str:
         case "php":
             url_elements = (REGISTRY[language]["url"], package)
             suffix = ".json"
+        case "cs":
+            if version:
+                url_elements = (
+                    REGISTRY[language]["url"],
+                    package,
+                    version,
+                    package + ".nuspec",
+                )
+            else:
+                url_elements = (REGISTRY[language]["url"], package, "index.json")
         case _:
             raise LanguageNotSupportedError(language)
     return "/".join(url_elements).rstrip("/") + suffix
@@ -157,6 +169,9 @@ def make_single_request(
             case "php":
                 response = requests.get(url)
                 vers = php_versions(response, queries)
+            case "cs":
+                response = requests.get(url)
+                vers = nuget_versions(response, queries)
     else:
         vers = [version]
     if not vers:
@@ -193,6 +208,8 @@ def make_single_request(
                     handle_rust(response, queries, result, url)
                 case "php":
                     handle_php(response, queries, result, ver)
+                case "cs":
+                    repo = handle_cs(response, queries, result)
                 case "go":
                     if response.status_code == 200:
                         # Handle 302: Redirection

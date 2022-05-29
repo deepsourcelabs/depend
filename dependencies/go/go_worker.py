@@ -47,7 +47,7 @@ def handle_go_mod(req_file_data: str) -> Result:
     free(ptr)
     d = json.loads(out)
     m = {
-        "MinGoVer": "lang_ver",
+        "MinGoVer": "lang_ve    r",
         "ModPath": "pkg_name",
         "ModVer": "pkg_ver",
         "DepVer": "pkg_dep",
