@@ -2,6 +2,7 @@
 import pytest
 from jsonschema import validate
 
+import dependencies.cs.cs_worker
 import dependencies.go.go_worker
 import dependencies.js.js_worker
 import dependencies.py.py_helper
@@ -131,4 +132,12 @@ def test_other_py(json_schema):
     with open("tests/data/example_pipfile") as f:
         pyproject = f.read()
     result = dependencies.py.py_worker.handle_otherpy(pyproject, "Pipfile")
+    assert json_schema.is_valid(result)
+
+
+def test_cs_xml(json_schema):
+    """Parses nuspec files"""
+    with open("tests/data/example_package.nuspec") as f:
+        nuspec = f.read()
+    result = dependencies.cs.cs_worker.handle_nuspec(nuspec)
     assert json_schema.is_valid(result)
