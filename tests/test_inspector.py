@@ -208,6 +208,7 @@ def test_make_single_request_php_ver(psql):
     )[0]
     assert result["pkg_dep"]
 
+
 def test_make_single_request_cs(psql):
     """Test version and license for javascript"""
     result = inspector.make_single_request(
@@ -219,6 +220,11 @@ def test_make_single_request_cs(psql):
 def test_make_single_request_cs_ver(psql):
     """Test version and license for javascript"""
     result = inspector.make_single_request(
-        psql, "murdock", "cs", "Walter.Web.Firewall.Core.3.x", "2020.8.25.1", force_schema=False
+        psql,
+        "murdock",
+        "cs",
+        "Walter.Web.Firewall.Core.3.x",
+        "2020.8.25.1",
+        force_schema=False,
     )[0]
     assert result["pkg_dep"]

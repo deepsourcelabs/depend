@@ -108,7 +108,7 @@ REQ_FILES = {
     "go": ["go.mod"],
     "rust": ["Cargo.toml", "Cargo.lock"],
     "php": ["composer.json"],
-    "cs": [".nuspec"]
+    "cs": [".nuspec"],
 }
 LICENSE_DICT: dict = {
     "AFL": "Academic Free License",

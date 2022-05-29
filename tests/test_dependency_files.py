@@ -2,13 +2,13 @@
 import pytest
 from jsonschema import validate
 
+import dependencies.cs.cs_worker
 import dependencies.go.go_worker
 import dependencies.js.js_worker
 import dependencies.php.php_worker
 import dependencies.py.py_helper
 import dependencies.py.py_worker
 import dependencies.rust.rust_worker
-import dependencies.cs.cs_worker
 
 
 class Helpers:

@@ -108,7 +108,7 @@ def handle_github(
 
                 req_files: list = constants.REQ_FILES[language]
                 if ".nuspec" in req_files:
-                    req_files.append(dependency+".nuspec")
+                    req_files.append(dependency + ".nuspec")
                 for f in set(files_s).intersection(req_files):
                     req_filename = f
                     file_extension = req_filename.split(".")[-1]

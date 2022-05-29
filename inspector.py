@@ -14,17 +14,17 @@ from db.postgres_worker import add_data, get_data, upd_data
 from dep_types import Result
 from dependencies.helper import (
     go_versions,
+    handle_cs,
     handle_npmjs,
     handle_php,
     handle_pypi,
     handle_rust,
-    handle_cs,
     js_versions,
+    nuget_versions,
     parse_dep_response,
     php_versions,
     py_versions,
     rust_versions,
-    nuget_versions,
     scrape_go,
 )
 from error import LanguageNotSupportedError, VCSNotSupportedError

@@ -10,13 +10,13 @@ from bs4 import BeautifulSoup
 from dep_types import Result
 from error import FileNotSupportedError
 
+from .cs.cs_worker import findkeys, handle_nuspec
 from .go.go_worker import handle_go_mod
 from .js.js_worker import handle_json, handle_yarn_lock
 from .php.php_worker import handle_c_json
 from .py.py_helper import handle_requirements_txt
 from .py.py_worker import handle_otherpy, handle_setup_cfg, handle_setup_py, handle_toml
 from .rust.rust_worker import handle_c_toml, handle_lock
-from .cs.cs_worker import handle_nuspec, findkeys
 
 
 def parse_license(license_file: str, license_dict: dict) -> List[str]:
