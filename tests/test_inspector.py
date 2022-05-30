@@ -162,9 +162,3 @@ def test_unsupported_vcs_fails(result_payload):
     """Checks if exception is raised for unsupported pattern"""
     with pytest.raises(VCSNotSupportedError, match="gitlab"):
         inspector.handle_vcs("go", "gitlab.com/secmask/awserver", result_payload)
-
-
-def test_unsupported_repo(result_payload):
-    """Checks if missing dependency or requirement files are handled"""
-    inspector.handle_github("go", "https://github.com/rust-lang/cargo", result_payload)
-    assert result_payload["pkg_lic"] == ["Other"]
