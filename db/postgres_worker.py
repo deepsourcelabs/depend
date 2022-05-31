@@ -16,14 +16,14 @@ def add_data(
     pkg_lic: list[str],
     pkg_err: dict,
     pkg_dep: list[str],
-    force: bool = False,
+    clear_old_data: bool = False,
 ):
     """
     Add data in correct format into Postgres DB
     """
     try:
         with psql as conn, conn.cursor(cursor_factory=pypsql.NamedTupleCursor) as cur:
-            if force:
+            if clear_old_data:
                 cur.execute(
                     sql.SQL("DROP TABLE IF EXISTS {db_name}").format(
                         db_name=sql.Identifier(db_name),
