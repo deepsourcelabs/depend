@@ -18,7 +18,7 @@ app = typer.Typer(add_completion=False)
 
 @app.callback(invoke_without_command=True)
 def main(
-    lang: str = typer.Option(None),
+    lang: str = typer.Option(...),
     packages: Optional[str] = typer.Option(None),
     dep_file: Optional[Path] = typer.Option(None),
     db_name: Optional[str] = typer.Option(None),
