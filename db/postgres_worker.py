@@ -1,13 +1,15 @@
 """Functions to work with PostGres."""
 import json
+import os
 
 import psycopg2.extras as pypsql
 from psycopg2 import errors, sql
 
+table_name = os.environ.get("TABLE_NAME") or "test"
+
 
 def add_data(
     psql,
-    db_name: str,
     language: str,
     pkg_name: str,
     pkg_ver: str,
@@ -25,13 +27,13 @@ def add_data(
         with psql as conn, conn.cursor(cursor_factory=pypsql.NamedTupleCursor) as cur:
             if clear_old_data:
                 cur.execute(
-                    sql.SQL("DROP TABLE IF EXISTS {db_name}").format(
-                        db_name=sql.Identifier(db_name),
+                    sql.SQL("DROP TABLE IF EXISTS {table_name}").format(
+                        table_name=sql.Identifier(table_name),
                     )
                 )
             create_script = sql.SQL(
                 """ 
-                CREATE TABLE IF NOT EXISTS {db_name} (
+                CREATE TABLE IF NOT EXISTS {table_name} (
                     ID          BIGINT NOT NULL PRIMARY KEY,
                     LANGUAGE    varchar NOT NULL,
                     PKG_NAME    varchar NOT NULL,
@@ -45,17 +47,17 @@ def add_data(
                 )                        
                 """
             ).format(
-                db_name=sql.Identifier(db_name),
+                table_name=sql.Identifier(table_name),
             )
             cur.execute(create_script)
 
             insert_script = sql.SQL(
-                "INSERT INTO {db_name} "
+                "INSERT INTO {table_name} "
                 "(ID, LANGUAGE, PKG_NAME, PKG_VER, IMPORT_NAME,"
                 " LANG_VER, PKG_LIC, PKG_ERR, PKG_DEP) "
                 "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
             ).format(
-                db_name=sql.Identifier(db_name),
+                table_name=sql.Identifier(table_name),
             )
             insert_values = [
                 (
@@ -78,7 +80,6 @@ def add_data(
 
 def get_data(
     psql,
-    db_name: str,
     language: str,
     pkg_name: str,
     pkg_ver: str,
@@ -89,8 +90,8 @@ def get_data(
     pkg_id = hash(language + pkg_name + pkg_ver)
     try:
         with psql as conn, conn.cursor(cursor_factory=pypsql.NamedTupleCursor) as cur:
-            read_script = sql.SQL("SELECT * FROM {db_name} WHERE ID = %s").format(
-                db_name=sql.Identifier(db_name),
+            read_script = sql.SQL("SELECT * FROM {table_name} WHERE ID = %s").format(
+                table_name=sql.Identifier(table_name),
             )
             read_record = (pkg_id,)
             cur.execute(read_script, read_record)
@@ -102,7 +103,6 @@ def get_data(
 
 def del_data(
     psql,
-    db_name: str,
     language: str,
     pkg_name: str,
     pkg_ver: str,
@@ -113,8 +113,8 @@ def del_data(
     pkg_id = hash(language + pkg_name + pkg_ver)
     try:
         with psql as conn, conn.cursor(cursor_factory=pypsql.NamedTupleCursor) as cur:
-            del_script = sql.SQL("DELETE FROM {db_name} WHERE ID = %s").format(
-                db_name=sql.Identifier(db_name)
+            del_script = sql.SQL("DELETE FROM {table_name} WHERE ID = %s").format(
+                table_name=sql.Identifier(table_name)
             )
             del_record = (pkg_id,)
             cur.execute(del_script, del_record)
@@ -124,7 +124,6 @@ def del_data(
 
 def upd_data(
     psql,
-    db_name: str,
     language: str,
     pkg_name: str,
     pkg_ver: str,
@@ -137,10 +136,9 @@ def upd_data(
     """
     Update info about a specific package version from DB
     """
-    del_data(psql, db_name, language, pkg_name, pkg_ver)
+    del_data(psql, language, pkg_name, pkg_ver)
     add_data(
         psql,
-        db_name,
         language,
         pkg_name,
         pkg_ver,

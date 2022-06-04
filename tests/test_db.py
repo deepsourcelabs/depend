@@ -35,7 +35,6 @@ def test_run_db(psql):
     """
     add_data(
         psql,
-        "murdock_test",
         "test",
         "murdock",
         "0.0.1",
@@ -46,7 +45,7 @@ def test_run_db(psql):
         ["a;v", "b;v"],
         True,
     )
-    data = get_data(psql, "murdock_test", "test", "murdock", "0.0.1")
+    data = get_data(psql, "test", "murdock", "0.0.1")
     assert data.pkg_lic == ["MIT"]
 
 
@@ -58,9 +57,7 @@ def test_check_db(psql):
     """
     upd_data(
         psql,
-        "murdock_test",
         "test",
-        "murdock",
         "0.0.1",
         "murdock",
         ["1.0"],
@@ -68,5 +65,5 @@ def test_check_db(psql):
         {},
         ["a;v", "b;v"],
     )
-    data = get_data(psql, "murdock_test", "test", "murdock", "0.0.1")
+    data = get_data(psql, "test", "murdock", "0.0.1")
     assert data.pkg_lic == ["GPL"]

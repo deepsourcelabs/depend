@@ -98,7 +98,6 @@ def find_github(text: str) -> str:
 
 def make_single_request(
     psql: Any,
-    db_name: Optional[str],
     language: str,
     package: str,
     version: str = "",
@@ -107,7 +106,6 @@ def make_single_request(
     """
     Obtain package license and dependency information.
     :param psql: Postgres connection
-    :param db_name: Postgres database to be used
     :param language: python, javascript or go
     :param package: as imported
     :param version: check for specific version
@@ -144,8 +142,8 @@ def make_single_request(
         vers = [""]
     for ver in vers:
         run_flag = "new"
-        if psql and db_name:
-            db_data = get_data(psql, db_name, language, package, ver)
+        if psql:
+            db_data = get_data(psql, language, package, ver)
             if db_data:
                 run_flag = "update"
                 db_time: datetime = db_data.timestamp
@@ -188,11 +186,10 @@ def make_single_request(
                     repo = find_github(response.text)
                 if repo:
                     handle_vcs(language, repo, result)
-        if psql and db_name:
+        if psql:
             if run_flag == "new":
                 add_data(
                     psql,
-                    db_name,
                     language,
                     result.get("pkg_name", ""),
                     result.get("pkg_ver", ""),
@@ -205,7 +202,6 @@ def make_single_request(
             else:
                 upd_data(
                     psql,
-                    db_name,
                     language,
                     result.get("pkg_name", ""),
                     result.get("pkg_ver", ""),
@@ -224,27 +220,22 @@ def make_single_request(
 
 def make_multiple_requests(
     psql: Any,
-    db_name: Optional[str],
     language: str,
     packages: List[str],
 ) -> List[Any]:
     """
     Obtain license and dependency information for list of packages.
     :param psql: Postgres connection
-    :param db_name: Postgres database to be used
     :param language: python, javascript or go
     :param packages: a list of dependencies in each language
     :return: result object with name version license and dependencies
     """
     result = []
-
     for package in packages:
         name_ver = (package[0] + package[1:].replace("@", ";")).rsplit(";", 1)
         if len(name_ver) == 1:
-            dep_resp = make_single_request(psql, db_name, language, package)
+            dep_resp = make_single_request(psql, language, package)
         else:
-            dep_resp = make_single_request(
-                psql, db_name, language, name_ver[0], name_ver[1]
-            )
+            dep_resp = make_single_request(psql, language, name_ver[0], name_ver[1])
         result.append(dep_resp)
     return result
