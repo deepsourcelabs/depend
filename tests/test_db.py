@@ -58,6 +58,7 @@ def test_check_db(psql):
     upd_data(
         psql,
         "test",
+        "murdock",
         "0.0.1",
         "murdock",
         ["1.0"],
