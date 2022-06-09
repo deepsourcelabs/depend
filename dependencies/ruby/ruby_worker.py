@@ -7,7 +7,7 @@ import re
 from datetime import datetime
 
 
-class Dependency(object):
+class Dependency:
     """
     A class to hold information about a dependency gem.
     """
@@ -34,7 +34,7 @@ class Dependency(object):
         )
 
 
-class GemfileParser(object):
+class GemfileParser:
     """
     Create a GemfileParser object to perform operations.
     """
@@ -102,13 +102,13 @@ class GemfileParser(object):
         line = line.strip()
         return line
 
-    def parse_line(self, line):
+    def parse_line(self, line_c):
         """
         Parse a line and return a Dependency object.
         """
 
         # csv requires a file-like object
-        linefile = io.StringIO(line)
+        linefile = io.StringIO(line_c)
         for line in csv.reader(linefile, delimiter=","):
             column_list = []
             for column in line:
