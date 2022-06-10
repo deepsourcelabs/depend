@@ -34,16 +34,6 @@ REGISTRY: dict = {
         "license": "License",
         "dependency": "dependencies",
     },
-    "ruby": {
-        "url": "https://rubygems.org/api/v2/rubygems",
-        "name": jc("name"),
-        "repo": jc("source_code_uri"),
-        "lang_ver": jc("ruby_version"),
-        "versions_api": "https://rubygems.org/api/v1/versions",
-        "version": jc("[].number"),
-        "license": jc("licenses"),
-        "dependency": jc("dependencies.runtime"),
-    },
 }
 LICENSE_FILES = [
     "LICENSE",
@@ -83,7 +73,6 @@ REQ_FILES = {
         "yarn.lock",
     ],
     "go": ["go.mod"],
-    "ruby": ["Gemfile", "Rakefile", ".gemspec"],
 }
 LICENSE_DICT: dict = {
     "AFL": "Academic Free License",
