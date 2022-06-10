@@ -167,7 +167,7 @@ def test_unsupported_vcs_fails(result_payload):
 def test_make_single_request_cs(psql):
     """Test version and license for javascript"""
     result = inspector.make_single_request(
-        psql, "murdock", "cs", "newtonsoft.json", force_schema=False
+        psql, "murdock", "cs", "Microsoft.Bcl.AsyncInterfaces", force_schema=False
     )[0]
     assert result["pkg_dep"]
 
