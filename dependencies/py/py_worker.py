@@ -5,7 +5,7 @@ import dparse2
 import toml
 from pkg_resources import parse_requirements
 
-from dep_types import Result
+from dep_helper import Result
 
 from .setup_reader import LaxSetupReader, handle_classifiers
 

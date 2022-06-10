@@ -21,7 +21,6 @@ def main(
     lang: str = typer.Option(...),
     packages: Optional[str] = typer.Option(None),
     dep_file: Optional[Path] = typer.Option(None),
-    deep_search: Optional[bool] = typer.Option(False),
 ) -> List[Any]:
     """
     Dependency Inspector
@@ -39,8 +38,6 @@ def main(
 
     :param dep_file: location of file to parse for packages
 
-    :param deep_search: when true populating all fields is attempted
-
     """
     payload: Dict[str, Union[None, str, list[str]]] = {}
     result: List[Any] = []
@@ -52,9 +49,6 @@ def main(
         dep_content = handle_dep_file(os.path.basename(dep_file), dep_file.read_text())
         payload[lang] = dep_content.get("pkg_dep")
         result.append(parse_dep_response([dep_content]))
-        if not deep_search:
-            logging.info(result)
-            return result
     else:
         payload[lang] = packages
     if lang not in ["go", "python", "javascript"]:

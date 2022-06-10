@@ -3,10 +3,10 @@ import re
 from typing import List
 
 import jmespath
-import requests
 from bs4 import BeautifulSoup
+from requests import Response
 
-from dep_types import Result
+from dep_helper import Result, requests
 from error import FileNotSupportedError
 
 from .go.go_worker import handle_go_mod
@@ -111,7 +111,7 @@ def handle_pypi(api_response: requests.Response, queries: dict, result: Result):
     return repo
 
 
-def handle_npmjs(api_response: requests.Response, queries: dict, result: Result):
+def handle_npmjs(api_response: Response, queries: dict, result: Result):
     """
     Take api response and return required results object
     :param api_response: response from requests get
@@ -141,7 +141,7 @@ def handle_npmjs(api_response: requests.Response, queries: dict, result: Result)
     return repo
 
 
-def scrape_go(response: requests.Response, queries: dict, result: Result, url: str):
+def scrape_go(response: Response, queries: dict, result: Result, url: str):
     """
     Take api response and return required results object
     :param response: response from requests get
@@ -197,7 +197,7 @@ def go_versions(url: str, queries: dict) -> list:
     return releases
 
 
-def js_versions(api_response: requests.Response, queries: dict) -> list:
+def js_versions(api_response: Response, queries: dict) -> list:
     """
     Get list of all versions for js package
     :param queries: compiled jmespath queries
@@ -214,7 +214,7 @@ def js_versions(api_response: requests.Response, queries: dict) -> list:
     return versions
 
 
-def py_versions(api_response: requests.Response, queries: dict) -> list:
+def py_versions(api_response: Response, queries: dict) -> list:
     """
     Get list of all versions for py package
     :param queries: compiled jmespath queries
