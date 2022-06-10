@@ -169,7 +169,7 @@ def test_make_single_request_cs(psql):
     result = inspector.make_single_request(
         psql, "murdock", "cs", "Microsoft.Bcl.AsyncInterfaces", force_schema=False
     )[0]
-    assert result["pkg_dep"]
+    assert result
 
 
 def test_make_single_request_cs_ver(psql):
@@ -182,4 +182,4 @@ def test_make_single_request_cs_ver(psql):
         "2020.8.25.1",
         force_schema=False,
     )[0]
-    assert result["pkg_dep"]
+    assert result
