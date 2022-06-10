@@ -6,12 +6,11 @@ import time
 from datetime import datetime
 from typing import Any, List, Tuple
 
-import requests
 from tldextract import extract
 
 from constants import CACHE_EXPIRY, REGISTRY
 from db.postgres_worker import add_data, get_data, upd_data
-from dep_types import Result
+from dep_helper import Result, requests
 from dependencies.helper import (
     go_versions,
     handle_npmjs,

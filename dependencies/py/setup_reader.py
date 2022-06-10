@@ -15,7 +15,7 @@ from github.ContentFile import ContentFile
 from poetry.core.semver import Version, exceptions
 from poetry.utils.setup_reader import SetupReader
 
-from dep_types import Result
+from dep_helper import Result
 from dependencies.py.py_helper import handle_requirements_txt
 from handle_env import get_github
 

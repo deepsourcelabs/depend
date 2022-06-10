@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pkg_resources import parse_requirements
 
-from dep_types import Result
+from dep_helper import Result
 
 
 def handle_requirements_txt(req_file_data: str) -> Result:
