@@ -133,9 +133,14 @@ def handle_cs(api_response: requests.Response, queries: dict, result: Result):
     if root.get("license", {}).get("@type") == "expression":
         result["pkg_lic"] = [root.get("license", {}).get("#text")]
     pkg_dep = set()
-    for dep in findkeys(root.get("dependencies"), "dependency"):
-        dep_entry = dep.get("@id") + ";" + dep.get("@version")
-        pkg_dep.add(dep_entry)
+    for gen_e in findkeys(root.get("dependencies"), "dependency"):
+        if isinstance(gen_e, list):
+            for dep_e in gen_e:
+                dep_entry = dep_e.get("@id") + ";" + dep_e.get("@version")
+                pkg_dep.add(dep_entry)
+        else:
+            dep_entry = gen_e.get("@id") + ";" + gen_e.get("@version")
+            pkg_dep.add(dep_entry)
     result["pkg_dep"] = list(pkg_dep)
     # @type = git
     return root.get("repository", {}).get("@url")
