@@ -175,6 +175,5 @@ def test_unsupported(json_schema):
             lang="python",
             packages=None,
             dep_file=Path("tests/data/example_pipfile"),
-            deep_search=False,
         )
         assert json_schema.is_valid(result)
