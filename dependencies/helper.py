@@ -132,10 +132,11 @@ def handle_cs(api_response: requests.Response, queries: dict, result: Result):
     # ignores "file" type
     if root.get("license", {}).get("@type") == "expression":
         result["pkg_lic"] = [root.get("license", {}).get("#text")]
-    pkg_dep = []
-    for dep in sum(list(findkeys(root.get("dependencies"), "dependency")), []):
-        pkg_dep.append(dep.get("@id") + ";" + dep.get("@version"))
-    result["pkg_dep"] = pkg_dep
+    pkg_dep = set()
+    for dep in findkeys(root.get("dependencies"), "dependency"):
+        dep_entry = dep.get("@id") + ";" + dep.get("@version")
+        pkg_dep.add(dep_entry)
+    result["pkg_dep"] = list(pkg_dep)
     # @type = git
     return root.get("repository", {}).get("@url")
 
