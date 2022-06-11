@@ -97,7 +97,7 @@ def get_data(
             read_record = (pkg_id,)
             cur.execute(read_script, read_record)
             return cur.fetchone()
-    except Exception as error:
+    except errors.InFailedSqlTransaction as error:
         print(error)
         return None
 
