@@ -56,6 +56,7 @@ def add_data(
                 "(ID, LANGUAGE, PKG_NAME, PKG_VER, IMPORT_NAME,"
                 " LANG_VER, PKG_LIC, PKG_ERR, PKG_DEP) "
                 "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                "ON CONFLICT (ID) DO NOTHING"
             ).format(
                 table_name=sql.Identifier(table_name),
             )
@@ -96,7 +97,7 @@ def get_data(
             read_record = (pkg_id,)
             cur.execute(read_script, read_record)
             return cur.fetchone()
-    except errors.InFailedSqlTransaction as error:
+    except Exception as error:
         print(error)
         return None
 
