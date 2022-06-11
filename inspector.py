@@ -141,11 +141,9 @@ def make_single_request(
     if not vers:
         vers = [""]
     for ver in vers:
-        run_flag = "new"
         if psql:
             db_data = get_data(psql, language, package, ver)
             if db_data:
-                run_flag = "update"
                 db_time: datetime = db_data.timestamp
                 if (
                     time.mktime(db_time.timetuple())
@@ -187,7 +185,8 @@ def make_single_request(
                 if repo:
                     handle_vcs(language, repo, result)
         if psql:
-            if run_flag == "new":
+            db_data = get_data(psql, language, package, ver)
+            if not db_data:
                 add_data(
                     psql,
                     language,
