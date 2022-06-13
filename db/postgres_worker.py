@@ -64,7 +64,7 @@ def add_data(
             hash_str = language + pkg_name + pkg_ver
             insert_values = [
                 (
-                    hashlib.sha224(hash_str.encode('utf-8')).hexdigest(),
+                    hashlib.sha224(hash_str.encode("utf-8")).hexdigest(),
                     language,
                     pkg_name,
                     pkg_ver,
@@ -91,7 +91,7 @@ def get_data(
     Fetch info about a specific package version from DB
     """
     hash_str = language + pkg_name + pkg_ver
-    pkg_id = hashlib.sha224(hash_str.encode('utf-8')).hexdigest()
+    pkg_id = hashlib.sha224(hash_str.encode("utf-8")).hexdigest()
     try:
         with psql as conn, conn.cursor(cursor_factory=pypsql.NamedTupleCursor) as cur:
             read_script = sql.SQL("SELECT * FROM {table_name} WHERE ID = %s").format(
@@ -115,7 +115,7 @@ def del_data(
     Fetch info about a specific package version from DB
     """
     hash_str = language + pkg_name + pkg_ver
-    pkg_id = hashlib.sha224(hash_str.encode('utf-8')).hexdigest()
+    pkg_id = hashlib.sha224(hash_str.encode("utf-8")).hexdigest()
     try:
         with psql as conn, conn.cursor(cursor_factory=pypsql.NamedTupleCursor) as cur:
             del_script = sql.SQL("DELETE FROM {table_name} WHERE ID = %s").format(
