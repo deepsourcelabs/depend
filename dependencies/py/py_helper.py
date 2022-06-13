@@ -24,10 +24,13 @@ def handle_requirements_txt(req_file_data: str) -> Result:
     }
     install_reqs = parse_requirements(req_file_data)
     for ir in install_reqs:
-        for spec in ir.specs:
-            if "=" in str(spec[0]):
-                res["pkg_dep"].append(str(ir.key) + ";" + str(spec[1]))
-            else:
-                # ! Handle each case properly
-                res["pkg_dep"].append(str(ir.key))
+        if not ir.specs:
+            res["pkg_dep"].append(str(ir.key))
+        else:
+            for spec in ir.specs:
+                if "=" in str(spec[0]):
+                    res["pkg_dep"].append(str(ir.key) + ";" + str(spec[1]))
+                else:
+                    # ! Handle each case properly
+                    res["pkg_dep"].append(str(ir.key))
     return res
