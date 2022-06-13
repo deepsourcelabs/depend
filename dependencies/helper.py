@@ -205,7 +205,7 @@ def js_versions(api_response: requests.Response, queries: dict) -> list:
     if api_response.status_code == 404:
         return []
     data = api_response.json()
-    versions_q: jmespath.parser.ParsedResult = queries["repo"]
+    versions_q: jmespath.parser.ParsedResult = queries["versions"]
     versions = versions_q.search(data)
     if not versions:
         return []
@@ -222,7 +222,7 @@ def py_versions(api_response: requests.Response, queries: dict) -> list:
     if api_response.status_code == 404:
         return []
     data = api_response.json()
-    versions_q: jmespath.parser.ParsedResult = queries["repo"]
+    versions_q: jmespath.parser.ParsedResult = queries["versions"]
     versions = versions_q.search(data)
     if not versions:
         return []
