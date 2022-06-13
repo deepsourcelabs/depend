@@ -1,11 +1,12 @@
 """Functions to work with PostGres."""
+import hashlib
 import json
 import os
 
 import psycopg2.extras as pypsql
 from psycopg2 import errors, sql
 
-table_name = os.environ.get("TABLE_NAME") or "test"
+table_name = os.environ.get("TABLE_NAME")
 
 
 def add_data(
@@ -34,7 +35,7 @@ def add_data(
             create_script = sql.SQL(
                 """ 
                 CREATE TABLE IF NOT EXISTS {table_name} (
-                    ID          BIGINT NOT NULL PRIMARY KEY,
+                    ID          varchar NOT NULL PRIMARY KEY,
                     LANGUAGE    varchar NOT NULL,
                     PKG_NAME    varchar NOT NULL,
                     PKG_VER     varchar NOT NULL,
@@ -60,9 +61,10 @@ def add_data(
             ).format(
                 table_name=sql.Identifier(table_name),
             )
+            hash_str = language + pkg_name + pkg_ver
             insert_values = [
                 (
-                    hash(language + pkg_name + pkg_ver),
+                    hashlib.sha224(hash_str.encode('utf-8')).hexdigest(),
                     language,
                     pkg_name,
                     pkg_ver,
@@ -88,7 +90,8 @@ def get_data(
     """
     Fetch info about a specific package version from DB
     """
-    pkg_id = hash(language + pkg_name + pkg_ver)
+    hash_str = language + pkg_name + pkg_ver
+    pkg_id = hashlib.sha224(hash_str.encode('utf-8')).hexdigest()
     try:
         with psql as conn, conn.cursor(cursor_factory=pypsql.NamedTupleCursor) as cur:
             read_script = sql.SQL("SELECT * FROM {table_name} WHERE ID = %s").format(
@@ -111,7 +114,8 @@ def del_data(
     """
     Fetch info about a specific package version from DB
     """
-    pkg_id = hash(language + pkg_name + pkg_ver)
+    hash_str = language + pkg_name + pkg_ver
+    pkg_id = hashlib.sha224(hash_str.encode('utf-8')).hexdigest()
     try:
         with psql as conn, conn.cursor(cursor_factory=pypsql.NamedTupleCursor) as cur:
             del_script = sql.SQL("DELETE FROM {table_name} WHERE ID = %s").format(
