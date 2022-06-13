@@ -41,10 +41,10 @@ def get_db():
         PORT_ID = os.environ.get("PG_PORT_ID")
         TABLE_NAME = os.environ.get("TABLE_NAME")
         req_var = {
-            'PG_DATABASE': DATABASE,
-            'PG_USERNAME': USERNAME,
-            'PG_PORT_ID': PORT_ID,
-            'TABLE_NAME': TABLE_NAME
+            "PG_DATABASE": DATABASE,
+            "PG_USERNAME": USERNAME,
+            "PG_PORT_ID": PORT_ID,
+            "TABLE_NAME": TABLE_NAME,
         }
         for v in req_var:
             if not req_var[v]:
