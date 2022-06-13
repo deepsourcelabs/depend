@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Union
 import typer
 
 from dependencies.helper import handle_dep_file, parse_dep_response
-from error import LanguageNotSupportedError, VCSNotSupportedError, ParamMissing
+from error import LanguageNotSupportedError, ParamMissing, VCSNotSupportedError
 from handle_env import get_db
 from inspector import make_multiple_requests
 
