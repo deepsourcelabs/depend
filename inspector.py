@@ -191,8 +191,8 @@ def make_single_request(
                 add_data(
                     psql,
                     language,
-                    result.get("pkg_name", ""),
-                    result.get("pkg_ver", ""),
+                    package,
+                    ver,
                     result.get("import_name", ""),
                     result.get("lang_ver", []),
                     result.get("pkg_lic", []),
@@ -203,8 +203,8 @@ def make_single_request(
                 upd_data(
                     psql,
                     language,
-                    result.get("pkg_name", ""),
-                    result.get("pkg_ver", ""),
+                    package,
+                    ver,
                     result.get("import_name", ""),
                     result.get("lang_ver", []),
                     result.get("pkg_lic", []),
