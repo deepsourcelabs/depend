@@ -11,6 +11,8 @@ load_dotenv()
 
 if "GITHUB_TOKEN" in os.environ:
     gh_token = os.environ.get("GITHUB_TOKEN")
+    if not gh_token:
+        gh_token = None
 else:
     gh_token = None
     logging.warning("Proceeding without GitHub Authentication")
