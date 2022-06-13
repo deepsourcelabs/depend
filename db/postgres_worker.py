@@ -32,25 +32,7 @@ def add_data(
                         table_name=sql.Identifier(table_name),
                     )
                 )
-            create_script = sql.SQL(
-                """ 
-                CREATE TABLE IF NOT EXISTS {table_name} (
-                    ID          varchar NOT NULL PRIMARY KEY,
-                    LANGUAGE    varchar NOT NULL,
-                    PKG_NAME    varchar NOT NULL,
-                    PKG_VER     varchar NOT NULL,
-                    IMPORT_NAME varchar,
-                    LANG_VER    text[], 
-                    PKG_LIC     text[],
-                    PKG_ERR     json,
-                    PKG_DEP     text[],
-                    timestamp   timestamptz default current_timestamp
-                )                        
-                """
-            ).format(
-                table_name=sql.Identifier(table_name),
-            )
-            cur.execute(create_script)
+            create_table(cur)
 
             insert_script = sql.SQL(
                 "INSERT INTO {table_name} "
@@ -81,6 +63,29 @@ def add_data(
         print(error)
 
 
+def create_table(cur):
+    """Create table if it doesn't exist"""
+    create_script = sql.SQL(
+        """ 
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            ID          varchar NOT NULL PRIMARY KEY,
+            LANGUAGE    varchar NOT NULL,
+            PKG_NAME    varchar NOT NULL,
+            PKG_VER     varchar NOT NULL,
+            IMPORT_NAME varchar,
+            LANG_VER    text[], 
+            PKG_LIC     text[],
+            PKG_ERR     json,
+            PKG_DEP     text[],
+            timestamp   timestamptz default current_timestamp
+        )                        
+        """
+    ).format(
+        table_name=sql.Identifier(table_name),
+    )
+    cur.execute(create_script)
+
+
 def get_data(
     psql,
     language: str,
@@ -92,17 +97,17 @@ def get_data(
     """
     hash_str = language + pkg_name + pkg_ver
     pkg_id = hashlib.sha224(hash_str.encode("utf-8")).hexdigest()
-    try:
-        with psql as conn, conn.cursor(cursor_factory=pypsql.NamedTupleCursor) as cur:
+    with psql as conn, conn.cursor(cursor_factory=pypsql.NamedTupleCursor) as cur:
+        try:
+            create_table(cur)
             read_script = sql.SQL("SELECT * FROM {table_name} WHERE ID = %s").format(
                 table_name=sql.Identifier(table_name),
             )
             read_record = (pkg_id,)
             cur.execute(read_script, read_record)
             return cur.fetchone()
-    except (errors.InFailedSqlTransaction, errors.UndefinedTable) as error:
-        print(error)
-        return None
+        except errors.InFailedSqlTransaction as error:
+            print(error)
 
 
 def del_data(
