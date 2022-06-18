@@ -4,7 +4,7 @@ import logging
 import re
 import time
 from datetime import datetime
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Set, Tuple
 
 from tldextract import extract
 
@@ -101,7 +101,7 @@ def make_single_request(
     package: str,
     version: str = "",
     force_schema: bool = True,
-) -> dict | Result | List[Result]:
+) -> (dict | Result | List[Result], list[str]):
     """
     Obtain package license and dependency information.
     :param psql: Postgres connection
@@ -111,6 +111,7 @@ def make_single_request(
     :param force_schema: returns schema compliant response if true
     :return: result object with name version license and dependencies
     """
+    rem_dep: Set[str] = set()
     result_list = []
     result: Result = {
         "import_name": "",
@@ -210,17 +211,22 @@ def make_single_request(
                     result.get("pkg_err", {}),
                     result.get("pkg_dep", []),
                 )
+        for dep in result.get("pkg_dep", []):
+            rem_dep.add(dep)
         result_list.append(result)
     if force_schema:
-        return parse_dep_response(result_list)
+        return parse_dep_response(result_list), list(rem_dep)
     else:
-        return result_list
+        return result_list, list(rem_dep)
 
 
 def make_multiple_requests(
     psql: Any,
     language: str,
     packages: List[str],
+    max_depth: Optional[int] = None,
+    result: Optional[list] = None,
+    cur_depth: int = 1,
 ) -> List[Any]:
     """
     Obtain license and dependency information for list of packages.
@@ -229,12 +235,22 @@ def make_multiple_requests(
     :param packages: a list of dependencies in each language
     :return: result object with name version license and dependencies
     """
-    result = []
+    deps = []
+    if result is None:
+        result = []
     for package in packages:
         name_ver = (package[0] + package[1:].replace("@", ";")).rsplit(";", 1)
         if len(name_ver) == 1:
-            dep_resp = make_single_request(psql, language, package)
+            dep_resp, deps = make_single_request(psql, language, package)
         else:
-            dep_resp = make_single_request(psql, language, name_ver[0], name_ver[1])
+            dep_resp, deps = make_single_request(
+                psql, language, name_ver[0], name_ver[1]
+            )
         result.append(dep_resp)
-    return result
+    # higher levels may ignore version specifications
+    if not deps or (max_depth == cur_depth):
+        return result
+    else:
+        return make_multiple_requests(
+            psql, language, deps, max_depth, result, cur_depth + 1
+        )

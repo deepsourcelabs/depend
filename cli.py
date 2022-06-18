@@ -21,6 +21,7 @@ def main(
     lang: str = typer.Option(...),
     packages: Optional[str] = typer.Option(None),
     dep_file: Optional[Path] = typer.Option(None),
+    max_depth: Optional[int] = typer.Option(None),
 ) -> List[Any]:
     """
     Dependency Inspector
@@ -38,6 +39,8 @@ def main(
 
     :param dep_file: location of file to parse for packages
 
+    :param max_depth: dependency query recursion level
+
     """
     payload: Dict[str, Union[None, str, list[str]]] = {}
     result: List[Any] = []
@@ -49,6 +52,9 @@ def main(
         dep_content = handle_dep_file(os.path.basename(dep_file), dep_file.read_text())
         payload[lang] = dep_content.get("pkg_dep")
         result.append(parse_dep_response([dep_content]))
+        if max_depth == 0:
+            logging.info(result)
+            return result
     else:
         payload[lang] = packages
     if lang not in ["go", "python", "javascript"]:
@@ -66,14 +72,14 @@ def main(
             logging.error("Unknown Response")
         try:
             if dep_list:
-                result.extend(make_multiple_requests(psql, language, dep_list))
-
-                logging.info(json.dumps(result, indent=3))
-                return result
+                result.extend(
+                    make_multiple_requests(psql, language, dep_list, max_depth)
+                )
         except (LanguageNotSupportedError, VCSNotSupportedError, ParamMissing) as e:
             logging.error(e.msg)
             sys.exit(-1)
-    return []
+    logging.info(json.dumps(result, indent=3))
+    return result
 
 
 if __name__ == "__main__":

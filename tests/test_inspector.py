@@ -81,7 +81,7 @@ def test_make_url_without_version():
 
 def test_make_single_request_py(psql):
     """Test version and license for python"""
-    result = inspector.make_single_request(
+    result, _ = inspector.make_single_request(
         psql, "python", "aiohttp", "3.7.2", force_schema=False
     )[0]
     assert result["pkg_name"] == "aiohttp"
@@ -92,7 +92,7 @@ def test_make_single_request_py(psql):
 
 def test_make_single_request_js(psql):
     """Test version and license for javascript"""
-    result = inspector.make_single_request(
+    result, _ = inspector.make_single_request(
         psql, "javascript", "react", "17.0.2", force_schema=False
     )[0]
     assert result["pkg_name"] == "react"
@@ -103,7 +103,7 @@ def test_make_single_request_js(psql):
 
 def test_make_single_request_go(psql):
     """Test version and license for go"""
-    result = inspector.make_single_request(
+    result, _ = inspector.make_single_request(
         psql,
         "go",
         "github.com/getsentry/sentry-go",
@@ -118,7 +118,7 @@ def test_make_single_request_go(psql):
 
 def test_make_single_request_go_redirect(psql):
     """Test version and license for go on redirects"""
-    result = inspector.make_single_request(
+    result, _ = inspector.make_single_request(
         psql, "go", "http", "go1.16.13", force_schema=False
     )[0]
     assert result["pkg_name"] == "http"
@@ -128,7 +128,7 @@ def test_make_single_request_go_redirect(psql):
 
 def test_make_single_request_go_github(psql):
     """Test version and license for go GitHub fallthrough"""
-    result = inspector.make_single_request(
+    result, _ = inspector.make_single_request(
         psql, "go", "https://github.com/go-yaml/yaml", force_schema=False
     )[0]
     assert result["pkg_name"] == "https://github.com/go-yaml/yaml"
