@@ -4,23 +4,18 @@
 #
 #    pip-compile
 #
-cycler==0.10.0            # via matplotlib
-kiwisolver==1.2.0         # via matplotlib
-matplotlib==3.2.1
-numpy==1.18.5
-pandas==1.0.4
-pyparsing==2.4.7          # via matplotlib
-python-dateutil==2.8.1    # via matplotlib, pandas
-pytz==2020.1              # via pandas
-scipy==1.4.1              # via seaborn
-seaborn==0.10.1
-six==1.15.0               # via cycler, python-dateutil
-beautifulsoup4==4.6.3
-certifi==2018.10.15
-chardet==3.0.4
-idna==2.7
-lxml==4.2.5
-requests==2.20.1
-selenium==3.141.0
-urllib3==1.24.1
-foo>5, <5.7
+cycler>=0.10.0            # via matplotlib
+kiwisolver>1.2.0         # via matplotlib
+matplotlib<3.2.1
+numpy!=1.18.5
+pandas==1.*
+pyparsing==2.*          # via matplotlib
+python-dateutil==2.8.*    # via matplotlib, pandas
+pytz==~2020             # via pandas
+scipy==~1.4              # via seaborn
+seaborn==~0.10.1
+six==^1.15.0               # via cycler, python-dateutil
+beautifulsoup4==^4.6
+certifi==^2018
+chardet==^0.0
+lxml>4, <5.7

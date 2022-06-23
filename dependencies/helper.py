@@ -1,6 +1,8 @@
 """Helper Functions for Inspector."""
+import functools
 import re
 from typing import List
+import semver
 
 import jmespath
 import requests
@@ -229,3 +231,96 @@ def py_versions(api_response: requests.Response, queries: dict) -> list:
     if not versions:
         return []
     return versions
+
+def is_non_specific(req: str) -> bool:
+    """
+    Checks if requirement string has any character that makes it non-specific
+    :param req: requirement string
+    """
+    non_sp_list = [
+        ">","<","~","^","*","!",",", "latest"
+    ]
+    return any(i in req for i in non_sp_list)
+
+
+def fix_ver(ver):
+    """Returns semver compliant version number"""
+    ver_c = ver.split("-")
+    if len(ver_c)>1:
+        channel = ver_c[1]
+    else:
+        channel = ""
+    ver_fix = (ver + ".0.0").split(".")
+    reg = re.compile(r'(?P<numbers>\d*)(?P<rest>.*)')
+    pos = ver.count(".")
+    result = reg.search(ver_fix[pos])
+    if result:
+        numbers = result.group('numbers')
+        rest = result.group('rest')
+        ver_fix[pos] = numbers
+        channel = channel + rest
+    if channel:
+        return ".".join(ver_fix[0:3])+"-"+channel
+    else:
+        return ".".join(ver_fix[0:3])
+
+
+def resolve_version(vers: List[str], reqs=None) -> str:
+    """
+    Returns latest suitable version from available metadata
+    :param vers: list of all available version
+    :param reqs: requirement info associated with package
+    :return: specific version to query
+    """
+    if not reqs:
+        reqs = [("==", "latest")]
+    # Multiple requirements
+    for (sym, ver) in reqs:
+        if "=" not in sym:
+            vers.remove(ver)
+        # Exact requirements
+        if sym is "==":
+            vers = [ver]
+        # Inequality requirements
+        elif "!" in sym and ver in vers:
+            vers.remove(ver)
+        elif ">" in sym:
+            vers = [x for x in vers if semver.compare(fix_ver(x), ver) != -1]
+        elif "<" in sym:
+            vers = [x for x in vers if semver.compare(fix_ver(x), ver) != 1]
+        # Caret Requirements
+        elif "^" in sym:
+            count_dot = ver.count(".")
+            fixed_ver = fix_ver(ver)
+            svi = semver.VersionInfo.parse(fixed_ver)
+            if svi.major != 0 or count_dot == 0:
+                vers = [x for x in vers if semver.VersionInfo.parse(fix_ver(x)).major == svi.major]
+            elif svi.minor != 0 or count_dot == 1:
+                vers = [x for x in vers if semver.VersionInfo.parse(fix_ver(x)).minor == svi.minor and semver.VersionInfo.parse(fix_ver(x)).major == svi.major]
+            elif svi.patch != 0:
+                vers = [x for x in vers if semver.VersionInfo.parse(fix_ver(x)).patch == svi.patch and semver.VersionInfo.parse(fix_ver(x)).minor == svi.minor and semver.VersionInfo.parse(fix_ver(x)).major == svi.major]
+        # Tilde requirements
+        elif "~" in sym:
+            count_dot = ver.count(".")
+            fixed_ver = fix_ver(ver)
+            svi = semver.VersionInfo.parse(fixed_ver)
+            if count_dot == 1 or count_dot == 0:
+                vers = [x for x in vers if semver.VersionInfo.parse(fix_ver(x)).major == svi.major]
+            elif count_dot >= 2:
+                vers = [x for x in vers if semver.VersionInfo.parse(fix_ver(x)).minor == svi.minor and semver.VersionInfo.parse(fix_ver(x)).major == svi.major]
+        # Wildcard requirements
+        elif "*" in sym:
+            tamed_ver = ver.split("*")[0]
+            count_dot = tamed_ver.count(".")
+            fixed_ver = fix_ver(tamed_ver)
+            svi = semver.VersionInfo.parse(fixed_ver)
+            if count_dot == 1:
+                vers = [x for x in vers if semver.VersionInfo.parse(fix_ver(x)).major == svi.major]
+            elif count_dot >= 2:
+                vers = [x for x in vers if semver.VersionInfo.parse(fix_ver(x)).minor == svi.minor and semver.VersionInfo.parse(fix_ver(x)).major == svi.major]
+    sorted_vers = sorted(vers, key=functools.cmp_to_key(my_cmp), reverse=True)
+    return sorted_vers[0] if sorted_vers else ""
+
+def my_cmp(a, b):
+    """Custom comparator based on semver and fixed variants"""
+    return semver.compare(fix_ver(a), fix_ver(b))
