@@ -74,7 +74,7 @@ def main(
             if dep_list:
                 result.extend(make_multiple_requests(psql, language, dep_list))
 
-                logging.info(json.dumps(result, indent=3))
+                logging.info(json.dumps(result, indent=3, default=str))
                 return result
         except (LanguageNotSupportedError, VCSNotSupportedError, ParamMissing) as e:
             logging.error(e.msg)

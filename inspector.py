@@ -14,7 +14,6 @@ from db.postgres_worker import add_data, get_data, upd_data
 from dep_types import Result
 from dependencies.helper import (
     resolve_version,
-    is_non_specific,
     go_versions,
     handle_npmjs,
     handle_pypi,
@@ -161,7 +160,8 @@ def make_single_request(
                     < CACHE_EXPIRY
                 ):
                     logging.info("Using " + package + " found in Postgres Database")
-                    return db_data
+                    # noinspection PyProtectedMember
+                    return parse_dep_response([db_data._asdict()])
         if "||" in version:
             git_url, git_branch = version.split("||")
             handle_vcs(language, git_url + "/tree/" + git_branch, result)
