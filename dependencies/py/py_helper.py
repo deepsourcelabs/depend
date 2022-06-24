@@ -27,5 +27,5 @@ def handle_requirements_txt(req_file_data: str) -> Result:
         if not ir.specs:
             res["pkg_dep"].append(str(ir.key))
         else:
-            res["pkg_dep"].append(str(ir.key) +"|"+ str(ir.specs))
+            res["pkg_dep"].append(str(ir.key) + "|" + str(ir.specs))
     return res

@@ -13,13 +13,13 @@ from constants import CACHE_EXPIRY, REGISTRY
 from db.postgres_worker import add_data, get_data, upd_data
 from dep_types import Result
 from dependencies.helper import (
-    resolve_version,
     go_versions,
     handle_npmjs,
     handle_pypi,
     js_versions,
     parse_dep_response,
     py_versions,
+    resolve_version,
     scrape_go,
 )
 from error import LanguageNotSupportedError, VCSNotSupportedError
@@ -104,7 +104,7 @@ def make_single_request(
     version: str = "",
     force_schema: bool = True,
     all_ver: bool = False,
-    ver_spec=None
+    ver_spec=None,
 ) -> dict | Result | List[Result]:
     """
     Obtain package license and dependency information.
@@ -250,6 +250,8 @@ def make_multiple_requests(
             else:
                 dep_resp = make_single_request(psql, language, name_ver[0], name_ver[1])
         else:
-            dep_resp = make_single_request(psql, language, package, ver_spec=ast.literal_eval(ver_spec))
+            dep_resp = make_single_request(
+                psql, language, package, ver_spec=ast.literal_eval(ver_spec)
+            )
         result.append(dep_resp)
     return result

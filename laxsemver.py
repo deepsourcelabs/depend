@@ -9,6 +9,7 @@ string_types = str, bytes
 text_type = str
 binary_type = bytes
 
+
 def char_last(string):
     """Separates non numeric characters"""
     hold = ["0", "0", "0"]
@@ -29,16 +30,17 @@ def char_last(string):
             fall_through = True
     return hold, "".join(channel)
 
+
 def fix_ver(ver):
     """Returns semver compliant version number"""
     ver_c = ver.split("-")
-    if len(ver_c)>1:
+    if len(ver_c) > 1:
         channel = ver_c[1]
     else:
         channel = ""
     ver_fix, false_channel = char_last(ver_c[0])
     if channel or false_channel:
-        return ".".join(ver_fix[0:3])+"-"+false_channel+channel
+        return ".".join(ver_fix[0:3]) + "-" + false_channel + channel
     else:
         return ".".join(ver_fix[0:3])
 
@@ -46,6 +48,7 @@ def fix_ver(ver):
 def cmp(a, b):
     """Return negative if a<b, zero if a==b, positive if a>b."""
     return (a > b) - (a < b)
+
 
 def _nat_cmp(a, b):
     def convert(text):
@@ -612,6 +615,7 @@ prerelease='pre.2', build='build.4')
             return True
         except ValueError:
             return False
+
 
 def compare(ver1, ver2):
     """

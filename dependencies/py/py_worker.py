@@ -63,9 +63,7 @@ def handle_toml(file_data: str) -> Result:
         else:
             install_reqs = parse_requirements("\n".join(package_dep))
             for ir in install_reqs:
-                res["pkg_dep"].append(
-                    str(ir.key) + "|" + str(ir.specs)
-                )
+                res["pkg_dep"].append(str(ir.key) + "|" + str(ir.specs))
     res["pkg_name"] = package_data.get("name", "")
     res["pkg_ver"] = package_data.get("version", "")
     res["pkg_lic"] = [package_data.get("license", "Other")]
