@@ -259,7 +259,7 @@ def resolve_version(vers: List[str], reqs=None) -> str:
         if "=" not in sym and ver in vers:
             vers.remove(ver)
         # Exact requirements
-        if sym is "==":
+        if sym == "==":
             vers = [ver]
         # Inequality requirements
         elif "!" in sym and ver in vers:
@@ -294,9 +294,8 @@ def resolve_version(vers: List[str], reqs=None) -> str:
         # Tilde requirements
         elif "~" in sym:
             count_dot = ver.count(".")
-            ver = ver
             svi = semver.VersionInfo.parse(ver)
-            if count_dot == 1 or count_dot == 0:
+            if count_dot in (1,0):
                 vers = [
                     x for x in vers if semver.VersionInfo.parse(x).major == svi.major
                 ]

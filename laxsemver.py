@@ -80,8 +80,7 @@ def _nat_cmp(a, b):
         cmp_result = cmp_prerelease_tag(sub_a, sub_b)
         if cmp_result != 0:
             return cmp_result
-    else:
-        return cmp(len(a), len(b))
+    return cmp(len(a), len(b))
 
 
 def comparator(operator):
@@ -105,7 +104,7 @@ def fakeint(param) -> int:
     return sum([ord(i) for i in param])
 
 
-class VersionInfo(object):
+class VersionInfo:
     """
     A semver compatible version class.
 
