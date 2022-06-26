@@ -4,7 +4,7 @@ import logging
 import re
 import time
 from datetime import datetime
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Tuple
 
 import requests
 from tldextract import extract
@@ -110,7 +110,6 @@ def find_github(text: str) -> str:
 
 def make_single_request(
     psql: Any,
-    db_name: Optional[str],
     language: str,
     package: str,
     version: str = "",
@@ -119,7 +118,6 @@ def make_single_request(
     """
     Obtain package license and dependency information.
     :param psql: Postgres connection
-    :param db_name: Postgres database to be used
     :param language: python, javascript or go
     :param package: as imported
     :param version: check for specific version
@@ -158,11 +156,9 @@ def make_single_request(
     if not vers:
         vers = [""]
     for ver in vers:
-        run_flag = "new"
-        if psql and db_name:
-            db_data = get_data(psql, db_name, language, package, ver)
+        if psql:
+            db_data = get_data(psql, language, package, ver)
             if db_data:
-                run_flag = "update"
                 db_time: datetime = db_data.timestamp
                 if (
                     time.mktime(db_time.timetuple())
@@ -190,10 +186,11 @@ def make_single_request(
                 case "go":
                     if response.status_code == 200:
                         # Handle 302: Redirection
+                        red_url = url
                         if response.history:
                             red_url = response.url + "@" + version
                             response = requests.get(red_url)
-                        scrape_go(response, queries, result, url)
+                        scrape_go(response, queries, result, red_url)
                     else:
                         repo = package
             supported_domains = [
@@ -205,14 +202,14 @@ def make_single_request(
                     repo = find_github(response.text)
                 if repo:
                     handle_vcs(language, repo, result)
-        if psql and db_name:
-            if run_flag == "new":
+        if psql:
+            db_data = get_data(psql, language, package, ver)
+            if not db_data:
                 add_data(
                     psql,
-                    db_name,
                     language,
-                    result.get("pkg_name", ""),
-                    result.get("pkg_ver", ""),
+                    package,
+                    ver,
                     result.get("import_name", ""),
                     result.get("lang_ver", []),
                     result.get("pkg_lic", []),
@@ -222,10 +219,9 @@ def make_single_request(
             else:
                 upd_data(
                     psql,
-                    db_name,
                     language,
-                    result.get("pkg_name", ""),
-                    result.get("pkg_ver", ""),
+                    package,
+                    ver,
                     result.get("import_name", ""),
                     result.get("lang_ver", []),
                     result.get("pkg_lic", []),
@@ -241,27 +237,22 @@ def make_single_request(
 
 def make_multiple_requests(
     psql: Any,
-    db_name: Optional[str],
     language: str,
     packages: List[str],
 ) -> List[Any]:
     """
     Obtain license and dependency information for list of packages.
     :param psql: Postgres connection
-    :param db_name: Postgres database to be used
     :param language: python, javascript or go
     :param packages: a list of dependencies in each language
     :return: result object with name version license and dependencies
     """
     result = []
-
     for package in packages:
         name_ver = (package[0] + package[1:].replace("@", ";")).rsplit(";", 1)
         if len(name_ver) == 1:
-            dep_resp = make_single_request(psql, db_name, language, package)
+            dep_resp = make_single_request(psql, language, package)
         else:
-            dep_resp = make_single_request(
-                psql, db_name, language, name_ver[0], name_ver[1]
-            )
+            dep_resp = make_single_request(psql, language, name_ver[0], name_ver[1])
         result.append(dep_resp)
     return result

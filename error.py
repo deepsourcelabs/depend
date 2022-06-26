@@ -34,3 +34,13 @@ class FileNotSupportedError(UnsupportedError):
     def __init__(self, file: str):
         self.msg = f"{file} is currently not supported"
         super().__init__(self.msg)
+
+
+class ParamMissing(UnsupportedError):
+    """Raised when DB parameter is not defined"""
+
+    def __init__(self, param: str):
+        self.msg = (
+            f"{param} is not defined as an environment variables or is an empty string"
+        )
+        super().__init__(self.msg)
