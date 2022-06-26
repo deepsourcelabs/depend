@@ -1,5 +1,5 @@
 """License & Version Extractor"""
-import ast
+
 import logging
 import re
 import time
@@ -19,7 +19,6 @@ from dependencies.helper import (
     js_versions,
     parse_dep_response,
     py_versions,
-    resolve_version,
     scrape_go,
 )
 from error import LanguageNotSupportedError, VCSNotSupportedError
@@ -103,8 +102,6 @@ def make_single_request(
     package: str,
     version: str = "",
     force_schema: bool = True,
-    all_ver: bool = False,
-    ver_spec=None,
 ) -> dict | Result | List[Result]:
     """
     Obtain package license and dependency information.
@@ -113,12 +110,8 @@ def make_single_request(
     :param package: as imported
     :param version: check for specific version
     :param force_schema: returns schema compliant response if true
-    :param all_ver: all versions queried if version not supplied
-    :param ver_spec: version specifier used
     :return: result object with name version license and dependencies
     """
-    if ver_spec is None:
-        ver_spec = []
     result_list = []
     result: Result = {
         "import_name": "",
@@ -143,8 +136,6 @@ def make_single_request(
                 vers = js_versions(response, queries)
             case "go":
                 vers = go_versions(url, queries)
-        if not all_ver:
-            vers = [resolve_version(vers, ver_spec)]
     else:
         vers = [version]
     if not vers:
@@ -160,8 +151,7 @@ def make_single_request(
                     < CACHE_EXPIRY
                 ):
                     logging.info("Using " + package + " found in Postgres Database")
-                    # noinspection PyProtectedMember
-                    return parse_dep_response([db_data._asdict()])
+                    return db_data
         if "||" in version:
             git_url, git_branch = version.split("||")
             handle_vcs(language, git_url + "/tree/" + git_branch, result)
@@ -241,17 +231,11 @@ def make_multiple_requests(
     :return: result object with name version license and dependencies
     """
     result = []
-    for package_d in packages:
-        package, ver_spec, *_ = package_d.rsplit("|", 1) + [""]
-        if not ver_spec:
-            name_ver = (package[0] + package[1:].replace("@", ";")).rsplit(";", 1)
-            if len(name_ver) == 1:
-                dep_resp = make_single_request(psql, language, package)
-            else:
-                dep_resp = make_single_request(psql, language, name_ver[0], name_ver[1])
+    for package in packages:
+        name_ver = (package[0] + package[1:].replace("@", ";")).rsplit(";", 1)
+        if len(name_ver) == 1:
+            dep_resp = make_single_request(psql, language, package)
         else:
-            dep_resp = make_single_request(
-                psql, language, package, ver_spec=ast.literal_eval(ver_spec)
-            )
+            dep_resp = make_single_request(psql, language, name_ver[0], name_ver[1])
         result.append(dep_resp)
     return result
