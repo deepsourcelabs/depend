@@ -1,13 +1,13 @@
 """Constants and config to be used by the analyzer."""
 from jmespath import compile as jc
 
-CACHE_EXPIRY = 1800
+CACHE_EXPIRY = 1800.0
 REGISTRY: dict = {
     "python": {
         "registry": "PyPI",
         "url": "https://pypi.org/pypi",
         "name": jc("info.name"),
-        "versions": 'releases."{}"',
+        "versions": jc("releases | keys(@)"),
         "version": jc("info.version"),
         "license": jc("info.license"),
         "dependency": jc("info.requires_dist"),
@@ -18,7 +18,7 @@ REGISTRY: dict = {
         "url": "https://registry.npmjs.org",
         "name": jc("name"),
         "latest": jc('"dist-tags".latest'),
-        "versions": 'versions."{}"',
+        "versions": jc("versions | keys(@)"),
         "version": jc("version"),
         "license": jc("[license,licenses|[?type!=null].type][]"),
         "dependency": jc("dependencies||__dependencies"),
