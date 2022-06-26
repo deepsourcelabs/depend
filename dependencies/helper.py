@@ -274,3 +274,7 @@ def ruby_versions(api_response: requests.Response, queries: dict) -> list:
         return []
     data = api_response.json()
     versions_q: jmespath.parser.ParsedResult = queries["version"]
+    versions = versions_q.search(data)
+    if not versions:
+        return []
+    return versions
