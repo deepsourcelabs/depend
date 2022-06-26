@@ -159,11 +159,9 @@ def make_single_request(
     if not vers:
         vers = [""]
     for ver in vers:
-        run_flag = "new"
         if psql:
             db_data = get_data(psql, language, package, ver)
             if db_data:
-                run_flag = "update"
                 db_time: datetime = db_data.timestamp
                 if (
                     time.mktime(db_time.timetuple())
@@ -192,7 +190,7 @@ def make_single_request(
                         if response.history:
                             red_url = response.url + "@" + version
                             response = requests.get(red_url)
-                        scrape_go(response, queries, result, url)
+                        scrape_go(response, queries, result, red_url)
                     else:
                         repo = package
                 case "ruby":
@@ -207,12 +205,13 @@ def make_single_request(
                 if repo:
                     handle_vcs(language, repo, result)
         if psql:
-            if run_flag == "new":
+            db_data = get_data(psql, language, package, ver)
+            if not db_data:
                 add_data(
                     psql,
                     language,
-                    result.get("pkg_name", ""),
-                    result.get("pkg_ver", ""),
+                    package,
+                    ver,
                     result.get("import_name", ""),
                     result.get("lang_ver", []),
                     result.get("pkg_lic", []),
@@ -223,8 +222,8 @@ def make_single_request(
                 upd_data(
                     psql,
                     language,
-                    result.get("pkg_name", ""),
-                    result.get("pkg_ver", ""),
+                    package,
+                    ver,
                     result.get("import_name", ""),
                     result.get("lang_ver", []),
                     result.get("pkg_lic", []),

@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Union
 import typer
 
 from dependencies.helper import handle_dep_file, parse_dep_response
-from error import LanguageNotSupportedError, VCSNotSupportedError
+from error import LanguageNotSupportedError, ParamMissing, VCSNotSupportedError
 from handle_env import get_db
 from inspector import make_multiple_requests
 
@@ -73,10 +73,9 @@ def main(
         try:
             if dep_list:
                 result.extend(make_multiple_requests(psql, language, dep_list))
-
                 logging.info(json.dumps(result, indent=3))
                 return result
-        except (LanguageNotSupportedError, VCSNotSupportedError) as e:
+        except (LanguageNotSupportedError, VCSNotSupportedError, ParamMissing) as e:
             logging.error(e.msg)
             sys.exit(-1)
     return []
