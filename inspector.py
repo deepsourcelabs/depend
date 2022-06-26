@@ -187,6 +187,7 @@ def make_single_request(
                 case "go":
                     if response.status_code == 200:
                         # Handle 302: Redirection
+                        red_url = url
                         if response.history:
                             red_url = response.url + "@" + version
                             response = requests.get(red_url)
