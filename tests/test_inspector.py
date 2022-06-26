@@ -161,3 +161,19 @@ def test_unsupported_vcs_fails(result_payload):
     """Checks if exception is raised for unsupported pattern"""
     with pytest.raises(VCSNotSupportedError, match="gitlab"):
         inspector.handle_vcs("go", "gitlab.com/secmask/awserver", result_payload)
+
+
+def test_make_single_request_ruby(psql):
+    """Test version and license for ruby"""
+    result = inspector.make_single_request(psql, "ruby", "coulda", force_schema=False)[
+        0
+    ]
+    assert result["pkg_dep"]
+
+
+def test_make_single_request_ruby_ver(psql):
+    """Test version and license for ruby"""
+    result = inspector.make_single_request(
+        psql, "ruby", "coulda", "0.7.1", force_schema=False
+    )[0]
+    assert result["pkg_dep"]

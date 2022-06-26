@@ -6,6 +6,7 @@ import dependencies.go.go_worker
 import dependencies.js.js_worker
 import dependencies.py.py_helper
 import dependencies.py.py_worker
+import dependencies.ruby.ruby_worker
 
 
 class Helpers:
@@ -132,3 +133,23 @@ def test_other_py(json_schema):
         pyproject = f.read()
     result = dependencies.py.py_worker.handle_otherpy(pyproject, "Pipfile")
     assert json_schema.is_valid(result)
+
+
+def test_gemfile(json_schema):
+    """
+    Parses Gemfile
+    """
+    with open("tests/data/example_Gemfile") as f:
+        pyproject = f.read()
+    result = dependencies.ruby.ruby_worker.GemfileParser(pyproject)
+    assert json_schema.is_valid(result.handle_gemfile())
+
+
+def test_gemspec(json_schema):
+    """
+    Parses .gemspec and Rakefile
+    """
+    with open("tests/data/example_.gemspec") as f:
+        pyproject = f.read()
+    result = dependencies.ruby.ruby_worker.GemfileParser(pyproject)
+    assert json_schema.is_valid(result.handle_gemspec())

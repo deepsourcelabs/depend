@@ -16,9 +16,11 @@ from dependencies.helper import (
     go_versions,
     handle_npmjs,
     handle_pypi,
+    handle_ruby,
     js_versions,
     parse_dep_response,
     py_versions,
+    ruby_versions,
     scrape_go,
 )
 from error import LanguageNotSupportedError, VCSNotSupportedError
@@ -72,6 +74,19 @@ def make_url(language: str, package: str, version: str = "") -> str:
                 url_elements = (str(REGISTRY[language]["url"]), package + "@" + version)
             else:
                 url_elements = (str(REGISTRY[language]["url"]), package)
+        case "ruby":
+            if version:
+                url_elements = (
+                    str(REGISTRY[language]["url"]),
+                    package,
+                    "versions",
+                    version + ".json",
+                )
+            else:
+                url_elements = (
+                    str(REGISTRY[language]["versions_api"]),
+                    package + ".json",
+                )
         case _:
             raise LanguageNotSupportedError(language)
     return "/".join(url_elements).rstrip("/")
@@ -136,6 +151,9 @@ def make_single_request(
                 vers = js_versions(response, queries)
             case "go":
                 vers = go_versions(url, queries)
+            case "ruby":
+                response = requests.get(url)
+                vers = ruby_versions(response, queries)
     else:
         vers = [version]
     if not vers:
@@ -176,6 +194,8 @@ def make_single_request(
                         scrape_go(response, queries, result, red_url)
                     else:
                         repo = package
+                case "ruby":
+                    repo = handle_ruby(response, queries, result)
             supported_domains = [
                 "github.com",
             ]

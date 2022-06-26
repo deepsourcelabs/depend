@@ -57,7 +57,7 @@ def main(
             return result
     else:
         payload[lang] = packages
-    if lang not in ["go", "python", "javascript"]:
+    if lang not in ["go", "python", "javascript", "rust", "php", "ruby"]:
         raise LanguageNotSupportedError(lang)
     if psql := get_db():
         logging.info("Postgres DB connected")
@@ -73,7 +73,6 @@ def main(
         try:
             if dep_list:
                 result.extend(make_multiple_requests(psql, language, dep_list))
-
                 logging.info(json.dumps(result, indent=3))
                 return result
         except (LanguageNotSupportedError, VCSNotSupportedError, ParamMissing) as e:
