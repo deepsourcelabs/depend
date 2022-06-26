@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Union
 import typer
 
 from dependencies.helper import handle_dep_file, parse_dep_response
-from error import LanguageNotSupportedError, VCSNotSupportedError
+from error import LanguageNotSupportedError, ParamMissing, VCSNotSupportedError
 from handle_env import get_db
 from inspector import make_multiple_requests
 
@@ -21,7 +21,6 @@ def main(
     lang: str = typer.Option(None),
     packages: Optional[str] = typer.Option(None),
     dep_file: Optional[Path] = typer.Option(None),
-    db_name: Optional[str] = typer.Option(None),
     deep_search: Optional[bool] = typer.Option(False),
 ) -> List[Any]:
     """
@@ -39,8 +38,6 @@ def main(
     :param packages: list of packages to check
 
     :param dep_file: location of file to parse for packages
-
-    :param db_name: Postgres database to be used
 
     :param deep_search: when true populating all fields is attempted
 
@@ -63,9 +60,6 @@ def main(
     if lang not in ["go", "python", "javascript", "rust", "php"]:
         raise LanguageNotSupportedError(lang)
     if psql := get_db():
-        if not db_name:
-            logging.error("Please specify DB Name!")
-            sys.exit(-1)
         logging.info("Postgres DB connected")
     for language, dependencies in payload.items():
         if isinstance(dependencies, str):
@@ -78,11 +72,10 @@ def main(
             logging.error("Unknown Response")
         try:
             if dep_list:
-                result.extend(make_multiple_requests(psql, db_name, language, dep_list))
-
+                result.extend(make_multiple_requests(psql, language, dep_list))
                 logging.info(json.dumps(result, indent=3))
                 return result
-        except (LanguageNotSupportedError, VCSNotSupportedError) as e:
+        except (LanguageNotSupportedError, VCSNotSupportedError, ParamMissing) as e:
             logging.error(e.msg)
             sys.exit(-1)
     return []

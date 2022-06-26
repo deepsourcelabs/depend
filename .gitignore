@@ -1,9 +1,10 @@
-**/*_cache.sqlite
-/venv/
-.idea
-.env
-coverage.xml
+__pycache__/
 .coverage
+.env
+.idea
+**/*_cache.sqlite
+/.mypy_cache/
 /.pytest_cache/
 /configuration.ini
-/.mypy_cache/
+/venv/
+coverage.xml
