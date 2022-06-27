@@ -5,8 +5,10 @@ from jsonschema import validate
 import dependencies.cs.cs_worker
 import dependencies.go.go_worker
 import dependencies.js.js_worker
+import dependencies.php.php_worker
 import dependencies.py.py_helper
 import dependencies.py.py_worker
+import dependencies.rust.rust_worker
 
 
 class Helpers:
@@ -140,4 +142,28 @@ def test_cs_xml(json_schema):
     with open("tests/data/example_package.nuspec") as f:
         nuspec = f.read()
     result = dependencies.cs.cs_worker.handle_nuspec(nuspec)
+    assert json_schema.is_valid(result)
+
+
+def test_composer_json(json_schema):
+    """Check composer json file output"""
+    with open("tests/data/example_composer.json") as f:
+        php_project = f.read()
+    result = dependencies.php.php_worker.handle_composer_json(php_project)
+    assert json_schema.is_valid(result)
+
+
+def test_cargo_toml(json_schema):
+    """Check cargo toml file output"""
+    with open("tests/data/example_cargo.toml") as f:
+        rust_project = f.read()
+    result = dependencies.rust.rust_worker.handle_cargo_toml(rust_project)
+    assert json_schema.is_valid(result)
+
+
+def test_cargo_lock(json_schema):
+    """Check poetry toml file output"""
+    with open("tests/data/example_cargo.lock") as f:
+        rust_project = f.read()
+    result = dependencies.rust.rust_worker.handle_lock(rust_project)
     assert json_schema.is_valid(result)

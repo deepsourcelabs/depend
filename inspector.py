@@ -16,11 +16,15 @@ from dependencies.helper import (
     go_versions,
     handle_cs,
     handle_npmjs,
+    handle_php,
     handle_pypi,
+    handle_rust,
     js_versions,
     nuget_versions,
     parse_dep_response,
+    php_versions,
     py_versions,
+    rust_versions,
     scrape_go,
 )
 from error import LanguageNotSupportedError, VCSNotSupportedError
@@ -52,6 +56,7 @@ def make_url(language: str, package: str, version: str = "") -> str:
     :param version: optional version specification
     :return: url to fetch
     """
+    suffix = ""
     url_elements: Tuple[str, ...]
     match language:
         case "python":
@@ -84,9 +89,17 @@ def make_url(language: str, package: str, version: str = "") -> str:
                 )
             else:
                 url_elements = (REGISTRY[language]["url"], package, "index.json")
+        case "php":
+            url_elements = (REGISTRY[language]["url"], package)
+            suffix = ".json"
+        case "rust":
+            if version:
+                url_elements = (REGISTRY[language]["url"], package, version)
+            else:
+                url_elements = (REGISTRY[language]["url"], package, "versions")
         case _:
             raise LanguageNotSupportedError(language)
-    return "/".join(url_elements).rstrip("/")
+    return "/".join(url_elements).rstrip("/") + suffix
 
 
 def find_github(text: str) -> str:
@@ -151,6 +164,12 @@ def make_single_request(
             case "cs":
                 response = requests.get(url)
                 vers = nuget_versions(response, queries)
+            case "php":
+                response = requests.get(url)
+                vers = php_versions(response, queries)
+            case "rust":
+                response = requests.get(url)
+                vers = rust_versions(response, queries)
     else:
         vers = [version]
     if not vers:
@@ -183,6 +202,10 @@ def make_single_request(
                     repo = handle_npmjs(response, queries, result)
                 case "cs":
                     repo = handle_cs(response, queries, result)
+                case "php":
+                    handle_php(response, queries, result, ver)
+                case "rust":
+                    handle_rust(response, queries, result, url)
                 case "go":
                     if response.status_code == 200:
                         # Handle 302: Redirection
