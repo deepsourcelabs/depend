@@ -4,11 +4,13 @@ from typing import List
 
 import jmespath
 import requests
+import xmltodict
 from bs4 import BeautifulSoup
 
 from dep_types import Result
 from error import FileNotSupportedError
 
+from .cs.cs_worker import findkeys, handle_nuspec
 from .go.go_worker import handle_go_mod
 from .js.js_worker import handle_json, handle_yarn_lock
 from .php.php_worker import handle_composer_json
@@ -66,6 +68,8 @@ def handle_dep_file(
             return handle_setup_py(file_content)
         case "cfg":
             return handle_setup_cfg(file_content)
+        case "xml":
+            return handle_nuspec(file_content)
         case _:
             raise FileNotSupportedError(file_name)
 
@@ -119,6 +123,37 @@ def handle_pypi(api_response: requests.Response, queries: dict, result: Result):
     result["pkg_dep"] = handle_requirements_txt(req_file_data).get("pkg_dep", [])
     repo = repo_q.search(data) or ""
     return repo
+
+
+def handle_cs(api_response: requests.Response, queries: dict, result: Result):
+    """
+    Take api response and return required results object
+    :param api_response: response from requests get
+    :param queries: compiled jmespath queries
+    :param result: object to mutate
+    """
+    _ = queries
+    if api_response.status_code == 404:
+        return ""
+    req_file_data = api_response.text
+    root = xmltodict.parse(req_file_data).get("package", {}).get("metadata")
+    result["pkg_name"] = root.get("id")
+    result["pkg_ver"] = root.get("version")
+    # ignores "file" type
+    if root.get("license", {}).get("@type") == "expression":
+        result["pkg_lic"] = [root.get("license", {}).get("#text")]
+    pkg_dep = set()
+    for gen_e in findkeys(root.get("dependencies"), "dependency"):
+        if isinstance(gen_e, list):
+            for dep_e in gen_e:
+                dep_entry = dep_e.get("@id") + ";" + dep_e.get("@version")
+                pkg_dep.add(dep_entry)
+        else:
+            dep_entry = gen_e.get("@id") + ";" + gen_e.get("@version")
+            pkg_dep.add(dep_entry)
+    result["pkg_dep"] = list(pkg_dep)
+    # @type = git
+    return root.get("repository", {}).get("@url")
 
 
 def handle_npmjs(api_response: requests.Response, queries: dict, result: Result):
@@ -291,6 +326,23 @@ def js_versions(api_response: requests.Response, queries: dict) -> list:
 def py_versions(api_response: requests.Response, queries: dict) -> list:
     """
     Get list of all versions for py package
+    :param queries: compiled jmespath queries
+    :param api_response: registry response
+    :return: list of versions
+    """
+    if api_response.status_code == 404:
+        return []
+    data = api_response.json()
+    versions_q: jmespath.parser.ParsedResult = queries["versions"]
+    versions = versions_q.search(data)
+    if not versions:
+        return []
+    return versions
+
+
+def nuget_versions(api_response: requests.Response, queries: dict) -> list:
+    """
+    Get list of all versions for C# package
     :param queries: compiled jmespath queries
     :param api_response: registry response
     :return: list of versions
