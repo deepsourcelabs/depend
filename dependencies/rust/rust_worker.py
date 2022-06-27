@@ -52,7 +52,9 @@ def handle_lock(file_data: str) -> dict:
         "pkg_dep": [],
         "timestamp": datetime.utcnow().isoformat(),
     }
-    dependencies_regex = re.compile(r'name = \"([^"]+)\"[\n\r]version = \"([^"]+)\"', re.MULTILINE)
+    dependencies_regex = re.compile(
+        r'name = \"([^"]+)\"[\n\r]version = \"([^"]+)\"', re.MULTILINE
+    )
     matches = [m.groups() for m in regex.finditer(file_data)]
     for name, specs in matches:
         res["pkg_dep"].append(name + ";" + str(specs))
