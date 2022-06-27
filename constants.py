@@ -34,6 +34,14 @@ REGISTRY: dict = {
         "license": "License",
         "dependency": "dependencies",
     },
+    "rust": {
+        "url": "https://crates.io/api/v1/crates",
+        "name": jc("version.crate"),
+        "versions": jc("versions[].num"),
+        "version": jc("version.num"),
+        "license": jc("version.license"),
+        "dependency": jc("dependencies[]|[].join(`;`, [crate_id, req])"),
+    },
 }
 LICENSE_FILES = [
     "LICENSE",
@@ -73,6 +81,7 @@ REQ_FILES = {
         "yarn.lock",
     ],
     "go": ["go.mod"],
+    "rust": ["Cargo.toml", "Cargo.lock"],
 }
 LICENSE_DICT: dict = {
     "AFL": "Academic Free License",
