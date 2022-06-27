@@ -141,6 +141,7 @@ def test_composer_json(json_schema):
     with open("tests/data/example_composer.json") as f:
         php_project = f.read()
     result = dependencies.php.php_worker.handle_composer_json(php_project)
+    assert json_schema.is_valid(result)
 
 
 def test_cargo_toml(json_schema):
