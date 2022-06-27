@@ -4,6 +4,7 @@ from jsonschema import validate
 
 import dependencies.go.go_worker
 import dependencies.js.js_worker
+import dependencies.php.php_worker
 import dependencies.py.py_helper
 import dependencies.py.py_worker
 import dependencies.rust.rust_worker
@@ -132,6 +133,14 @@ def test_other_py(json_schema):
     with open("tests/data/example_pipfile") as f:
         pyproject = f.read()
     result = dependencies.py.py_worker.handle_otherpy(pyproject, "Pipfile")
+    assert json_schema.is_valid(result)
+
+
+def test_composer_json(json_schema):
+    """Check poetry toml file output"""
+    with open("tests/data/example_composer.json") as f:
+        php_project = f.read()
+    result = dependencies.php.php_worker.handle_composer_json(php_project)
     assert json_schema.is_valid(result)
 
 

@@ -34,6 +34,14 @@ REGISTRY: dict = {
         "license": "License",
         "dependency": "dependencies",
     },
+    "php": {
+        "url": "https://packagist.org/packages",
+        "name": jc("package.name"),
+        "versions": jc("package.versions.keys(@)"),
+        "ver_data": jc("package.versions"),
+        "license_key": "license",
+        "dependency_key": "require",
+    },
     "rust": {
         "url": "https://crates.io/api/v1/crates",
         "name": jc("version.crate"),
@@ -81,6 +89,7 @@ REQ_FILES = {
         "yarn.lock",
     ],
     "go": ["go.mod"],
+    "php": ["composer.json"],
     "rust": ["Cargo.toml", "Cargo.lock"],
 }
 LICENSE_DICT: dict = {
