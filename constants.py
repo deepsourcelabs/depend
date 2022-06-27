@@ -34,14 +34,6 @@ REGISTRY: dict = {
         "license": "License",
         "dependency": "dependencies",
     },
-    "java": {
-        "registry": "maven",
-        "url": "https://search.maven.org/solrsearch/select?q=",
-        "g": jc("response.docs[0].g"),
-        "a": jc("response.docs[0].a"),
-        "v": jc("response.docs[0].v"),
-        "versions": jc("response.docs[*].v"),
-    },
     "rust": {
         "url": "https://crates.io/api/v1/crates",
         "name": jc("version.crate"),
