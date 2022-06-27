@@ -18,9 +18,10 @@ app = typer.Typer(add_completion=False)
 
 @app.callback(invoke_without_command=True)
 def main(
-    lang: str = typer.Option(...),
+    lang: str = typer.Option(None),
     packages: Optional[str] = typer.Option(None),
     dep_file: Optional[Path] = typer.Option(None),
+    db_name: Optional[str] = typer.Option(None),
     deep_search: Optional[bool] = typer.Option(False),
 ) -> List[Any]:
     """
@@ -57,7 +58,7 @@ def main(
             return result
     else:
         payload[lang] = packages
-    if lang not in ["go", "python", "javascript"]:
+    if lang not in ["go", "python", "javascript", "rust"]:
         raise LanguageNotSupportedError(lang)
     if psql := get_db():
         logging.info("Postgres DB connected")
@@ -73,7 +74,6 @@ def main(
         try:
             if dep_list:
                 result.extend(make_multiple_requests(psql, language, dep_list))
-
                 logging.info(json.dumps(result, indent=3))
                 return result
         except (LanguageNotSupportedError, VCSNotSupportedError, ParamMissing) as e:
