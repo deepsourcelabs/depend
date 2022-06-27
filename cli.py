@@ -58,7 +58,7 @@ def main(
             return result
     else:
         payload[lang] = packages
-    if lang not in ["go", "python", "javascript", "rust", "php"]:
+    if lang not in ["go", "python", "javascript", "rust", "php", "cs"]:
         raise LanguageNotSupportedError(lang)
     if psql := get_db():
         logging.info("Postgres DB connected")

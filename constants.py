@@ -34,6 +34,15 @@ REGISTRY: dict = {
         "license": "License",
         "dependency": "dependencies",
     },
+    "cs": {
+        "url": "https://api.nuget.org/v3-flatcontainer",
+        "name": jc("package.metadata.id"),
+        "versions": jc("versions"),
+        "version": jc("package.metadata.version"),
+        "license": jc("package.metadata.license"),
+        "dependency": jc("package.metadata.dependencies"),
+        "repo": jc("package.metadata.repository "),
+    },
     "php": {
         "url": "https://packagist.org/packages",
         "name": jc("package.name"),
@@ -89,6 +98,7 @@ REQ_FILES = {
         "yarn.lock",
     ],
     "go": ["go.mod"],
+    "cs": [".nuspec"],
     "php": ["composer.json"],
     "rust": ["Cargo.toml", "Cargo.lock"],
 }

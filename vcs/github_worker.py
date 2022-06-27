@@ -106,7 +106,9 @@ def handle_github(
                     logging.info(releases)
                     result["pkg_ver"] = commit_branch_tag or releases[0]
 
-                req_files = constants.REQ_FILES[language]
+                req_files: list = constants.REQ_FILES[language]
+                if ".nuspec" in req_files:
+                    req_files.append(dependency + ".nuspec")
                 for f in set(files_s).intersection(req_files):
                     req_filename = f
                     file_extension = req_filename.split(".")[-1]

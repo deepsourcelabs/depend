@@ -1,0 +1,82 @@
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+<metadata>
+<id>Walter.Web.Firewall.Core.3.x</id>
+<version>2020.8.25.1</version>
+<title>Advanced application firewall for integration with .net web applications</title>
+<authors>Walter Verhoeven,Stijn Snellinx</authors>
+<owners/>
+<requireLicenseAcceptance>true</requireLicenseAcceptance>
+<license type="file">FireWallLicense.txt</license>
+<licenseUrl>https://aka.ms/deprecateLicenseUrl</licenseUrl>
+<projectUrl>https://www.asp-waf.com/</projectUrl>
+<iconUrl>https://cdn.asp-waf.com/img/firewall.png</iconUrl>
+<description>Firewall that can be used in MVC applications that protect for penetration attacks, Cross Site Scripting cookie hijacking, IFrames, allows for GEO blocking, denial of service, transparent 2 factor authentication and much more. You can get started with the firewall using the samples shown in https://support.asp-waf.com/GetStarted/Firewall</description>
+<summary>Advanced application firewall for integration with .net web applications both api and browser based</summary>
+<releaseNotes>22 August 2020 1. Alter default cookie names 2. Set CRF token settings based on firewall settings 3. update text report to associate fictitious user nr to incident details 20 August 2020 1. Add DisableFireWall Attribute 2. Add CrossSite protection in rule engine 3. Update to .Net core 3.1.7 service pack 12 August 2020 1. Update to .net core 3.1.7 18 August 2020 1. Additional Firewall rules 2. Integrate Header protection in firewall filter 11 June 2020 1. integrate ticket service for incident reporting when the TicketService.ExceptionReporting is set to true (default false) 6 June 2020 1. Integrate ISiteMap interface 4 June 2020 1. Make SequentialGuid public 2. Update DNS resolver to make it more robust 28 May 2020 1. KPI and PageKPI enhanced with filter on HTTPMethod in FireWall.Configuration.Reporting as well as aggregate process times 2. Added logging for trouble shooting 3. Updated fluent API for firewall registration with dependency 24 May 2020 1. Inject logging in web service calls 23 May 2020 1. DIContainer assigned IService in FileWall injection 2. Move GEO configuration initialization to a non-blocking background ask as to facilitate stat-up time web application 21 May 2020 1. Added access to ServiceFactory DIContainer as global static method 2. Text based Report on IFireWall interface 3. Always protection middleware when using app.UseFireWall() 4. Enable firewall protection on any class that exposed an endpoint by use if Firewall annotation</releaseNotes>
+<copyright>© 2019 Walter Verhoeven, all rights reserved.</copyright>
+<language>en-US</language>
+<tags>firewall waf asp-waf aspnetcore aspnetcoremvc FireWall Geo-block HTTP Encryption security protect block</tags>
+<dependencies>
+<group targetFramework=".NETCoreApp3.0">
+<dependency id="Walter.Net.LookWhosTalking" version="2020.8.25.1" exclude="Build,Analyzers"/>
+<dependency id="Walter.Net.Networking" version="2020.8.25.1" exclude="Build,Analyzers"/>
+<dependency id="Walter.BOM" version="2020.8.25.1" exclude="Build,Analyzers"/>
+<dependency id="Walter.Web.FireWall.SqlDataTools" version="2020.8.25.1" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.AspNetCore.Http.Features" version="3.1.7" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.AspNetCore.Mvc.Core" version="2.2.5" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.AspNetCore.Mvc.RazorPages" version="2.2.5" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.AspNetCore.Routing" version="2.2.2" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.Extensions.Caching.Abstractions" version="3.1.7" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.Extensions.Configuration.Binder" version="3.1.7" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="3.1.7" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.Extensions.FileProviders.Physical" version="3.1.7" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.Extensions.Identity.Core" version="3.1.7" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.Extensions.Logging.Abstractions" version="3.1.7" exclude="Build,Analyzers"/>
+<dependency id="Newtonsoft.Json" version="12.0.3" exclude="Build,Analyzers"/>
+<dependency id="System.Configuration.ConfigurationManager" version="4.7.0" exclude="Build,Analyzers"/>
+<dependency id="Walter" version="2020.8.23.1" exclude="Build,Analyzers"/>
+<dependency id="Walter.Cypher" version="2020.8.23.1" exclude="Build,Analyzers"/>
+</group>
+<group targetFramework=".NETCoreApp3.1">
+<dependency id="Walter.Net.LookWhosTalking" version="2020.8.25.1" exclude="Build,Analyzers"/>
+<dependency id="Walter.Net.Networking" version="2020.8.25.1" exclude="Build,Analyzers"/>
+<dependency id="Walter.BOM" version="2020.8.25.1" exclude="Build,Analyzers"/>
+<dependency id="Walter.Web.FireWall.SqlDataTools" version="2020.8.25.1" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.AspNetCore.Http.Features" version="3.1.7" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.AspNetCore.Mvc.Core" version="2.2.5" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.AspNetCore.Mvc.RazorPages" version="2.2.5" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.AspNetCore.Routing" version="2.2.2" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.Extensions.Caching.Abstractions" version="3.1.7" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.Extensions.Configuration.Binder" version="3.1.7" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="3.1.7" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.Extensions.FileProviders.Physical" version="3.1.7" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.Extensions.Identity.Core" version="3.1.7" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.Extensions.Logging.Abstractions" version="3.1.7" exclude="Build,Analyzers"/>
+<dependency id="Newtonsoft.Json" version="12.0.3" exclude="Build,Analyzers"/>
+<dependency id="System.Configuration.ConfigurationManager" version="4.7.0" exclude="Build,Analyzers"/>
+<dependency id="Walter" version="2020.8.23.1" exclude="Build,Analyzers"/>
+<dependency id="Walter.Cypher" version="2020.8.23.1" exclude="Build,Analyzers"/>
+</group>
+<group targetFramework=".NETStandard2.1">
+<dependency id="Walter.Net.LookWhosTalking" version="2020.8.25.1" exclude="Build,Analyzers"/>
+<dependency id="Walter.Net.Networking" version="2020.8.25.1" exclude="Build,Analyzers"/>
+<dependency id="Walter.BOM" version="2020.8.25.1" exclude="Build,Analyzers"/>
+<dependency id="Walter.Web.FireWall.SqlDataTools" version="2020.8.25.1" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.AspNetCore.Http.Features" version="3.1.7" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.AspNetCore.Mvc.Core" version="2.2.5" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.AspNetCore.Mvc.RazorPages" version="2.2.5" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.AspNetCore.Routing" version="2.2.2" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.Extensions.Caching.Abstractions" version="3.1.7" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.Extensions.Configuration.Binder" version="3.1.7" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.Extensions.DependencyInjection.Abstractions" version="3.1.7" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.Extensions.FileProviders.Physical" version="3.1.7" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.Extensions.Identity.Core" version="3.1.7" exclude="Build,Analyzers"/>
+<dependency id="Microsoft.Extensions.Logging.Abstractions" version="3.1.7" exclude="Build,Analyzers"/>
+<dependency id="Newtonsoft.Json" version="12.0.3" exclude="Build,Analyzers"/>
+<dependency id="System.Configuration.ConfigurationManager" version="4.7.0" exclude="Build,Analyzers"/>
+<dependency id="Walter" version="2020.8.23.1" exclude="Build,Analyzers"/>
+<dependency id="Walter.Cypher" version="2020.8.23.1" exclude="Build,Analyzers"/>
+</group>
+</dependencies>
+</metadata>
+</package>
