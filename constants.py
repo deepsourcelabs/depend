@@ -41,6 +41,7 @@ REGISTRY: dict = {
         "ver_data": jc("package.versions"),
         "license_key": "license",
         "dependency_key": "require",
+    },
     "rust": {
         "url": "https://crates.io/api/v1/crates",
         "name": jc("version.crate"),

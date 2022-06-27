@@ -140,7 +140,7 @@ def test_composer_json(json_schema):
     """Check poetry toml file output"""
     with open("tests/data/example_composer.json") as f:
         php_project = f.read()
-    result = dependencies.php.php_worker.handle_c_json(php_project)
+    result = dependencies.php.php_worker.handle_composer_json(php_project)
 
 
 def test_cargo_toml(json_schema):

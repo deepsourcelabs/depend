@@ -11,7 +11,7 @@ from error import FileNotSupportedError
 
 from .go.go_worker import handle_go_mod
 from .js.js_worker import handle_json, handle_yarn_lock
-from .php.php_worker import handle_c_json
+from .php.php_worker import handle_composer_json
 from .py.py_helper import handle_requirements_txt
 from .py.py_worker import handle_otherpy, handle_setup_cfg, handle_setup_py, handle_toml
 from .rust.rust_worker import handle_cargo_toml, handle_lock
@@ -48,7 +48,7 @@ def handle_dep_file(
             return handle_go_mod(file_content)
         case "json":
             if file_name == "composer.json":
-                return handle_c_json(file_content)
+                return handle_composer_json(file_content)
             return handle_json(file_content)
         case ["conda.yml", "tox.ini", "Pipfile", "Pipfile.lock"]:
             return handle_otherpy(file_content, file_name)
