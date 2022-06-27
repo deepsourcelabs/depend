@@ -1,6 +1,4 @@
 """Helper Functions for Inspector."""
-import datetime
-import functools
 import re
 from typing import List
 
@@ -8,12 +6,12 @@ import jmespath
 import requests
 from bs4 import BeautifulSoup
 
-import laxsemver as semver
 from dep_types import Result
 from error import FileNotSupportedError
 
 from .go.go_worker import handle_go_mod
 from .js.js_worker import handle_json, handle_yarn_lock
+from .php.php_worker import handle_composer_json
 from .py.py_helper import handle_requirements_txt
 from .py.py_worker import handle_otherpy, handle_setup_cfg, handle_setup_py, handle_toml
 from .rust.rust_worker import handle_cargo_toml, handle_lock
@@ -49,6 +47,8 @@ def handle_dep_file(
         case "mod":
             return handle_go_mod(file_content)
         case "json":
+            if file_name == "composer.json":
+                return handle_composer_json(file_content)
             return handle_json(file_content)
         case ["conda.yml", "tox.ini", "Pipfile", "Pipfile.lock"]:
             return handle_otherpy(file_content, file_name)
@@ -90,9 +90,7 @@ def parse_dep_response(
                     else ec.get("pkg_lic"),
                     "pkg_err": ec.get("pkg_err") or {},
                     "pkg_dep": ec.get("pkg_dep") or [],
-                    "timestamp": ec.get("timestamp").strftime("%Y-%m-%dT%H:%M:%S.%f")
-                    if isinstance(ec.get("timestamp"), datetime.datetime)
-                    else ec.get("timestamp"),
+                    "timestamp": ec.get("timestamp"),
                 }
                 for ec in ecs
             }
@@ -153,6 +151,28 @@ def handle_npmjs(api_response: requests.Response, queries: dict, result: Result)
     return repo
 
 
+def handle_php(
+    api_response: requests.Response, queries: dict, result: Result, ver: str
+):
+    """
+    Take api response and return required results object
+    :param api_response: response from requests get
+    :param queries: compiled jmespath queries
+    :param result: object to mutate
+    :param ver: queried versions
+    """
+    data = api_response.json()
+    result["pkg_ver"] = ver
+    versions_q: jmespath.parser.ParsedResult = queries["ver_data"]
+    versions = versions_q.search(data)
+    ver_data = versions.get(ver, {})
+    result["pkg_lic"] = ver_data.get(queries["license_key"], ["Other"])
+    dep_data = ver_data.get(queries["dependency_key"], {})
+    lang_ver = dep_data.pop("php", "")
+    result["lang_ver"] = lang_ver
+    result["pkg_dep"] = [key + ";" + value for (key, value) in dep_data.items()]
+    
+    
 def handle_rust(
     api_response: requests.Response, queries: dict, result: Result, url: str
 ):
@@ -285,91 +305,18 @@ def py_versions(api_response: requests.Response, queries: dict) -> list:
     return versions
 
 
-def is_non_specific(req: str) -> bool:
+def php_versions(api_response: requests.Response, queries: dict) -> list:
     """
-    Checks if requirement string has any character that makes it non-specific
-    :param req: requirement string
+    Get list of all versions for php package
+    :param queries: compiled jmespath queries
+    :param api_response: registry response
+    :return: list of versions
     """
-    non_sp_list = [">", "<", "~", "^", "*", "!", ",", "latest"]
-    return any(i in req for i in non_sp_list)
-
-
-def resolve_version(vers: List[str], reqs=None) -> str:
-    """
-    Returns latest suitable version from available metadata
-    :param vers: list of all available version
-    :param reqs: requirement info associated with package
-    :return: specific version to query
-    """
-    if not reqs:
-        reqs = [("==", "latest")]
-    # Multiple requirements
-    for (sym, ver) in reqs:
-        if "=" not in sym and ver in vers:
-            vers.remove(ver)
-        # Exact requirements
-        if sym == "==":
-            vers = [ver]
-        # Inequality requirements
-        elif "!" in sym and ver in vers:
-            vers.remove(ver)
-        elif ">" in sym:
-            vers = [x for x in vers if semver.compare(x, ver) != -1]
-        elif "<" in sym:
-            vers = [x for x in vers if semver.compare(x, ver) != 1]
-        # Caret Requirements
-        elif "^" in sym:
-            count_dot = ver.count(".")
-            svi = semver.VersionInfo.parse(ver)
-            if svi.major != 0 or count_dot == 0:
-                vers = [
-                    x for x in vers if semver.VersionInfo.parse(x).major == svi.major
-                ]
-            elif svi.minor != 0 or count_dot == 1:
-                vers = [
-                    x
-                    for x in vers
-                    if semver.VersionInfo.parse(x).minor == svi.minor
-                    and semver.VersionInfo.parse(x).major == svi.major
-                ]
-            elif svi.patch != 0:
-                vers = [
-                    x
-                    for x in vers
-                    if semver.VersionInfo.parse(x).patch == svi.patch
-                    and semver.VersionInfo.parse(x).minor == svi.minor
-                    and semver.VersionInfo.parse(x).major == svi.major
-                ]
-        # Tilde requirements
-        elif "~" in sym:
-            count_dot = ver.count(".")
-            svi = semver.VersionInfo.parse(ver)
-            if count_dot in (1,0):
-                vers = [
-                    x for x in vers if semver.VersionInfo.parse(x).major == svi.major
-                ]
-            elif count_dot >= 2:
-                vers = [
-                    x
-                    for x in vers
-                    if semver.VersionInfo.parse(x).minor == svi.minor
-                    and semver.VersionInfo.parse(x).major == svi.major
-                ]
-        # Wildcard requirements
-        elif "*" in sym:
-            ver = ver.split("*")[0]
-            count_dot = ver.count(".")
-            svi = semver.VersionInfo.parse(ver)
-            if count_dot == 1:
-                vers = [
-                    x for x in vers if semver.VersionInfo.parse(x).major == svi.major
-                ]
-            elif count_dot >= 2:
-                vers = [
-                    x
-                    for x in vers
-                    if semver.VersionInfo.parse(x).minor == svi.minor
-                    and semver.VersionInfo.parse(x).major == svi.major
-                ]
-    sorted_vers = sorted(vers, key=functools.cmp_to_key(semver.compare), reverse=True)
-    return sorted_vers[0] if sorted_vers else ""
+    if api_response.status_code == 404:
+        return []
+    data = api_response.json()
+    versions_q: jmespath.parser.ParsedResult = queries["versions"]
+    versions = versions_q.search(data)
+    if not versions:
+        return []
+    return versions

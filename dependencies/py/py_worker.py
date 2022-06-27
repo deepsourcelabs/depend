@@ -60,7 +60,7 @@ def handle_toml(file_data: str) -> Result:
         package_dep = package_data.get("dependencies")
         if isinstance(package_dep, dict):
             res["pkg_dep"] = []
-        else:
+        elif package_dep:
             install_reqs = parse_requirements("\n".join(package_dep))
             for ir in install_reqs:
                 res["pkg_dep"].append(str(ir.key) + "|" + str(ir.specs))
