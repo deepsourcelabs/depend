@@ -55,7 +55,7 @@ def handle_lock(file_data: str) -> dict:
     dependencies_regex = re.compile(
         r'name = \"([^"]+)\"[\n\r]version = \"([^"]+)\"', re.MULTILINE
     )
-    matches = [m.groups() for m in regex.finditer(file_data)]
+    matches = [m.groups() for m in dependencies_regex.finditer(file_data)]
     for name, specs in matches:
         res["pkg_dep"].append(name + ";" + str(specs))
     return res
