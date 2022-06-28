@@ -187,7 +187,9 @@ def make_single_request(
         vers = [version]
     if not vers:
         vers = []
-        logging.warning(f"No version could be resolved for package {package} with version constraint {ver_spec}")
+        logging.warning(
+            f"No version could be resolved for package {package} with version constraint {ver_spec}"
+        )
     for ver in vers:
         if psql:
             db_data = get_data(psql, language, package, ver)
