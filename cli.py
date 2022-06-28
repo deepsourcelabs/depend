@@ -21,7 +21,6 @@ def main(
     lang: str = typer.Option(None),
     packages: Optional[str] = typer.Option(None),
     dep_file: Optional[Path] = typer.Option(None),
-    db_name: Optional[str] = typer.Option(None),
     deep_search: Optional[bool] = typer.Option(False),
 ) -> List[Any]:
     """

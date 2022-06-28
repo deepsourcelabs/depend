@@ -178,11 +178,16 @@ def make_single_request(
                 response = requests.get(url)
                 vers = rust_versions(response, queries)
         if not all_ver:
-            vers = [resolve_version(vers, ver_spec)]
+            resolved_version = resolve_version(vers, ver_spec)
+            if resolved_version is not None:
+                vers = [resolved_version]
+            else:
+                vers = []
     else:
         vers = [version]
     if not vers:
-        vers = [""]
+        vers = []
+        logging.warning(f"No version could be resolved for package {package} with version constraint {ver_spec}")
     for ver in vers:
         if psql:
             db_data = get_data(psql, language, package, ver)

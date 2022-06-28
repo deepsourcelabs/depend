@@ -2,7 +2,7 @@
 import datetime
 import functools
 import re
-from typing import List
+from typing import List, Optional
 
 import jmespath
 import requests
@@ -379,16 +379,7 @@ def php_versions(api_response: requests.Response, queries: dict) -> list:
     return versions
 
 
-def is_non_specific(req: str) -> bool:
-    """
-    Checks if requirement string has any character that makes it non-specific
-    :param req: requirement string
-    """
-    non_sp_list = [">", "<", "~", "^", "*", "!", ",", "latest"]
-    return any(i in req for i in non_sp_list)
-
-
-def resolve_version(vers: List[str], reqs=None) -> str:
+def resolve_version(vers: List[str], reqs=None) -> Optional[str]:
     """
     Returns latest suitable version from available metadata
     :param vers: list of all available version
@@ -398,27 +389,30 @@ def resolve_version(vers: List[str], reqs=None) -> str:
     if reqs:
         # Multiple requirements
         for (sym, ver) in reqs:
-            if "=" not in sym and ver in vers:
-                vers.remove(ver)
+            parsed_ver = semver.VersionInfo.parse(ver)
             # Exact requirements
             if sym == "==":
                 vers = [ver]
             # Inequality requirements
-            elif "!" in sym and ver in vers:
+            elif sym == "!=" and ver in vers:
                 vers.remove(ver)
             elif ">" in sym:
-                vers = [x for x in vers if semver.compare(x, ver) != -1]
+                vers = [x for x in vers if parsed_ver > semver.VersionInfo.parse(x)]
+                if "=" not in sym and ver in vers:
+                    vers.remove(ver)
             elif "<" in sym:
-                vers = [x for x in vers if semver.compare(x, ver) != 1]
+                vers = [x for x in ver if parsed_ver < semver.VersionInfo.parse(x)]
+                if "=" not in sym and ver in vers:
+                    vers.remove(ver)
             # Caret Requirements
-            elif "^" in sym:
-                count_dot = ver.count(".")
+            elif sym == "^":
+                dot_count = ver.count(".")
                 svi = semver.VersionInfo.parse(ver)
-                if svi.major != 0 or count_dot == 0:
+                if svi.major != 0 or dot_count == 0:
                     vers = [
                         x for x in vers if semver.VersionInfo.parse(x).major == svi.major
                     ]
-                elif svi.minor != 0 or count_dot == 1:
+                elif svi.minor != 0 or dot_count == 1:
                     vers = [
                         x
                         for x in vers
@@ -435,13 +429,13 @@ def resolve_version(vers: List[str], reqs=None) -> str:
                     ]
             # Tilde requirements
             elif "~" in sym:
-                count_dot = ver.count(".")
+                dot_count = ver.count(".")
                 svi = semver.VersionInfo.parse(ver)
-                if count_dot in (1,0):
+                if dot_count in (1,0):
                     vers = [
                         x for x in vers if semver.VersionInfo.parse(x).major == svi.major
                     ]
-                elif count_dot >= 2:
+                elif dot_count >= 2:
                     vers = [
                         x
                         for x in vers
@@ -451,13 +445,13 @@ def resolve_version(vers: List[str], reqs=None) -> str:
             # Wildcard requirements
             elif "*" in sym:
                 ver = ver.split("*")[0]
-                count_dot = ver.count(".")
+                dot_count = ver.count(".")
                 svi = semver.VersionInfo.parse(ver)
-                if count_dot == 1:
+                if dot_count == 1:
                     vers = [
                         x for x in vers if semver.VersionInfo.parse(x).major == svi.major
                     ]
-                elif count_dot >= 2:
+                elif dot_count >= 2:
                     vers = [
                         x
                         for x in vers
@@ -465,4 +459,4 @@ def resolve_version(vers: List[str], reqs=None) -> str:
                         and semver.VersionInfo.parse(x).major == svi.major
                     ]
     sorted_vers = sorted(vers, key=functools.cmp_to_key(semver.compare), reverse=True)
-    return sorted_vers[0] if sorted_vers else ""
+    return sorted_vers[0] if sorted_vers else None
