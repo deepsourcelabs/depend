@@ -3,8 +3,8 @@ import hashlib
 import json
 import os
 
-from dotenv import load_dotenv
 import psycopg2.extras as pypsql
+from dotenv import load_dotenv
 from psycopg2 import errors, sql
 
 load_dotenv()
