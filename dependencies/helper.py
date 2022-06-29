@@ -409,7 +409,7 @@ def resolve_version(vers: List[str], reqs=None) -> Optional[str]:
     :param reqs: requirement info associated with package
     :return: specific version to query
     """
-    compatible_vers = []
+    compatible_vers: List[str] = []
     if reqs:
         # Multiple requirements
         for (sym, ver) in reqs:
@@ -418,7 +418,7 @@ def resolve_version(vers: List[str], reqs=None) -> Optional[str]:
                 compatible_vers = [ver]
             # Inequality requirements
             elif sym == "!=":
-                compatible_vers = filter(lambda x: x != ver, vers)
+                compatible_vers = list(filter(lambda x: x != ver, vers))
             elif ">" in sym:
                 compatible_vers = list(
                     filter(find_newer_versions(ver, include_ver="=" in sym), vers)
