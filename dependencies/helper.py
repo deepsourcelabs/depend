@@ -409,7 +409,7 @@ def resolve_version(vers: List[str], reqs=None) -> Optional[str]:
     :param reqs: requirement info associated with package
     :return: specific version to query
     """
-    compatible_vers: List[str] = []
+    compatible_vers: List[str] = vers
     if reqs:
         # Multiple requirements
         for (sym, ver) in reqs:
