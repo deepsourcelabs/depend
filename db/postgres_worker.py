@@ -3,9 +3,11 @@ import hashlib
 import json
 import os
 
+from dotenv import load_dotenv
 import psycopg2.extras as pypsql
 from psycopg2 import errors, sql
 
+load_dotenv()
 table_name = os.environ.get("TABLE_NAME")
 
 

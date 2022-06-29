@@ -209,7 +209,7 @@ def handle_php(
     result["pkg_lic"] = ver_data.get(queries["license_key"], ["Other"])
     dep_data = ver_data.get(queries["dependency_key"], {})
     lang_ver = dep_data.pop("php", "")
-    result["lang_ver"] = lang_ver
+    result["lang_ver"] = [lang_ver]
     result["pkg_dep"] = [key + ";" + value for (key, value) in dep_data.items()]
 
 

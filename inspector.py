@@ -177,7 +177,7 @@ def make_single_request(
             case "rust":
                 response = requests.get(url)
                 vers = rust_versions(response, queries)
-        if not all_ver:
+        if not all_ver and vers:
             resolved_version = resolve_version(vers, ver_spec)
             if resolved_version is not None:
                 vers = [resolved_version]
@@ -186,7 +186,7 @@ def make_single_request(
     else:
         vers = [version]
     if not vers:
-        vers = []
+        vers = [""]
         logging.warning(
             f"No version could be resolved for package {package} with version constraint {ver_spec}"
         )
