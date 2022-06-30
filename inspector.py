@@ -4,7 +4,7 @@ import logging
 import re
 import time
 from datetime import datetime
-from typing import Any, List, Set, Tuple
+from typing import Any, List, Set, Tuple, Union
 
 import requests
 from tldextract import extract
@@ -130,7 +130,7 @@ def make_single_request(
     force_schema: bool = True,
     all_ver: bool = False,
     ver_spec=None,
-) -> dict | Result | List[Result], list[str]:
+) -> Union[dict | Result | List[Result], list[str]]:
     """
     Obtain package license and dependency information.
     :param psql: Postgres connection
