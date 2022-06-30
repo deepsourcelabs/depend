@@ -10,8 +10,8 @@ import xmltodict
 from bs4 import BeautifulSoup
 from requests import Response
 
-from dep_helper import Result, requests
 import laxsemver as semver
+from dep_helper import Result, requests
 from error import FileNotSupportedError
 
 from .cs.cs_worker import findkeys, handle_nuspec
