@@ -1,5 +1,5 @@
 """License & Version Extractor"""
-
+import ast
 import logging
 import re
 import time
@@ -24,6 +24,7 @@ from dependencies.helper import (
     parse_dep_response,
     php_versions,
     py_versions,
+    resolve_version,
     rust_versions,
     scrape_go,
 )
@@ -127,6 +128,8 @@ def make_single_request(
     package: str,
     version: str = "",
     force_schema: bool = True,
+    all_ver: bool = False,
+    ver_spec=None,
 ) -> dict | Result | List[Result]:
     """
     Obtain package license and dependency information.
@@ -135,8 +138,12 @@ def make_single_request(
     :param package: as imported
     :param version: check for specific version
     :param force_schema: returns schema compliant response if true
+    :param all_ver: all versions queried if version not supplied
+    :param ver_spec: version specifier used
     :return: result object with name version license and dependencies
     """
+    if ver_spec is None:
+        ver_spec = []
     result_list = []
     result: Result = {
         "import_name": "",
@@ -170,10 +177,19 @@ def make_single_request(
             case "rust":
                 response = requests.get(url)
                 vers = rust_versions(response, queries)
+        if not all_ver and vers:
+            resolved_version = resolve_version(vers, ver_spec)
+            if resolved_version is not None:
+                vers = [resolved_version]
+            else:
+                vers = []
     else:
         vers = [version]
     if not vers:
         vers = [""]
+        logging.warning(
+            f"No version could be resolved for package {package} with version constraint {ver_spec}"
+        )
     for ver in vers:
         if psql:
             db_data = get_data(psql, language, package, ver)
@@ -185,7 +201,8 @@ def make_single_request(
                     < CACHE_EXPIRY
                 ):
                     logging.info("Using " + package + " found in Postgres Database")
-                    return db_data
+                    # noinspection PyProtectedMember
+                    return parse_dep_response([db_data._asdict()])
         if "||" in version:
             git_url, git_branch = version.split("||")
             handle_vcs(language, git_url + "/tree/" + git_branch, result)
@@ -271,11 +288,17 @@ def make_multiple_requests(
     :return: result object with name version license and dependencies
     """
     result = []
-    for package in packages:
-        name_ver = (package[0] + package[1:].replace("@", ";")).rsplit(";", 1)
-        if len(name_ver) == 1:
-            dep_resp = make_single_request(psql, language, package)
+    for package_d in packages:
+        package, ver_spec, *_ = package_d.rsplit("|", 1) + [""]
+        if not ver_spec:
+            name_ver = (package[0] + package[1:].replace("@", ";")).rsplit(";", 1)
+            if len(name_ver) == 1:
+                dep_resp = make_single_request(psql, language, package)
+            else:
+                dep_resp = make_single_request(psql, language, name_ver[0], name_ver[1])
         else:
-            dep_resp = make_single_request(psql, language, name_ver[0], name_ver[1])
+            dep_resp = make_single_request(
+                psql, language, package, ver_spec=ast.literal_eval(ver_spec)
+            )
         result.append(dep_resp)
     return result

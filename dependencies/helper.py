@@ -1,12 +1,15 @@
 """Helper Functions for Inspector."""
+import datetime
+import functools
 import re
-from typing import List
+from typing import Callable, List, Optional
 
 import jmespath
 import requests
 import xmltodict
 from bs4 import BeautifulSoup
 
+import laxsemver as semver
 from dep_types import Result
 from error import FileNotSupportedError
 
@@ -94,7 +97,9 @@ def parse_dep_response(
                     else ec.get("pkg_lic"),
                     "pkg_err": ec.get("pkg_err") or {},
                     "pkg_dep": ec.get("pkg_dep") or [],
-                    "timestamp": ec.get("timestamp"),
+                    "timestamp": ec.get("timestamp").strftime("%Y-%m-%dT%H:%M:%S.%f")
+                    if isinstance(ec.get("timestamp"), datetime.datetime)
+                    else ec.get("timestamp"),
                 }
                 for ec in ecs
             }
@@ -204,10 +209,10 @@ def handle_php(
     result["pkg_lic"] = ver_data.get(queries["license_key"], ["Other"])
     dep_data = ver_data.get(queries["dependency_key"], {})
     lang_ver = dep_data.pop("php", "")
-    result["lang_ver"] = lang_ver
+    result["lang_ver"] = [lang_ver]
     result["pkg_dep"] = [key + ";" + value for (key, value) in dep_data.items()]
-    
-    
+
+
 def handle_rust(
     api_response: requests.Response, queries: dict, result: Result, url: str
 ):
@@ -372,3 +377,121 @@ def php_versions(api_response: requests.Response, queries: dict) -> list:
     if not versions:
         return []
     return versions
+
+
+def resolve_version(vers: List[str], reqs=None) -> Optional[str]:
+    """
+    Returns latest suitable version from available metadata
+    :param vers: list of all available version
+    :param reqs: requirement info associated with package
+    :return: specific version to query
+    """
+    compatible_vers: List[str] = vers
+    if reqs:
+        # Multiple requirements
+        for (sym, ver) in reqs:
+            # Exact requirements
+            if sym == "==":
+                compatible_vers = [ver]
+            # Inequality requirements
+            elif sym == "!=":
+                compatible_vers = list(filter(lambda x: x != ver, vers))
+            elif sym in ('>', '>=', '<', '<='):
+                version = semver.VersionInfo.parse(ver)
+                if sym == '>':
+                    compatible_vers = [x for x in vers if semver.VersionInfo.parse(x) > version]
+                if sym == '>=':
+                    compatible_vers = [x for x in vers if semver.VersionInfo.parse(x) >= version]
+                if sym == '<':
+                    compatible_vers = [x for x in vers if semver.VersionInfo.parse(x) < version]
+                if sym == '<=':
+                    compatible_vers = [x for x in vers if semver.VersionInfo.parse(x) <= version]
+            # Caret Requirements
+            elif sym == "^":
+                compatible_vers = handle_caret_requirements(ver, vers)
+            # Tilde requirements
+            elif sym == "~":
+                compatible_vers = handle_tilde_requirements(ver, vers)
+            # Wildcard requirements
+            elif sym == "*":
+                compatible_vers = handle_wildcard_requirements(ver, vers)
+    sorted_vers = sorted(
+        compatible_vers, key=functools.cmp_to_key(semver.compare), reverse=True
+    )
+    return sorted_vers[0] if sorted_vers else None
+
+
+def handle_wildcard_requirements(ver: str, vers: List[str]) -> List[str]:
+    """
+    Compatible versions based on wildcard position
+    *	    >=0.0.0
+    1.*	    >=1.0.0 <2.0.0
+    1.2.*	>=1.2.0 <1.3.0
+    """
+    ver = ver.split("*")[0]
+    dot_count = ver.count(".")
+    svi = semver.VersionInfo.parse(ver)
+    if dot_count == 1:
+        vers = [x for x in vers if semver.VersionInfo.parse(x).major == svi.major]
+    elif dot_count >= 2:
+        vers = [
+            x
+            for x in vers
+            if semver.VersionInfo.parse(x).minor == svi.minor
+            and semver.VersionInfo.parse(x).major == svi.major
+        ]
+    return vers
+
+
+def handle_tilde_requirements(ver: str, vers: List[str]) -> List[str]:
+    """
+    Compatible versions based on specified major, minor, and patch version
+    ~1.2.3	>=1.2.3 <1.3.0
+    ~1.2	>=1.2.0 <1.3.0
+    ~1	    >=1.0.0 <2.0.0
+    """
+    dot_count = ver.count(".")
+    svi = semver.VersionInfo.parse(ver)
+    if dot_count in (1, 0):
+        vers = [x for x in vers if semver.VersionInfo.parse(x).major == svi.major]
+    elif dot_count >= 2:
+        vers = [
+            x
+            for x in vers
+            if semver.VersionInfo.parse(x).minor == svi.minor
+            and semver.VersionInfo.parse(x).major == svi.major
+        ]
+    return vers
+
+
+def handle_caret_requirements(ver: str, vers: List[str]) -> List[str]:
+    """
+    Compatible versions based on specified version
+    ^1.2.3	>=1.2.3 <2.0.0
+    ^1.2	>=1.2.0 <2.0.0
+    ^1	    >=1.0.0 <2.0.0
+    ^0.2.3	>=0.2.3 <0.3.0
+    ^0.0.3	>=0.0.3 <0.0.4
+    ^0.0	>=0.0.0 <0.1.0
+    ^0	    >=0.0.0 <1.0.0
+    """
+    dot_count = ver.count(".")
+    svi = semver.VersionInfo.parse(ver)
+    if svi.major != 0 or dot_count == 0:
+        vers = [x for x in vers if semver.VersionInfo.parse(x).major == svi.major]
+    elif svi.minor != 0 or dot_count == 1:
+        vers = [
+            x
+            for x in vers
+            if semver.VersionInfo.parse(x).minor == svi.minor
+            and semver.VersionInfo.parse(x).major == svi.major
+        ]
+    elif svi.patch != 0:
+        vers = [
+            x
+            for x in vers
+            if semver.VersionInfo.parse(x).patch == svi.patch
+            and semver.VersionInfo.parse(x).minor == svi.minor
+            and semver.VersionInfo.parse(x).major == svi.major
+        ]
+    return vers
