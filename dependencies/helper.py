@@ -379,29 +379,6 @@ def php_versions(api_response: requests.Response, queries: dict) -> list:
     return versions
 
 
-def find_older_versions(
-    target: str, include_ver: bool = False
-) -> Callable[[str], bool]:
-    """Returns True if ver is older than the target version"""
-
-    return (
-        lambda ver: include_ver
-        and ver == target
-        or semver.VersionInfo.parse(ver) < semver.VersionInfo.parse(target)
-    )
-
-
-def find_newer_versions(
-    target: str, include_ver: bool = False
-) -> Callable[[str], bool]:
-    """Returns True if ver is newer than the target version"""
-    return (
-        lambda ver: include_ver
-        and ver == target
-        or semver.VersionInfo.parse(ver) > semver.VersionInfo.parse(target)
-    )
-
-
 def resolve_version(vers: List[str], reqs=None) -> Optional[str]:
     """
     Returns latest suitable version from available metadata
@@ -419,22 +396,24 @@ def resolve_version(vers: List[str], reqs=None) -> Optional[str]:
             # Inequality requirements
             elif sym == "!=":
                 compatible_vers = list(filter(lambda x: x != ver, vers))
-            elif ">" in sym:
-                compatible_vers = list(
-                    filter(find_newer_versions(ver, include_ver="=" in sym), vers)
-                )
-            elif "<" in sym:
-                compatible_vers = list(
-                    filter(find_older_versions(ver, include_ver="=" in sym), vers)
-                )
+            elif sym in ('>', '>=', '<', '<='):
+                version = semver.VersionInfo.parse(ver)
+                if sym == '>':
+                    compatible_vers = [x for x in vers if semver.VersionInfo.parse(x) > version]
+                if sym == '>=':
+                    compatible_vers = [x for x in vers if semver.VersionInfo.parse(x) >= version]
+                if sym == '<':
+                    compatible_vers = [x for x in vers if semver.VersionInfo.parse(x) < version]
+                if sym == '<=':
+                    compatible_vers = [x for x in vers if semver.VersionInfo.parse(x) <= version]
             # Caret Requirements
             elif sym == "^":
                 compatible_vers = handle_caret_requirements(ver, vers)
             # Tilde requirements
-            elif "~" in sym:
+            elif sym == "~":
                 compatible_vers = handle_tilde_requirements(ver, vers)
             # Wildcard requirements
-            elif "*" in sym:
+            elif sym == "*":
                 compatible_vers = handle_wildcard_requirements(ver, vers)
     sorted_vers = sorted(
         compatible_vers, key=functools.cmp_to_key(semver.compare), reverse=True
