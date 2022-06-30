@@ -60,13 +60,10 @@ def handle_toml(file_data: str) -> Result:
         package_dep = package_data.get("dependencies")
         if isinstance(package_dep, dict):
             res["pkg_dep"] = []
-        else:
+        elif package_dep:
             install_reqs = parse_requirements("\n".join(package_dep))
             for ir in install_reqs:
-                for spec in ir.specs:
-                    res["pkg_dep"].append(
-                        str(ir.key) + ";" + str(spec[1]) + ";" + str(spec[0])
-                    )
+                res["pkg_dep"].append(str(ir.key) + "|" + str(ir.specs))
     res["pkg_name"] = package_data.get("name", "")
     res["pkg_ver"] = package_data.get("version", "")
     res["pkg_lic"] = [package_data.get("license", "Other")]

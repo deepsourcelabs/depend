@@ -1,11 +1,12 @@
 """License & Version Extractor"""
-
+import ast
 import logging
 import re
 import time
 from datetime import datetime
-from typing import Any, List, Optional, Set, Tuple
+from typing import Any, List, Set, Tuple
 
+import requests
 from tldextract import extract
 
 from constants import CACHE_EXPIRY, REGISTRY
@@ -13,11 +14,18 @@ from db.postgres_worker import add_data, get_data, upd_data
 from dep_helper import Result, requests
 from dependencies.helper import (
     go_versions,
+    handle_cs,
     handle_npmjs,
+    handle_php,
     handle_pypi,
+    handle_rust,
     js_versions,
+    nuget_versions,
     parse_dep_response,
+    php_versions,
     py_versions,
+    resolve_version,
+    rust_versions,
     scrape_go,
 )
 from error import LanguageNotSupportedError, VCSNotSupportedError
@@ -49,6 +57,7 @@ def make_url(language: str, package: str, version: str = "") -> str:
     :param version: optional version specification
     :return: url to fetch
     """
+    suffix = ""
     url_elements: Tuple[str, ...]
     match language:
         case "python":
@@ -71,9 +80,27 @@ def make_url(language: str, package: str, version: str = "") -> str:
                 url_elements = (str(REGISTRY[language]["url"]), package + "@" + version)
             else:
                 url_elements = (str(REGISTRY[language]["url"]), package)
+        case "cs":
+            if version:
+                url_elements = (
+                    REGISTRY[language]["url"],
+                    package,
+                    version,
+                    package + ".nuspec",
+                )
+            else:
+                url_elements = (REGISTRY[language]["url"], package, "index.json")
+        case "php":
+            url_elements = (REGISTRY[language]["url"], package)
+            suffix = ".json"
+        case "rust":
+            if version:
+                url_elements = (REGISTRY[language]["url"], package, version)
+            else:
+                url_elements = (REGISTRY[language]["url"], package, "versions")
         case _:
             raise LanguageNotSupportedError(language)
-    return "/".join(url_elements).rstrip("/")
+    return "/".join(url_elements).rstrip("/") + suffix
 
 
 def find_github(text: str) -> str:
@@ -101,7 +128,9 @@ def make_single_request(
     package: str,
     version: str = "",
     force_schema: bool = True,
-) -> (dict | Result | List[Result], list[str]):
+    all_ver: bool = False,
+    ver_spec=None,
+) -> dict | Result | List[Result], list[str])::
     """
     Obtain package license and dependency information.
     :param psql: Postgres connection
@@ -109,9 +138,13 @@ def make_single_request(
     :param package: as imported
     :param version: check for specific version
     :param force_schema: returns schema compliant response if true
+    :param all_ver: all versions queried if version not supplied
+    :param ver_spec: version specifier used
     :return: result object with name version license and dependencies
     """
     rem_dep: Set[str] = set()
+    if ver_spec is None:
+        ver_spec = []
     result_list = []
     result: Result = {
         "import_name": "",
@@ -136,10 +169,28 @@ def make_single_request(
                 vers = js_versions(response, queries)
             case "go":
                 vers = go_versions(url, queries)
+            case "cs":
+                response = requests.get(url)
+                vers = nuget_versions(response, queries)
+            case "php":
+                response = requests.get(url)
+                vers = php_versions(response, queries)
+            case "rust":
+                response = requests.get(url)
+                vers = rust_versions(response, queries)
+        if not all_ver and vers:
+            resolved_version = resolve_version(vers, ver_spec)
+            if resolved_version is not None:
+                vers = [resolved_version]
+            else:
+                vers = []
     else:
         vers = [version]
     if not vers:
         vers = [""]
+        logging.warning(
+            f"No version could be resolved for package {package} with version constraint {ver_spec}"
+        )
     for ver in vers:
         if psql:
             db_data = get_data(psql, language, package, ver)
@@ -151,7 +202,8 @@ def make_single_request(
                     < CACHE_EXPIRY
                 ):
                     logging.info("Using " + package + " found in Postgres Database")
-                    return db_data
+                    # noinspection PyProtectedMember
+                    return parse_dep_response([db_data._asdict()])
         if "||" in version:
             git_url, git_branch = version.split("||")
             handle_vcs(language, git_url + "/tree/" + git_branch, result)
@@ -166,6 +218,12 @@ def make_single_request(
                     repo = handle_pypi(response, queries, result)
                 case "javascript":
                     repo = handle_npmjs(response, queries, result)
+                case "cs":
+                    repo = handle_cs(response, queries, result)
+                case "php":
+                    handle_php(response, queries, result, ver)
+                case "rust":
+                    handle_rust(response, queries, result, url)
                 case "go":
                     if response.status_code == 200:
                         # Handle 302: Redirection
@@ -238,13 +296,17 @@ def make_multiple_requests(
     deps = []
     if result is None:
         result = []
-    for package in packages:
-        name_ver = (package[0] + package[1:].replace("@", ";")).rsplit(";", 1)
-        if len(name_ver) == 1:
-            dep_resp, deps = make_single_request(psql, language, package)
+    for package_d in packages:
+        package, ver_spec, *_ = package_d.rsplit("|", 1) + [""]
+        if not ver_spec:
+            name_ver = (package[0] + package[1:].replace("@", ";")).rsplit(";", 1)
+            if len(name_ver) == 1:
+                dep_resp = make_single_request(psql, language, package)
+            else:
+                dep_resp = make_single_request(psql, language, name_ver[0], name_ver[1])
         else:
-            dep_resp, deps = make_single_request(
-                psql, language, name_ver[0], name_ver[1]
+            dep_resp = make_single_request(
+                psql, language, package, ver_spec=ast.literal_eval(ver_spec)
             )
         result.append(dep_resp)
     # higher levels may ignore version specifications

@@ -18,7 +18,7 @@ app = typer.Typer(add_completion=False)
 
 @app.callback(invoke_without_command=True)
 def main(
-    lang: str = typer.Option(...),
+    lang: str = typer.Option(None),
     packages: Optional[str] = typer.Option(None),
     dep_file: Optional[Path] = typer.Option(None),
     max_depth: Optional[int] = typer.Option(None),
@@ -57,7 +57,7 @@ def main(
             return result
     else:
         payload[lang] = packages
-    if lang not in ["go", "python", "javascript"]:
+    if lang not in ["go", "python", "javascript", "rust", "php", "cs"]:
         raise LanguageNotSupportedError(lang)
     if psql := get_db():
         logging.info("Postgres DB connected")

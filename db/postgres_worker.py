@@ -4,8 +4,10 @@ import json
 import os
 
 import psycopg2.extras as pypsql
+from dotenv import load_dotenv
 from psycopg2 import errors, sql
 
+load_dotenv()
 table_name = os.environ.get("TABLE_NAME")
 
 
