@@ -4,7 +4,7 @@ import logging
 import re
 import time
 from datetime import datetime
-from typing import Any, List, Set, Tuple, Optional
+from typing import Any, List, Optional, Set, Tuple
 
 from tldextract import extract
 
