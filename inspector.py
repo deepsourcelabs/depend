@@ -4,7 +4,7 @@ import logging
 import re
 import time
 from datetime import datetime
-from typing import Any, List, Set, Tuple, Union
+from typing import Any, List, Set, Tuple, Optional
 
 import requests
 from tldextract import extract
@@ -130,7 +130,7 @@ def make_single_request(
     force_schema: bool = True,
     all_ver: bool = False,
     ver_spec=None,
-) -> Union[dict | Result | List[Result], list[str]]:
+) -> Tuple[dict | Result | List[Result], list[str]]:
     """
     Obtain package license and dependency information.
     :param psql: Postgres connection
@@ -203,7 +203,8 @@ def make_single_request(
                 ):
                     logging.info("Using " + package + " found in Postgres Database")
                     # noinspection PyProtectedMember
-                    return parse_dep_response([db_data._asdict()])
+                    db_dict = db_data._asdict()
+                    return parse_dep_response([db_dict]), db_dict.get("pkg_dep") or []
         if "||" in version:
             git_url, git_branch = version.split("||")
             handle_vcs(language, git_url + "/tree/" + git_branch, result)
@@ -291,6 +292,9 @@ def make_multiple_requests(
     :param psql: Postgres connection
     :param language: python, javascript or go
     :param packages: a list of dependencies in each language
+    :param max_depth: depth of recursion, None for no limit and 0 for input parsing alone
+    :param result: optional result object to apend to during revursion
+    :param cur_depth: variable to keep track of current recursion depth
     :return: result object with name version license and dependencies
     """
     deps = []

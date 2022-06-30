@@ -2,7 +2,7 @@
 import json
 from datetime import datetime
 
-from dep_types import Result
+from dep_helper import Result
 
 
 def handle_composer_json(req_file_data: str) -> Result:

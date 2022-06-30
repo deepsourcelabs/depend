@@ -2,7 +2,7 @@
 import datetime
 import functools
 import re
-from typing import Callable, List, Optional
+from typing import List, Optional
 
 import jmespath
 import requests
@@ -13,7 +13,6 @@ from requests import Response
 import laxsemver as semver
 from dep_helper import Result, requests
 from error import FileNotSupportedError
-
 from .cs.cs_worker import findkeys, handle_nuspec
 from .go.go_worker import handle_go_mod
 from .js.js_worker import handle_json, handle_yarn_lock
