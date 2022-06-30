@@ -130,7 +130,7 @@ def handle_pypi(api_response: Response, queries: dict, result: Result):
     return repo
 
 
-def handle_cs(api_response: requests.Response, queries: dict, result: Result):
+def handle_cs(api_response: Response, queries: dict, result: Result):
     """
     Take api response and return required results object
     :param api_response: response from requests get
@@ -161,7 +161,7 @@ def handle_cs(api_response: requests.Response, queries: dict, result: Result):
     return root.get("repository", {}).get("@url")
 
 
-def handle_npmjs(api_response: requests.Response, queries: dict, result: Result):
+def handle_npmjs(api_response: Response, queries: dict, result: Result):
     """
     Take api response and return required results object
     :param api_response: response from requests get
@@ -192,7 +192,7 @@ def handle_npmjs(api_response: requests.Response, queries: dict, result: Result)
 
 
 def handle_php(
-    api_response: requests.Response, queries: dict, result: Result, ver: str
+    api_response: Response, queries: dict, result: Result, ver: str
 ):
     """
     Take api response and return required results object
@@ -214,7 +214,7 @@ def handle_php(
 
 
 def handle_rust(
-    api_response: requests.Response, queries: dict, result: Result, url: str
+    api_response: Response, queries: dict, result: Result, url: str
 ):
     """
     Take api response and return required results object
@@ -238,7 +238,7 @@ def handle_rust(
     result["pkg_dep"] = req_file_data
 
 
-def scrape_go(response: requests.Response, queries: dict, result: Result, url: str):
+def scrape_go(response: Response, queries: dict, result: Result, url: str):
     """
     Take api response and return required results object
     :param response: response from requests get
@@ -294,7 +294,7 @@ def go_versions(url: str, queries: dict) -> list:
     return releases
 
 
-def rust_versions(api_response: requests.Response, queries: dict) -> list:
+def rust_versions(api_response: Response, queries: dict) -> list:
     """
     Get list of all versions for rust package
     :param queries: compiled jmespath queries
@@ -311,7 +311,7 @@ def rust_versions(api_response: requests.Response, queries: dict) -> list:
     return versions
 
 
-def js_versions(api_response: requests.Response, queries: dict) -> list:
+def js_versions(api_response: Response, queries: dict) -> list:
     """
     Get list of all versions for js package
     :param queries: compiled jmespath queries
@@ -362,7 +362,7 @@ def ruby_versions(api_response: Response, queries: dict) -> list:
     return versions
 
 
-def nuget_versions(api_response: requests.Response, queries: dict) -> list:
+def nuget_versions(api_response: Response, queries: dict) -> list:
     """
     Get list of all versions for C# package
     :param queries: compiled jmespath queries
@@ -379,7 +379,7 @@ def nuget_versions(api_response: requests.Response, queries: dict) -> list:
     return versions
 
 
-def php_versions(api_response: requests.Response, queries: dict) -> list:
+def php_versions(api_response: Response, queries: dict) -> list:
     """
     Get list of all versions for php package
     :param queries: compiled jmespath queries

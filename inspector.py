@@ -6,7 +6,6 @@ import time
 from datetime import datetime
 from typing import Any, List, Set, Tuple, Optional
 
-import requests
 from tldextract import extract
 
 from constants import CACHE_EXPIRY, REGISTRY
