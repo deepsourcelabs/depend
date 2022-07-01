@@ -74,9 +74,7 @@ def main(
         try:
             if dep_list:
                 if file_extension == "lock":
-                    result.extend(
-                        make_multiple_requests(psql, language, dep_list, 1)
-                    )
+                    result.extend(make_multiple_requests(psql, language, dep_list, 1))
                 else:
                     result.extend(
                         make_multiple_requests(psql, language, dep_list, max_depth)
