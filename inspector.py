@@ -313,7 +313,7 @@ def make_multiple_requests(
             )
         result.append(dep_resp)
     # higher levels may ignore version specifications
-    if not deps or (max_depth == cur_depth):
+    if not deps or (max_depth <= cur_depth):
         return result
     else:
         return make_multiple_requests(
