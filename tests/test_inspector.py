@@ -83,22 +83,22 @@ def test_make_single_request_py(psql):
     """Test version and license for python"""
     result, _ = inspector.make_single_request(
         psql, "python", "aiohttp", "3.7.2", force_schema=False
-    )[0]
-    assert result["pkg_name"] == "aiohttp"
-    assert result["pkg_ver"] == "3.7.2"
-    assert result["pkg_lic"][0] == "Apache 2"
-    assert len(result["pkg_dep"]) != 0
+    )
+    assert result[0]["pkg_name"] == "aiohttp"
+    assert result[0]["pkg_ver"] == "3.7.2"
+    assert result[0]["pkg_lic"][0] == "Apache 2"
+    assert len(result[0]["pkg_dep"]) != 0
 
 
 def test_make_single_request_js(psql):
     """Test version and license for javascript"""
     result, _ = inspector.make_single_request(
         psql, "javascript", "react", "17.0.2", force_schema=False
-    )[0]
-    assert result["pkg_name"] == "react"
-    assert result["pkg_ver"] == "17.0.2"
-    assert result["pkg_lic"][0] == "MIT"
-    assert len(result["pkg_dep"]) != 0
+    )
+    assert result[0]["pkg_name"] == "react"
+    assert result[0]["pkg_ver"] == "17.0.2"
+    assert result[0]["pkg_lic"][0] == "MIT"
+    assert len(result[0]["pkg_dep"]) != 0
 
 
 def test_make_single_request_go(psql):
@@ -109,47 +109,47 @@ def test_make_single_request_go(psql):
         "github.com/getsentry/sentry-go",
         "v0.12.0",
         force_schema=False,
-    )[0]
-    assert result["pkg_name"] == "github.com/getsentry/sentry-go"
-    assert result["pkg_ver"] == "v0.12.0"
-    assert result["pkg_lic"][0] == "BSD-2-Clause"
-    assert len(result["pkg_dep"]) != 0
+    )
+    assert result[0]["pkg_name"] == "github.com/getsentry/sentry-go"
+    assert result[0]["pkg_ver"] == "v0.12.0"
+    assert result[0]["pkg_lic"][0] == "BSD-2-Clause"
+    assert len(result[0]["pkg_dep"]) != 0
 
 
 def test_make_single_request_go_redirect(psql):
     """Test version and license for go on redirects"""
     result, _ = inspector.make_single_request(
         psql, "go", "http", "go1.16.13", force_schema=False
-    )[0]
-    assert result["pkg_name"] == "http"
-    assert result["pkg_ver"] == "go1.16.13"
-    assert result["pkg_lic"][0] == "BSD-3-Clause"
+    )
+    assert result[0]["pkg_name"] == "http"
+    assert result[0]["pkg_ver"] == "go1.16.13"
+    assert result[0]["pkg_lic"][0] == "BSD-3-Clause"
 
 
 def test_make_single_request_go_github(psql):
     """Test version and license for go GitHub fallthrough"""
     result, _ = inspector.make_single_request(
         psql, "go", "https://github.com/go-yaml/yaml", force_schema=False
-    )[0]
-    assert result["pkg_name"] == "https://github.com/go-yaml/yaml"
-    assert result["pkg_lic"][0] == "Apache Software License"
-    assert len(result["pkg_dep"]) != 0
+    )
+    assert result[0]["pkg_name"] == "https://github.com/go-yaml/yaml"
+    assert result[0]["pkg_lic"][0] == "Apache Software License"
+    assert len(result[0]["pkg_dep"]) != 0
 
 
 def test_make_single_request_rust(psql):
     """Test version and license for javascript"""
     result, _ = inspector.make_single_request(
         psql, "rust", "reqrnpdno", force_schema=False
-    )[0]
-    assert result["pkg_dep"]
+    )
+    assert result[0]["pkg_dep"]
 
 
 def test_make_single_request_rust_ver(psql):
     """Test version and license for javascript"""
     result, _ = inspector.make_single_request(
         psql, "rust", "picnic-sys", "3.0.14", force_schema=False
-    )[0]
-    assert result["pkg_dep"]
+    )
+    assert result[0]["pkg_dep"]
 
 
 def test_make_single_request_rust_git(psql):
@@ -160,8 +160,8 @@ def test_make_single_request_rust_git(psql):
         "sciter-rs",
         "https://github.com/open-trade/rust-sciter||dyn",
         force_schema=False,
-    )[0]
-    assert result["pkg_dep"]
+    )
+    assert result[0]["pkg_dep"]
 
 
 def test_make_multiple_requests(dependency_payload, psql):
@@ -195,7 +195,7 @@ def test_make_single_request_cs(psql):
     """Test version and license for c#"""
     result, _ = inspector.make_single_request(
         psql, "cs", "Microsoft.Bcl.AsyncInterfaces", force_schema=False
-    )[0]
+    )
     assert result
 
 
@@ -207,7 +207,7 @@ def test_make_single_request_cs_ver(psql):
         "Walter.Web.Firewall.Core.3.x",
         "2020.8.25.1",
         force_schema=False,
-    )[0]
+    )
     assert result
 
 
@@ -215,13 +215,13 @@ def test_make_single_request_php(psql):
     """Test version and license for php"""
     result, _ = inspector.make_single_request(
         psql, "php", "folospace/socketio", force_schema=False
-    )[0]
-    assert result["pkg_dep"]
+    )
+    assert result[0]["pkg_dep"]
 
 
 def test_make_single_request_php_ver(psql):
     """Test version and license for php"""
     result, _ = inspector.make_single_request(
         psql, "php", "ajgarlag/psr15-dispatcher", "0.4.1", force_schema=False
-    )[0]
-    assert result["pkg_dep"]
+    )
+    assert result[0]["pkg_dep"]
