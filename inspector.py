@@ -304,11 +304,11 @@ def make_multiple_requests(
         if not ver_spec:
             name_ver = (package[0] + package[1:].replace("@", ";")).rsplit(";", 1)
             if len(name_ver) == 1:
-                dep_resp, _ = make_single_request(psql, language, package)
+                dep_resp, deps = make_single_request(psql, language, package)
             else:
-                dep_resp, _ = make_single_request(psql, language, name_ver[0], name_ver[1])
+                dep_resp, deps = make_single_request(psql, language, name_ver[0], name_ver[1])
         else:
-            dep_resp, _ = make_single_request(
+            dep_resp, deps = make_single_request(
                 psql, language, package, ver_spec=ast.literal_eval(ver_spec)
             )
         result.append(dep_resp)
