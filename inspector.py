@@ -282,18 +282,16 @@ def make_multiple_requests(
     psql: Any,
     language: str,
     packages: List[str],
-    max_depth: Optional[int] = None,
+    depth: Optional[int] = None,
     result: Optional[list] = None,
-    cur_depth: int = 1,
 ) -> List[Any]:
     """
     Obtain license and dependency information for list of packages.
     :param psql: Postgres connection
     :param language: python, javascript or go
     :param packages: a list of dependencies in each language
-    :param max_depth: depth of recursion, None for no limit and 0 for input parsing alone
+    :param depth: depth of recursion, None for no limit and 0 for input parsing alone
     :param result: optional result object to apend to during revursion
-    :param cur_depth: variable to keep track of current recursion depth
     :return: result object with name version license and dependencies
     """
     deps = []
@@ -313,9 +311,13 @@ def make_multiple_requests(
             )
         result.append(dep_resp)
     # higher levels may ignore version specifications
-    if not deps or (max_depth <= cur_depth):
-        return result
-    else:
+    if depth is None and deps:
         return make_multiple_requests(
-            psql, language, deps, max_depth, result, cur_depth + 1
+            psql, language, deps, result=result
         )
+    elif isinstance(depth, int) and depth > 0:
+        return make_multiple_requests(
+            psql, language, deps, depth - 1, result
+        )
+    else:
+        return result
