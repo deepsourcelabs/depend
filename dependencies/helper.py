@@ -1,5 +1,6 @@
 """Helper Functions for Inspector."""
 import datetime
+import logging
 import re
 from collections import defaultdict
 from typing import List, Optional
@@ -420,8 +421,7 @@ def fix_constraint(language: str, reqs: str):
         case "javascript":
             # https://docs.npmjs.com/cli/v8/configuring-npm/package-json#dependencies
             # wildcard replace x with * negative lookahead and loohbehind for alphanum
-            if "*" in fixed_constraint:
-                fixed_constraint = re.sub(r"(?<![A-Za-z0-9])(x)(?![A-Za-z0-9])", "*", fixed_constraint)
+            fixed_constraint = re.sub(r"(?<![A-Za-z0-9])(x)(?![A-Za-z0-9])", "*", fixed_constraint)
             # handle logical or
             if "||" in fixed_constraint:
                 sub_constraint = fixed_constraint.split("||")
@@ -434,11 +434,27 @@ def fix_constraint(language: str, reqs: str):
             # handle remaining logical ands
             fixed_constraint = re.sub(r"(\s)+(?![A-Za-z0-9])", ",", fixed_constraint)
         case "go":
-            pass
+            # https://go.dev/ref/mod#go-mod-file-require
+            logging.warning("Lexical comparison used instead of Minimum Version Selection")
         case "cs":
+            # https://docs.microsoft.com/en-us/nuget/concepts/package-versioning#version-ranges
             pass
         case "php":
-            pass
+            # https://getcomposer.org/doc/articles/versions.md#writing-version-constraints
+            # handle logical or
+            if "|" in fixed_constraint:
+                sub_constraint = fixed_constraint.split("||")
+                # Considers only first constraint
+                fixed_constraint = sub_constraint[0].strip()
+                # compatibility for logical OR
+                sub_constraint = fixed_constraint.split("|")
+                fixed_constraint = sub_constraint[0].strip()
+            # range constraints alternative
+            if " - " in fixed_constraint:
+                sub_constraint = fixed_constraint.split(" - ")
+                fixed_constraint = f">={sub_constraint[0]}, <={sub_constraint[1]}"
+            # handle remaining logical ands
+            fixed_constraint = re.sub(r"(\s)+(?![A-Za-z0-9])", ",", fixed_constraint)
         case "rust":
             # https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html
             # Default works like caret
