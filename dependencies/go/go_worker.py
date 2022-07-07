@@ -39,7 +39,7 @@ def handle_go_mod(req_file_data: str) -> Result:
         "pkg_ver": "",
         "pkg_lic": ["Other"],
         "pkg_err": {},
-        "pkg_dep": [],
+        "pkg_dep": {},
         "timestamp": datetime.utcnow().isoformat(),
     }
     ptr = getDepVer(req_file_data.encode("utf-8"))
@@ -52,6 +52,7 @@ def handle_go_mod(req_file_data: str) -> Result:
         "ModVer": "pkg_ver",
         "DepVer": "pkg_dep",
     }
+    # TODO pkg_dep
     for k in d:
         if k in m:
             if k == "MinGoVer":

@@ -52,6 +52,7 @@ def main(
             sys.exit(-1)
         file_extension = os.path.basename(dep_file).split(".")[-1]
         dep_content = handle_dep_file(os.path.basename(dep_file), dep_file.read_text())
+        # TODO
         payload[lang] = dep_content.get("pkg_dep")
         result.append(parse_dep_response([dep_content]))
         if depth == 0:

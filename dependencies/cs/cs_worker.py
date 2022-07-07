@@ -1,4 +1,5 @@
 """Functions to handle C# dependency files."""
+from collections import defaultdict
 from datetime import datetime
 
 import xmltodict
@@ -31,7 +32,7 @@ def handle_nuspec(req_file_data: str) -> dict:
         "pkg_ver": "",
         "pkg_lic": ["Other"],
         "pkg_err": {},
-        "pkg_dep": [],
+        "pkg_dep": {},
         "timestamp": datetime.utcnow().isoformat(),
     }
     root = xmltodict.parse(req_file_data).get("package", {}).get("metadata")
@@ -40,8 +41,8 @@ def handle_nuspec(req_file_data: str) -> dict:
     # ignores "file" type
     if root.get("license", {}).get("@type") == "expression":
         res["pkg_lic"] = [root.get("license", {}).get("#text")]
-    pkg_dep = []
+    pkg_dep = defaultdict(list)
     for dep in sum(list(findkeys(root.get("dependencies"), "dependency")), []):
-        pkg_dep.append(dep.get("@id") + ";" + dep.get("@version"))
+        pkg_dep[dep.get("@id")].append(dep.get("@version"))
     res["pkg_dep"] = pkg_dep
     return res

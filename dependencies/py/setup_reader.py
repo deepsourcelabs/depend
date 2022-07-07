@@ -71,7 +71,7 @@ class LaxSetupReader(SetupReader):
             "pkg_ver": "",
             "pkg_lic": ["Other"],
             "pkg_err": {},
-            "pkg_dep": [],
+            "pkg_dep": {},
             "timestamp": datetime.utcnow().isoformat(),
         }
         body = ast.parse(content).body
@@ -98,13 +98,13 @@ class LaxSetupReader(SetupReader):
                 if isinstance(repo_file_content, ContentFile):
                     dep_file = repo_file_content.decoded_content.decode()
                     res["pkg_dep"] = handle_requirements_txt(dep_file).get(
-                        "pkg_dep", []
+                        "pkg_dep", {}
                     )
             except github.GithubException as e:
                 logging.error(e)
         else:
             res["pkg_dep"] = handle_requirements_txt("\n".join(pkg_dep)).get(
-                "pkg_dep", []
+                "pkg_dep", {}
             )
         classifiers = self._find_single_string(setup_call, body, "classifiers")
         if classifiers:
@@ -275,7 +275,7 @@ class LaxSetupReader(SetupReader):
             "pkg_ver": "",
             "pkg_lic": ["Other"],
             "pkg_err": {},
-            "pkg_dep": [],
+            "pkg_dep": {},
             "timestamp": datetime.utcnow().isoformat(),
         }
         parser = ConfigParser()
@@ -291,7 +291,7 @@ class LaxSetupReader(SetupReader):
             res["pkg_ver"] = ""
         res["pkg_dep"] = handle_requirements_txt(
             parser.get("options", "install_requires", fallback="")
-        ).get("pkg_dep", [])
+        ).get("pkg_dep", {})
         res["lang_ver"] = parser.get("options", "python_requires", fallback="").split(
             ","
         )

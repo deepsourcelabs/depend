@@ -40,10 +40,7 @@ class Helpers:
                                                 "items": {"type": "string"},
                                             },
                                             "pkg_err": {"type": "object"},
-                                            "pkg_dep": {
-                                                "type": "array",
-                                                "items": {"type": "string"},
-                                            },
+                                            "pkg_dep": {"type": "object"},
                                             "timestamp": {"type": "string"},
                                         },
                                         "additionalProperties": False,

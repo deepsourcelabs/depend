@@ -25,7 +25,7 @@ from dependencies.helper import (
     py_versions,
     resolve_version,
     rust_versions,
-    scrape_go,
+    scrape_go, fix_constraint,
 )
 from error import LanguageNotSupportedError, VCSNotSupportedError
 from vcs.github_worker import handle_github
@@ -152,7 +152,7 @@ def make_single_request(
         "pkg_ver": "",
         "pkg_lic": ["Other"],
         "pkg_err": {},
-        "pkg_dep": [],
+        "pkg_dep": {},
         "timestamp": datetime.utcnow().isoformat(),
     }
     if not version:
@@ -178,7 +178,8 @@ def make_single_request(
                 response = requests.get(url)
                 vers = rust_versions(response, queries)
         if not all_ver and vers:
-            resolved_version = resolve_version(vers, ver_spec)
+            version_constraint = fix_constraint(language, ver_spec)
+            resolved_version = resolve_version(vers, version_constraint)
             if resolved_version is not None:
                 vers = [resolved_version]
             else:
@@ -203,7 +204,7 @@ def make_single_request(
                     logging.info("Using " + package + " found in Postgres Database")
                     # noinspection PyProtectedMember
                     db_dict = db_data._asdict()
-                    return parse_dep_response([db_dict]), db_dict.get("pkg_dep") or []
+                    return parse_dep_response([db_dict]), db_dict.get("pkg_dep") or {}
         if "||" in version:
             git_url, git_branch = version.split("||")
             handle_vcs(language, git_url + "/tree/" + git_branch, result)
@@ -255,7 +256,7 @@ def make_single_request(
                     result.get("lang_ver", []),
                     result.get("pkg_lic", []),
                     result.get("pkg_err", {}),
-                    result.get("pkg_dep", []),
+                    result.get("pkg_dep", {}),
                 )
             else:
                 upd_data(
@@ -267,9 +268,9 @@ def make_single_request(
                     result.get("lang_ver", []),
                     result.get("pkg_lic", []),
                     result.get("pkg_err", {}),
-                    result.get("pkg_dep", []),
+                    result.get("pkg_dep", {}),
                 )
-        for dep in result.get("pkg_dep", []):
+        for dep in result.get("pkg_dep", {}):
             rem_dep.add(dep)
         result_list.append(result)
     if force_schema:

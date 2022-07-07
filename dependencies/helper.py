@@ -1,8 +1,10 @@
 """Helper Functions for Inspector."""
 import datetime
-import functools
 import re
+from collections import defaultdict
 from typing import List, Optional
+from packaging.requirements import Requirement
+from packaging.version import Version
 
 import jmespath
 import requests
@@ -10,7 +12,6 @@ import xmltodict
 from bs4 import BeautifulSoup
 from requests import Response
 
-import laxsemver as semver
 from dep_helper import Result, requests
 from error import FileNotSupportedError
 
@@ -97,7 +98,7 @@ def parse_dep_response(
                     if isinstance(ec.get("pkg_lic"), str)
                     else ec.get("pkg_lic"),
                     "pkg_err": ec.get("pkg_err") or {},
-                    "pkg_dep": ec.get("pkg_dep") or [],
+                    "pkg_dep": ec.get("pkg_dep") or {},
                     "timestamp": ec.get("timestamp").strftime("%Y-%m-%dT%H:%M:%S.%f")
                     if isinstance(ec.get("timestamp"), datetime.datetime)
                     else ec.get("timestamp"),
@@ -126,7 +127,7 @@ def handle_pypi(api_response: Response, queries: dict, result: Result):
     result["pkg_ver"] = version_q.search(data) or ""
     result["pkg_lic"] = [license_q.search(data) or "Other"]
     req_file_data = "\n".join(dependencies_q.search(data) or "")
-    result["pkg_dep"] = handle_requirements_txt(req_file_data).get("pkg_dep", [])
+    result["pkg_dep"] = handle_requirements_txt(req_file_data).get("pkg_dep", {})
     repo = repo_q.search(data) or ""
     return repo
 
@@ -148,16 +149,15 @@ def handle_cs(api_response: Response, queries: dict, result: Result):
     # ignores "file" type
     if root.get("license", {}).get("@type") == "expression":
         result["pkg_lic"] = [root.get("license", {}).get("#text")]
-    pkg_dep = set()
+    pkg_dep = defaultdict(list)
     for gen_e in findkeys(root.get("dependencies"), "dependency"):
         if isinstance(gen_e, list):
             for dep_e in gen_e:
-                dep_entry = dep_e.get("@id") + ";" + dep_e.get("@version")
-                pkg_dep.add(dep_entry)
+                pkg_dep[dep_e.get("@id")].append(dep_e.get("@version"))
         else:
-            dep_entry = gen_e.get("@id") + ";" + gen_e.get("@version")
-            pkg_dep.add(dep_entry)
-    result["pkg_dep"] = list(pkg_dep)
+            pkg_dep[gen_e.get("@id")].append(gen_e.get("@version"))
+
+    result["pkg_dep"] = pkg_dep
     # @type = git
     return root.get("repository", {}).get("@url")
 
@@ -187,7 +187,10 @@ def handle_npmjs(api_response: Response, queries: dict, result: Result):
     result["pkg_lic"] = license_q.search(data) or ["Other"]
     dep_data = dependencies_q.search(data)
     if dep_data:
-        result["pkg_dep"] = [";".join(tup) for tup in dep_data.items()]
+        pkg_dep = defaultdict(list)
+        for tup in dep_data.items():
+            pkg_dep[tup[0]].append(tup[1])
+        result["pkg_dep"] = pkg_dep
     repo = repo_q.search(data) or ""
     return repo
 
@@ -211,7 +214,10 @@ def handle_php(
     dep_data = ver_data.get(queries["dependency_key"], {})
     lang_ver = dep_data.pop("php", "")
     result["lang_ver"] = [lang_ver]
-    result["pkg_dep"] = [key + ";" + value for (key, value) in dep_data.items()]
+    pkg_dep = defaultdict(list)
+    for k,v in dep_data.items():
+        pkg_dep[k].append(v)
+    result["pkg_dep"] = pkg_dep
 
 
 def handle_rust(
@@ -236,7 +242,10 @@ def handle_rust(
     result["pkg_ver"] = version_q.search(data) or ""
     result["pkg_lic"] = [license_q.search(data) or "Other"]
     req_file_data = dependencies_q.search(dep) or []
-    result["pkg_dep"] = req_file_data
+    pkg_dep = defaultdict(list)
+    for k, v in req_file_data.split(";"):
+        pkg_dep[k].append(v)
+    result["pkg_dep"] = pkg_dep
 
 
 def scrape_go(response: Response, queries: dict, result: Result, url: str):
@@ -260,20 +269,19 @@ def scrape_go(response: Response, queries: dict, result: Result, url: str):
     key_element = soup.find(key_parse[0], class_=key_parse[1]).getText()
     key_data = re.findall(r"([^ \n:]+): ([- ,.\w]+)", key_element)
     data = dict(key_data)
-    dependencies_tag = []
+    pkg_dep = defaultdict(list)
     # requirements not version specific
     non_ver_url = url.split("@")[0] + "?tab=imports"
     dep_res = requests.get(non_ver_url, allow_redirects=False)
     if dep_res.status_code == 200:
         dep_soup = BeautifulSoup(dep_res.text, "html.parser")
-        dependencies_tag = [
-            dependency.getText().strip()
-            for dependency in dep_soup.findAll(dep_parse[0], class_=dep_parse[1])
-        ]
+        for dependency in dep_soup.findAll(dep_parse[0], class_=dep_parse[1]):
+            pkg_dep[dependency.getText().strip()].append("latest")
+
     result["pkg_name"] = package_name
     result["pkg_ver"] = data[queries["version"]] or ""
     result["pkg_lic"] = [data[queries["license"]] or "Other"]
-    result["pkg_dep"] = dependencies_tag
+    result["pkg_dep"] = pkg_dep
 
 
 def go_versions(url: str, queries: dict) -> list:
@@ -397,119 +405,59 @@ def php_versions(api_response: Response, queries: dict) -> list:
     return versions
 
 
+def fix_constraint(language: str, reqs: str):
+    """
+    Fixes requirement string to be parsed by python requirements
+    :param language: language of source code
+    :param reqs: requirement info associated with package
+    """
+    fixed_constraint = reqs.strip()
+    if fixed_constraint == "latest":
+        return "*"
+    match language:
+        case "python":
+            pass
+        case "javascript":
+            # https://docs.npmjs.com/cli/v8/configuring-npm/package-json#dependencies
+            # wildcard replace x with * negative lookahead and loohbehind for alphanum
+            if "*" in fixed_constraint:
+                fixed_constraint = re.sub(r"(?<![A-Za-z0-9])(x)(?![A-Za-z0-9])", "*", fixed_constraint)
+            # handle logical or
+            if "||" in fixed_constraint:
+                sub_constraint = fixed_constraint.split("||")
+                # Considers only first constraint
+                fixed_constraint = sub_constraint[0].strip()
+            # range constraints alternative
+            if " - " in fixed_constraint:
+                sub_constraint = fixed_constraint.split(" - ")
+                fixed_constraint = f">={sub_constraint[0]}, <={sub_constraint[1]}"
+            # handle remaining logical ands
+            fixed_constraint = re.sub(r"(\s)+(?![A-Za-z0-9])", ",", fixed_constraint)
+        case "go":
+            fixed_constraint = reqs
+        case "cs":
+            fixed_constraint = reqs
+        case "php":
+            fixed_constraint = reqs
+        case "rust":
+            fixed_constraint = reqs
+    return fixed_constraint
+
+
 def resolve_version(vers: List[str], reqs=None) -> Optional[str]:
     """
     Returns latest suitable version from available metadata
     :param vers: list of all available version
     :param reqs: requirement info associated with package
-    :return: specific version to query
+    :return: specific version to query defaults to latest
     """
-    compatible_vers: List[str] = vers
-    if reqs:
-        # Multiple requirements
-        for (sym, ver) in reqs:
-            # Exact requirements
-            if sym == "==":
-                compatible_vers = [ver]
-            # Inequality requirements
-            elif sym == "!=":
-                compatible_vers = list(filter(lambda x: x != ver, vers))
-            elif sym in ('>', '>=', '<', '<='):
-                version = semver.VersionInfo.parse(ver)
-                if sym == '>':
-                    compatible_vers = [x for x in vers if semver.VersionInfo.parse(x) > version]
-                if sym == '>=':
-                    compatible_vers = [x for x in vers if semver.VersionInfo.parse(x) >= version]
-                if sym == '<':
-                    compatible_vers = [x for x in vers if semver.VersionInfo.parse(x) < version]
-                if sym == '<=':
-                    compatible_vers = [x for x in vers if semver.VersionInfo.parse(x) <= version]
-            # Caret Requirements
-            elif sym == "^":
-                compatible_vers = handle_caret_requirements(ver, vers)
-            # Tilde requirements
-            elif sym == "~":
-                compatible_vers = handle_tilde_requirements(ver, vers)
-            # Wildcard requirements
-            elif sym == "*":
-                compatible_vers = handle_wildcard_requirements(ver, vers)
     sorted_vers = sorted(
-        compatible_vers, key=functools.cmp_to_key(semver.compare), reverse=True
+        vers, key=lambda item1, item2: Version(item1) < Version(item2), reverse=True
     )
-    return sorted_vers[0] if sorted_vers else None
-
-
-def handle_wildcard_requirements(ver: str, vers: List[str]) -> List[str]:
-    """
-    Compatible versions based on wildcard position
-    *	    >=0.0.0
-    1.*	    >=1.0.0 <2.0.0
-    1.2.*	>=1.2.0 <1.3.0
-    """
-    ver = ver.split("*")[0]
-    dot_count = ver.count(".")
-    svi = semver.VersionInfo.parse(ver)
-    if dot_count == 1:
-        vers = [x for x in vers if semver.VersionInfo.parse(x).major == svi.major]
-    elif dot_count >= 2:
-        vers = [
-            x
-            for x in vers
-            if semver.VersionInfo.parse(x).minor == svi.minor
-            and semver.VersionInfo.parse(x).major == svi.major
+    if reqs:
+        compatible_vers = [
+            ver for ver in sorted_vers if Requirement(reqs).specifier.contains(ver)
         ]
-    return vers
-
-
-def handle_tilde_requirements(ver: str, vers: List[str]) -> List[str]:
-    """
-    Compatible versions based on specified major, minor, and patch version
-    ~1.2.3	>=1.2.3 <1.3.0
-    ~1.2	>=1.2.0 <1.3.0
-    ~1	    >=1.0.0 <2.0.0
-    """
-    dot_count = ver.count(".")
-    svi = semver.VersionInfo.parse(ver)
-    if dot_count in (1, 0):
-        vers = [x for x in vers if semver.VersionInfo.parse(x).major == svi.major]
-    elif dot_count >= 2:
-        vers = [
-            x
-            for x in vers
-            if semver.VersionInfo.parse(x).minor == svi.minor
-            and semver.VersionInfo.parse(x).major == svi.major
-        ]
-    return vers
-
-
-def handle_caret_requirements(ver: str, vers: List[str]) -> List[str]:
-    """
-    Compatible versions based on specified version
-    ^1.2.3	>=1.2.3 <2.0.0
-    ^1.2	>=1.2.0 <2.0.0
-    ^1	    >=1.0.0 <2.0.0
-    ^0.2.3	>=0.2.3 <0.3.0
-    ^0.0.3	>=0.0.3 <0.0.4
-    ^0.0	>=0.0.0 <0.1.0
-    ^0	    >=0.0.0 <1.0.0
-    """
-    dot_count = ver.count(".")
-    svi = semver.VersionInfo.parse(ver)
-    if svi.major != 0 or dot_count == 0:
-        vers = [x for x in vers if semver.VersionInfo.parse(x).major == svi.major]
-    elif svi.minor != 0 or dot_count == 1:
-        vers = [
-            x
-            for x in vers
-            if semver.VersionInfo.parse(x).minor == svi.minor
-            and semver.VersionInfo.parse(x).major == svi.major
-        ]
-    elif svi.patch != 0:
-        vers = [
-            x
-            for x in vers
-            if semver.VersionInfo.parse(x).patch == svi.patch
-            and semver.VersionInfo.parse(x).minor == svi.minor
-            and semver.VersionInfo.parse(x).major == svi.major
-        ]
-    return vers
+    else:
+        compatible_vers = vers
+    return compatible_vers[0] if compatible_vers else sorted_vers[0]
