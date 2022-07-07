@@ -434,13 +434,16 @@ def fix_constraint(language: str, reqs: str):
             # handle remaining logical ands
             fixed_constraint = re.sub(r"(\s)+(?![A-Za-z0-9])", ",", fixed_constraint)
         case "go":
-            fixed_constraint = reqs
+            pass
         case "cs":
-            fixed_constraint = reqs
+            pass
         case "php":
-            fixed_constraint = reqs
+            pass
         case "rust":
-            fixed_constraint = reqs
+            # https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html
+            # Default works like caret
+            if fixed_constraint[:1].isalnum():
+                fixed_constraint = "^" + fixed_constraint
     return fixed_constraint
 
 
