@@ -3,13 +3,13 @@ import datetime
 import re
 from collections import defaultdict
 from typing import List, Optional
-from packaging.requirements import Requirement
-from packaging.version import Version
 
 import jmespath
 import requests
 import xmltodict
 from bs4 import BeautifulSoup
+from packaging.requirements import Requirement
+from packaging.version import Version
 from requests import Response
 
 from dep_helper import Result, requests

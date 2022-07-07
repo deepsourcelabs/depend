@@ -20,7 +20,7 @@ def add_data(
     lang_ver: list[str],
     pkg_lic: list[str],
     pkg_err: dict,
-    pkg_dep:  dict,
+    pkg_dep: dict,
     clear_old_data: bool = False,
 ):
     """
@@ -143,7 +143,7 @@ def upd_data(
     lang_ver: list[str],
     pkg_lic: list[str],
     pkg_err: dict,
-    pkg_dep:  dict,
+    pkg_dep: dict,
 ):
     """
     Update info about a specific package version from DB

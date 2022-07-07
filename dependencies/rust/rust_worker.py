@@ -60,5 +60,5 @@ def handle_lock(file_data: str) -> dict:
     pkg_dep = defaultdict(list)
     for name, specs in matches:
         pkg_dep[name].append(specs)
-    res["pkg_dep"]= pkg_dep
+    res["pkg_dep"] = pkg_dep
     return res
