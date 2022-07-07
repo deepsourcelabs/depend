@@ -12,6 +12,7 @@ from constants import CACHE_EXPIRY, REGISTRY
 from db.postgres_worker import add_data, get_data, upd_data
 from dep_helper import Result, requests
 from dependencies.helper import (
+    fix_constraint,
     go_versions,
     handle_cs,
     handle_npmjs,
@@ -25,7 +26,7 @@ from dependencies.helper import (
     py_versions,
     resolve_version,
     rust_versions,
-    scrape_go, fix_constraint,
+    scrape_go,
 )
 from error import LanguageNotSupportedError, VCSNotSupportedError
 from vcs.github_worker import handle_github

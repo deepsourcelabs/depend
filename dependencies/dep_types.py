@@ -11,5 +11,5 @@ class Result(TypedDict):
     pkg_ver: str
     pkg_lic: list[str]
     pkg_err: dict
-    pkg_dep:  dict
+    pkg_dep: dict
     timestamp: str

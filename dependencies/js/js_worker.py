@@ -17,7 +17,7 @@ class Result(TypedDict):
     pkg_ver: str
     pkg_lic: list[str]
     pkg_err: dict
-    pkg_dep:  dict
+    pkg_dep: dict
     timestamp: str
 
 
@@ -46,7 +46,9 @@ def handle_yarn_lock(req_file_data: str) -> Result:
     for package in unfiltered_content.keys():
         if package.startswith("_"):
             continue
-        pkg_dep[str(package.split(",")[0].rsplit("@", 1)[0])].append(str(unfiltered_content[package].get("version", "latest")))
+        pkg_dep[str(package.split(",")[0].rsplit("@", 1)[0])].append(
+            str(unfiltered_content[package].get("version", "latest"))
+        )
     res["pkg_dep"] = pkg_dep
     return res
 
