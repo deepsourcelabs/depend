@@ -438,7 +438,40 @@ def fix_constraint(language: str, reqs: str):
             logging.warning("Lexical comparison used instead of Minimum Version Selection")
         case "cs":
             # https://docs.microsoft.com/en-us/nuget/concepts/package-versioning#version-ranges
-            pass
+            if fixed_constraint[0] == "(":
+                ver_spec = fixed_constraint[1:-1].split(",")
+                if fixed_constraint[-1] == ")":
+                    if ver_spec[0] and not ver_spec[1]:
+                        fixed_constraint = ">"+ver_spec[0]
+                    elif not ver_spec[0] and ver_spec[1]:
+                        fixed_constraint = "<"+ver_spec[1]
+                    else:
+                        fixed_constraint = ">"+ver_spec[0]+",<" + ver_spec[1]
+                else:
+                    if ver_spec[0] and not ver_spec[1]:
+                        fixed_constraint = ">"+ver_spec[0]
+                    elif not ver_spec[0] and ver_spec[1]:
+                        fixed_constraint = "<="+ver_spec[1]
+                    else:
+                        fixed_constraint = ">"+ver_spec[0]+",<=" + ver_spec[1]
+            elif fixed_constraint[0] =="[":
+                ver_spec = fixed_constraint[1:-1].split(",")
+                if fixed_constraint[-1] == ")":
+                    if ver_spec[0] and not ver_spec[1]:
+                        fixed_constraint = ">=" + ver_spec[0]
+                    elif not ver_spec[0] and ver_spec[1]:
+                        fixed_constraint = "<" + ver_spec[1]
+                    else:
+                        fixed_constraint = ">=" + ver_spec[0] + ",<" + ver_spec[1]
+                else:
+                    if ver_spec[0] and not ver_spec[1]:
+                        fixed_constraint = ">=" + ver_spec[0]
+                    elif not ver_spec[0] and ver_spec[1]:
+                        fixed_constraint = "<=" + ver_spec[1]
+                    else:
+                        fixed_constraint = ">=" + ver_spec[0] + ",<=" + ver_spec[1]
+            else:
+                fixed_constraint = ">="+fixed_constraint
         case "php":
             # https://getcomposer.org/doc/articles/versions.md#writing-version-constraints
             # handle logical or
