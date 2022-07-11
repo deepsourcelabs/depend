@@ -179,8 +179,8 @@ def make_single_request(
                 response = requests.get(url)
                 vers = rust_versions(response, queries)
         if not all_ver and vers:
-            version_constraint = fix_constraint(language, ver_spec)
-            resolved_version = resolve_version(vers, version_constraint)
+            version_constraints = fix_constraint(language, ver_spec)
+            resolved_version = resolve_version(vers, version_constraints)
             if resolved_version is not None:
                 vers = [resolved_version]
             else:

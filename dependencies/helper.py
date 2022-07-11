@@ -9,7 +9,7 @@ import jmespath
 import requests
 import xmltodict
 from bs4 import BeautifulSoup
-from packaging.requirements import Requirement
+from packaging.specifiers import SpecifierSet
 from packaging.version import Version
 from requests import Response
 
@@ -406,7 +406,7 @@ def php_versions(api_response: Response, queries: dict) -> list:
     return versions
 
 
-def fix_constraint(language: str, reqs: str):
+def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
     """
     Fixes requirement string to be parsed by python requirements
     :param language: language of source code
@@ -414,27 +414,30 @@ def fix_constraint(language: str, reqs: str):
     """
     fixed_constraint = reqs.strip()
     if fixed_constraint == "latest":
-        return "*"
+        all_constraints = [SpecifierSet("==*")]
     match language:
         case "python":
-            pass
+            all_constraints = [SpecifierSet(fixed_constraint)]
         case "javascript":
             # https://docs.npmjs.com/cli/v8/configuring-npm/package-json#dependencies
-            # wildcard replace x with * negative lookahead and loohbehind for alphanum
-            fixed_constraint = re.sub(r"(?<![A-Za-z0-9])(x)(?![A-Za-z0-9])", "*", fixed_constraint)
+            all_constraints = []
             # handle logical or
-            if "||" in fixed_constraint:
-                sub_constraint = fixed_constraint.split("||")
-                # Considers only first constraint
-                fixed_constraint = sub_constraint[0].strip()
-            # range constraints alternative
-            if " - " in fixed_constraint:
-                sub_constraint = fixed_constraint.split(" - ")
-                fixed_constraint = f">={sub_constraint[0]}, <={sub_constraint[1]}"
-            # handle remaining logical ands
-            fixed_constraint = re.sub(r"(\s)+(?![A-Za-z0-9])", ",", fixed_constraint)
+            for sub_constraint in fixed_constraint.split("||"):
+                # JavaScript uses `x` as its wildcard character.
+                # Replacing '.x' with '.*' should be fine, as `package=x` isn't valid
+                # (use `package=*` for that), and for cases like `1.2.3-pre.x`, i think
+                # it's fine to have it replaced with `1.2.3-pre.*`.
+                sub_constraint = sub_constraint.strip().replace(".x", ".*")
+                # range constraints alternative
+                if " - " in sub_constraint:
+                    sub_constraint = sub_constraint.split(" - ", 1)
+                    sub_constraint = f">={sub_constraint[0]}, <={sub_constraint[1]}"
+                # handle remaining logical ands
+                sub_constraint = re.sub(r"(\s)+(?![A-Za-z0-9])", ",", sub_constraint)
+                all_constraints.append(SpecifierSet(sub_constraint))
         case "go":
             # https://go.dev/ref/mod#go-mod-file-require
+            all_constraints = [SpecifierSet(fixed_constraint)]
             logging.warning("Lexical comparison used instead of Minimum Version Selection")
         case "cs":
             # https://docs.microsoft.com/en-us/nuget/concepts/package-versioning#version-ranges
@@ -472,44 +475,48 @@ def fix_constraint(language: str, reqs: str):
                         fixed_constraint = ">=" + ver_spec[0] + ",<=" + ver_spec[1]
             else:
                 fixed_constraint = ">="+fixed_constraint
+            all_constraints = [SpecifierSet(fixed_constraint)]
         case "php":
             # https://getcomposer.org/doc/articles/versions.md#writing-version-constraints
+            all_constraints = []
             # handle logical or
-            if "|" in fixed_constraint:
-                sub_constraint = fixed_constraint.split("||")
-                # Considers only first constraint
-                fixed_constraint = sub_constraint[0].strip()
-                # compatibility for logical OR
-                sub_constraint = fixed_constraint.split("|")
-                fixed_constraint = sub_constraint[0].strip()
-            # range constraints alternative
-            if " - " in fixed_constraint:
-                sub_constraint = fixed_constraint.split(" - ")
-                fixed_constraint = f">={sub_constraint[0]}, <={sub_constraint[1]}"
-            # handle remaining logical ands
-            fixed_constraint = re.sub(r"(\s)+(?![A-Za-z0-9])", ",", fixed_constraint)
+            for sub_constraint in fixed_constraint.replace("||","|").split("|"):
+                # JavaScript uses `x` as its wildcard character.
+                # Replacing '.x' with '.*' should be fine, as `package=x` isn't valid
+                # (use `package=*` for that), and for cases like `1.2.3-pre.x`, i think
+                # it's fine to have it replaced with `1.2.3-pre.*`.
+                sub_constraint = sub_constraint.strip()
+                # range constraints alternative
+                if " - " in sub_constraint:
+                    sub_constraint = sub_constraint.split(" - ", 1)
+                    sub_constraint = f">={sub_constraint[0]}, <={sub_constraint[1]}"
+                # handle remaining logical ands
+                sub_constraint = re.sub(r"(\s)+(?![A-Za-z0-9])", ",", sub_constraint)
+                all_constraints.append(SpecifierSet(sub_constraint))
         case "rust":
             # https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html
             # Default works like caret
             if fixed_constraint[:1].isalnum():
                 fixed_constraint = "^" + fixed_constraint
-    return fixed_constraint
+            all_constraints = [SpecifierSet(fixed_constraint)]
+    return all_constraints
 
 
-def resolve_version(vers: List[str], reqs=None) -> Optional[str]:
+def resolve_version(vers: List[str], reqs: List[SpecifierSet]=None) -> Optional[str]:
     """
     Returns latest suitable version from available metadata
     :param vers: list of all available version
     :param reqs: requirement info associated with package
     :return: specific version to query defaults to latest
     """
-    sorted_vers = sorted(
-        vers, key=lambda item1, item2: Version(item1) < Version(item2), reverse=True
-    )
-    if reqs:
+    for req in reqs:
         compatible_vers = [
-            ver for ver in sorted_vers if Requirement(reqs).specifier.contains(ver)
+            ver for ver in compatible_vers if req.specifier.contains(ver)
         ]
+    if compatible_vers:
+        sorted_vers = sorted(
+            compatible_vers, key=lambda item1, item2: Version(item1) < Version(item2), reverse=True
+        )
+        return sorted_vers[0] 
     else:
-        compatible_vers = vers
-    return compatible_vers[0] if compatible_vers else sorted_vers[0]
+        return None
