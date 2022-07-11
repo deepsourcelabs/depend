@@ -24,7 +24,7 @@ def handle_composer_json(req_file_data: str) -> Result:
         "pkg_name": package_data.get("name", ""),
         "pkg_ver": package_data.get("version", ""),
         "pkg_lic": package_data.get("license", "Other").split(","),
-        "pkg_dep": pkg_dep,
+        "pkg_dep": dict(pkg_dep),
         "pkg_err": {},
         "timestamp": datetime.utcnow().isoformat(),
     }
