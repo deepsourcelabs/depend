@@ -509,6 +509,7 @@ def resolve_version(vers: List[str], reqs: List[SpecifierSet]=None) -> Optional[
     :param reqs: requirement info associated with package
     :return: specific version to query defaults to latest
     """
+    compatible_vers = vers
     for req in reqs:
         compatible_vers = [
             ver for ver in compatible_vers if req.specifier.contains(ver)
