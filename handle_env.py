@@ -23,4 +23,3 @@ def get_github():
     Returns an authenticated GitHub object if env variable is defined
     """
     return github_object
-
