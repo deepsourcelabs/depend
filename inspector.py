@@ -2,14 +2,12 @@
 import ast
 import logging
 import re
-import time
 from datetime import datetime
 from typing import Any, List, Optional, Set, Tuple
 
 from tldextract import extract
 
-from constants import CACHE_EXPIRY, REGISTRY
-from db.postgres_worker import add_data, get_data, upd_data
+from constants import REGISTRY
 from dep_helper import Result, requests
 from dependencies.helper import (
     fix_constraint,
@@ -123,7 +121,6 @@ def find_github(text: str) -> str:
 
 
 def make_single_request(
-    psql: Any,
     language: str,
     package: str,
     version: str = "",
@@ -133,7 +130,6 @@ def make_single_request(
 ) -> Tuple[dict | Result | List[Result], list[str]]:
     """
     Obtain package license and dependency information.
-    :param psql: Postgres connection
     :param language: python, javascript or go
     :param package: as imported
     :param version: check for specific version
@@ -193,19 +189,6 @@ def make_single_request(
             f"No version could be resolved for package {package} with version constraint {ver_spec}"
         )
     for ver in vers:
-        if psql:
-            db_data = get_data(psql, language, package, ver)
-            if db_data:
-                db_time: datetime = db_data.timestamp
-                if (
-                    time.mktime(db_time.timetuple())
-                    - time.mktime(datetime.utcnow().timetuple())
-                    < CACHE_EXPIRY
-                ):
-                    logging.info("Using " + package + " found in Postgres Database")
-                    # noinspection PyProtectedMember
-                    db_dict = db_data._asdict()
-                    return parse_dep_response([db_dict]), db_dict.get("pkg_dep") or {}
         if "||" in version:
             git_url, git_branch = version.split("||")
             handle_vcs(language, git_url + "/tree/" + git_branch, result)
@@ -245,32 +228,6 @@ def make_single_request(
                     repo = find_github(response.text)
                 if repo:
                     handle_vcs(language, repo, result)
-        if psql:
-            db_data = get_data(psql, language, package, ver)
-            if not db_data:
-                add_data(
-                    psql,
-                    language,
-                    package,
-                    ver,
-                    result.get("import_name", ""),
-                    result.get("lang_ver", []),
-                    result.get("pkg_lic", []),
-                    result.get("pkg_err", {}),
-                    result.get("pkg_dep", {}),
-                )
-            else:
-                upd_data(
-                    psql,
-                    language,
-                    package,
-                    ver,
-                    result.get("import_name", ""),
-                    result.get("lang_ver", []),
-                    result.get("pkg_lic", []),
-                    result.get("pkg_err", {}),
-                    result.get("pkg_dep", {}),
-                )
         for dep in result.get("pkg_dep", {}):
             rem_dep.add(dep)
         result_list.append(result)
@@ -306,7 +263,9 @@ def make_multiple_requests(
             if len(name_ver) == 1:
                 dep_resp, deps = make_single_request(psql, language, package)
             else:
-                dep_resp, deps = make_single_request(psql, language, name_ver[0], name_ver[1])
+                dep_resp, deps = make_single_request(
+                    psql, language, name_ver[0], name_ver[1]
+                )
         else:
             dep_resp, deps = make_single_request(
                 psql, language, package, ver_spec=ast.literal_eval(ver_spec)
@@ -314,12 +273,8 @@ def make_multiple_requests(
         result.append(dep_resp)
     # higher levels may ignore version specifications
     if depth is None and deps:
-        return make_multiple_requests(
-            psql, language, deps, result=result
-        )
+        return make_multiple_requests(psql, language, deps, result=result)
     elif isinstance(depth, int) and depth > 0:
-        return make_multiple_requests(
-            psql, language, deps, depth - 1, result
-        )
+        return make_multiple_requests(psql, language, deps, depth - 1, result)
     else:
         return result

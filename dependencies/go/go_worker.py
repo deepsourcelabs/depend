@@ -58,6 +58,6 @@ def handle_go_mod(req_file_data: str) -> Result:
             if k == "MinGoVer":
                 res[m[k]] = d[k].split(",")  # type: ignore
             elif d[k]:
-                res[m[k]] = d[k] # type: ignore
+                res[m[k]] = d[k]  # type: ignore
     res["timestamp"] = datetime.utcnow().isoformat()
     return res

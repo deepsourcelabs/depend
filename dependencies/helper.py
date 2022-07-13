@@ -196,9 +196,7 @@ def handle_npmjs(api_response: Response, queries: dict, result: Result):
     return repo
 
 
-def handle_php(
-    api_response: Response, queries: dict, result: Result, ver: str
-):
+def handle_php(api_response: Response, queries: dict, result: Result, ver: str):
     """
     Take api response and return required results object
     :param api_response: response from requests get
@@ -216,14 +214,12 @@ def handle_php(
     lang_ver = dep_data.pop("php", "")
     result["lang_ver"] = [lang_ver]
     pkg_dep = defaultdict(list)
-    for k,v in dep_data.items():
+    for k, v in dep_data.items():
         pkg_dep[k].append(v)
     result["pkg_dep"] = pkg_dep
 
 
-def handle_rust(
-    api_response: Response, queries: dict, result: Result, url: str
-):
+def handle_rust(api_response: Response, queries: dict, result: Result, url: str):
     """
     Take api response and return required results object
     :param api_response: response from requests get
@@ -438,26 +434,28 @@ def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
         case "go":
             # https://go.dev/ref/mod#go-mod-file-require
             all_constraints = [SpecifierSet(fixed_constraint)]
-            logging.warning("Lexical comparison used instead of Minimum Version Selection")
+            logging.warning(
+                "Lexical comparison used instead of Minimum Version Selection"
+            )
         case "cs":
             # https://docs.microsoft.com/en-us/nuget/concepts/package-versioning#version-ranges
             if fixed_constraint[0] == "(":
                 ver_spec = fixed_constraint[1:-1].split(",")
                 if fixed_constraint[-1] == ")":
                     if ver_spec[0] and not ver_spec[1]:
-                        fixed_constraint = ">"+ver_spec[0]
+                        fixed_constraint = ">" + ver_spec[0]
                     elif not ver_spec[0] and ver_spec[1]:
-                        fixed_constraint = "<"+ver_spec[1]
+                        fixed_constraint = "<" + ver_spec[1]
                     else:
-                        fixed_constraint = ">"+ver_spec[0]+",<" + ver_spec[1]
+                        fixed_constraint = ">" + ver_spec[0] + ",<" + ver_spec[1]
                 else:
                     if ver_spec[0] and not ver_spec[1]:
-                        fixed_constraint = ">"+ver_spec[0]
+                        fixed_constraint = ">" + ver_spec[0]
                     elif not ver_spec[0] and ver_spec[1]:
-                        fixed_constraint = "<="+ver_spec[1]
+                        fixed_constraint = "<=" + ver_spec[1]
                     else:
-                        fixed_constraint = ">"+ver_spec[0]+",<=" + ver_spec[1]
-            elif fixed_constraint[0] =="[":
+                        fixed_constraint = ">" + ver_spec[0] + ",<=" + ver_spec[1]
+            elif fixed_constraint[0] == "[":
                 ver_spec = fixed_constraint[1:-1].split(",")
                 if fixed_constraint[-1] == ")":
                     if ver_spec[0] and not ver_spec[1]:
@@ -474,13 +472,13 @@ def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
                     else:
                         fixed_constraint = ">=" + ver_spec[0] + ",<=" + ver_spec[1]
             else:
-                fixed_constraint = ">="+fixed_constraint
+                fixed_constraint = ">=" + fixed_constraint
             all_constraints = [SpecifierSet(fixed_constraint)]
         case "php":
             # https://getcomposer.org/doc/articles/versions.md#writing-version-constraints
             all_constraints = []
             # handle logical or
-            for sub_constraint in fixed_constraint.replace("||","|").split("|"):
+            for sub_constraint in fixed_constraint.replace("||", "|").split("|"):
                 # JavaScript uses `x` as its wildcard character.
                 # Replacing '.x' with '.*' should be fine, as `package=x` isn't valid
                 # (use `package=*` for that), and for cases like `1.2.3-pre.x`, i think
@@ -502,7 +500,7 @@ def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
     return all_constraints
 
 
-def resolve_version(vers: List[str], reqs: List[SpecifierSet]=None) -> Optional[str]:
+def resolve_version(vers: List[str], reqs: List[SpecifierSet] = None) -> Optional[str]:
     """
     Returns latest suitable version from available metadata
     :param vers: list of all available version
@@ -516,8 +514,10 @@ def resolve_version(vers: List[str], reqs: List[SpecifierSet]=None) -> Optional[
         ]
     if compatible_vers:
         sorted_vers = sorted(
-            compatible_vers, key=lambda item1, item2: Version(item1) < Version(item2), reverse=True
+            compatible_vers,
+            key=lambda item1, item2: Version(item1) < Version(item2),
+            reverse=True,
         )
-        return sorted_vers[0] 
+        return sorted_vers[0]
     else:
         return None
