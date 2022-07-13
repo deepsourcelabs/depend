@@ -238,7 +238,6 @@ def make_single_request(
 
 
 def make_multiple_requests(
-    psql: Any,
     language: str,
     packages: List[str],
     depth: Optional[int] = None,
@@ -246,7 +245,6 @@ def make_multiple_requests(
 ) -> List[Any]:
     """
     Obtain license and dependency information for list of packages.
-    :param psql: Postgres connection
     :param language: python, javascript or go
     :param packages: a list of dependencies in each language
     :param depth: depth of recursion, None for no limit and 0 for input parsing alone
@@ -261,20 +259,18 @@ def make_multiple_requests(
         if not ver_spec:
             name_ver = (package[0] + package[1:].replace("@", ";")).rsplit(";", 1)
             if len(name_ver) == 1:
-                dep_resp, deps = make_single_request(psql, language, package)
+                dep_resp, deps = make_single_request(language, package)
             else:
-                dep_resp, deps = make_single_request(
-                    psql, language, name_ver[0], name_ver[1]
-                )
+                dep_resp, deps = make_single_request(language, name_ver[0], name_ver[1])
         else:
             dep_resp, deps = make_single_request(
-                psql, language, package, ver_spec=ast.literal_eval(ver_spec)
+                language, package, ver_spec=ast.literal_eval(ver_spec)
             )
         result.append(dep_resp)
     # higher levels may ignore version specifications
     if depth is None and deps:
-        return make_multiple_requests(psql, language, deps, result=result)
+        return make_multiple_requests(language, deps, result=result)
     elif isinstance(depth, int) and depth > 0:
-        return make_multiple_requests(psql, language, deps, depth - 1, result)
+        return make_multiple_requests(language, deps, depth - 1, result)
     else:
         return result

@@ -62,8 +62,6 @@ def main(
         payload[lang] = packages
     if lang not in ["go", "python", "javascript", "rust", "php", "cs"]:
         raise LanguageNotSupportedError(lang)
-    if psql := get_db():
-        logging.info("Postgres DB connected")
     for language, dependencies in payload.items():
         if isinstance(dependencies, str):
             dep_list = dependencies.replace(",", "\n").split("\n")
@@ -76,11 +74,9 @@ def main(
         try:
             if dep_list:
                 if file_extension == "lock":
-                    result.extend(make_multiple_requests(psql, language, dep_list, 1))
+                    result.extend(make_multiple_requests(language, dep_list, 1))
                 else:
-                    result.extend(
-                        make_multiple_requests(psql, language, dep_list, depth)
-                    )
+                    result.extend(make_multiple_requests(language, dep_list, depth))
         except (LanguageNotSupportedError, VCSNotSupportedError, ParamMissing) as e:
             logging.error(e.msg)
             sys.exit(-1)
