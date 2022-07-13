@@ -10,7 +10,6 @@ import typer
 
 from dependencies.helper import handle_dep_file, parse_dep_response
 from error import LanguageNotSupportedError, ParamMissing, VCSNotSupportedError
-from handle_env import get_db
 from inspector import make_multiple_requests
 
 app = typer.Typer(add_completion=False)

@@ -408,6 +408,7 @@ def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
     :param language: language of source code
     :param reqs: requirement info associated with package
     """
+    all_constraints = []
     fixed_constraint = reqs.strip()
     if fixed_constraint == "latest":
         all_constraints = [SpecifierSet("==*")]
@@ -416,7 +417,6 @@ def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
             all_constraints = [SpecifierSet(fixed_constraint)]
         case "javascript":
             # https://docs.npmjs.com/cli/v8/configuring-npm/package-json#dependencies
-            all_constraints = []
             # handle logical or
             for sub_constraint in fixed_constraint.split("||"):
                 # JavaScript uses `x` as its wildcard character.
@@ -476,7 +476,6 @@ def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
             all_constraints = [SpecifierSet(fixed_constraint)]
         case "php":
             # https://getcomposer.org/doc/articles/versions.md#writing-version-constraints
-            all_constraints = []
             # handle logical or
             for sub_constraint in fixed_constraint.replace("||", "|").split("|"):
                 # JavaScript uses `x` as its wildcard character.
