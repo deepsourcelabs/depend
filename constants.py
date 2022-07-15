@@ -18,7 +18,7 @@ REGISTRY: dict = {
         "url": "https://registry.npmjs.org",
         "name": jc("name"),
         "latest": jc('"dist-tags".latest'),
-        "versions": jc('versions | keys(@)'),
+        "versions": jc("versions | keys(@)"),
         "version": jc("version"),
         "license": jc("[license,licenses|[?type!=null].type][]"),
         "dependency": jc("dependencies||__dependencies"),
