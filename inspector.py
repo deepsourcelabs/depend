@@ -141,7 +141,7 @@ def make_single_request(
     """
     rem_dep: Set[str] = set()
     if ver_spec is None:
-        ver_spec = []
+        ver_spec = "latest"
     result_list = []
     result: Result = {
         "import_name": "",
@@ -190,15 +190,24 @@ def make_single_request(
             f"No version could be resolved for package {package} with version constraint {ver_spec}"
         )
     for ver in vers:
-        if "||" in version:
-            git_url, git_branch = version.split("||")
-            handle_vcs(language, git_url + "/tree/" + git_branch, result)
+        repo = ""
+        response = ""
+        supported_domains = [
+            "github.com",
+        ]
+        if any(domain in version for domain in supported_domains):
+            if "||" in version:
+                git_url, git_branch = version.split("||")
+                repo = git_url + "/tree/" + git_branch
+            else:
+                repo = version
         else:
             url = make_url(language, package, ver)
             logging.info(url)
             response = requests.get(url)
             queries = REGISTRY[language]
-            repo = ""
+            if response.status_code != 200:
+                logging.error("{}: {}".format(response.status_code, url))
             match language:
                 case "python":
                     repo = handle_pypi(response, queries, result)
@@ -220,15 +229,12 @@ def make_single_request(
                         scrape_go(response, queries, result, red_url)
                     else:
                         repo = package
-            supported_domains = [
-                "github.com",
-            ]
+        if repo:
+            c_domain = extract(str(repo)).domain + "." + extract(str(repo)).suffix
+            if c_domain not in supported_domains or extract(str(repo)).subdomain:
+                repo = find_github(response.text)
             if repo:
-                c_domain = extract(str(repo)).domain + "." + extract(str(repo)).suffix
-                if c_domain not in supported_domains or extract(str(repo)).subdomain:
-                    repo = find_github(response.text)
-                if repo:
-                    handle_vcs(language, repo, result)
+                handle_vcs(language, repo, result)
         for dep in result.get("pkg_dep", []):
             rem_dep.add(dep)
         result_list.append(result)

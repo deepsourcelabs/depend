@@ -9,7 +9,7 @@ import requests
 import xmltodict
 from bs4 import BeautifulSoup
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
-from packaging.version import Version
+from packaging.version import Version, InvalidVersion
 from requests import Response
 
 from dep_helper import requests
@@ -189,10 +189,7 @@ def handle_npmjs(api_response: Response, queries: dict, result: Result):
     if version:
         result["pkg_ver"] = version
     else:
-        latest_q: jmespath.parser.ParsedResult = queries["latest"]
-        latest = latest_q.search(data)
-        result["pkg_ver"] = latest
-        data = jmespath.search(queries["versions"].format(latest), data)
+        logging.error("Version query failed")
     result["pkg_lic"] = license_q.search(data) or ["Other"]
     dep_data = dependencies_q.search(data)
     if dep_data:
@@ -382,7 +379,7 @@ def php_versions(api_response: Response, queries: dict) -> list:
 def handle_lax_specifier(all_constraints: list[str]) -> list[SpecifierSet]:
     proper_specifiers = []
     for constraint in all_constraints:
-        spec = SpecifierSet("==*")
+        spec = SpecifierSet()
         try:
             spec = SpecifierSet(constraint)
         except InvalidSpecifier:
@@ -405,11 +402,14 @@ def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
     all_constraints = []
     fixed_constraint = reqs.strip()
     if fixed_constraint == "latest":
-        return [SpecifierSet("==*")]
+        return [SpecifierSet()]
     match language:
         case "python":
             all_constraints = [SpecifierSet(fixed_constraint)]
         case "javascript":
+            # JS supports * or x as a direct major ver wildcard
+            if fixed_constraint in ("x", "*"):
+                return SpecifierSet()
             # https://docs.npmjs.com/cli/v8/configuring-npm/package-json#dependencies
             # handle logical or
             for sub_constraint in fixed_constraint.split("||"):
@@ -503,14 +503,21 @@ def resolve_version(vers: List[str], reqs: List[SpecifierSet] = None) -> Optiona
     compatible_vers = vers
     for req in reqs:
         compatible_vers = [
-            ver for ver in compatible_vers if req.specifier.contains(ver)
+            ver for ver in compatible_vers if req.contains(ver)
         ]
     if compatible_vers:
         sorted_vers = sorted(
             compatible_vers,
-            key=lambda item1, item2: Version(item1) < Version(item2),
+            key=lambda i: try_version(i),
             reverse=True,
         )
         return sorted_vers[0]
     else:
         return None
+
+def try_version(value):
+    """If version parsing fails defer the version"""
+    try:
+        return Version(value)
+    except InvalidVersion:
+        return Version("999.999.999")
