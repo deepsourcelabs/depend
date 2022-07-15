@@ -1,23 +1,22 @@
 """Functions to handle C# dependency files."""
-from collections import defaultdict
 from datetime import datetime
 
 import xmltodict
 
 
-def findkeys(node, kv):
+def find_keys(node, kv):
     """
     Find nested keys by key id
     """
     if isinstance(node, list):
         for i in node:
-            for x in findkeys(i, kv):
+            for x in find_keys(i, kv):
                 yield x
     elif isinstance(node, dict):
         if kv in node:
             yield node[kv]
         for j in node.values():
-            for x in findkeys(j, kv):
+            for x in find_keys(j, kv):
                 yield x
 
 
@@ -32,7 +31,7 @@ def handle_nuspec(req_file_data: str) -> dict:
         "pkg_ver": "",
         "pkg_lic": ["Other"],
         "pkg_err": {},
-        "pkg_dep": {},
+        "pkg_dep": [],
         "timestamp": datetime.utcnow().isoformat(),
     }
     root = xmltodict.parse(req_file_data).get("package", {}).get("metadata")
@@ -41,8 +40,8 @@ def handle_nuspec(req_file_data: str) -> dict:
     # ignores "file" type
     if root.get("license", {}).get("@type") == "expression":
         res["pkg_lic"] = [root.get("license", {}).get("#text")]
-    pkg_dep = defaultdict(list)
-    for dep in sum(list(findkeys(root.get("dependencies"), "dependency")), []):
-        pkg_dep[dep.get("@id")].append(dep.get("@version"))
+    pkg_dep = []
+    for dep in sum(list(find_keys(root.get("dependencies"), "dependency")), []):
+        pkg_dep.append(dep.get("@id") + ";" + dep.get("@version"))
     res["pkg_dep"] = pkg_dep
     return res

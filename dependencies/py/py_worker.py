@@ -5,8 +5,7 @@ import dparse2
 import toml
 from pkg_resources import parse_requirements
 
-from dep_helper import Result
-
+from ..dep_types import Result
 from .setup_reader import LaxSetupReader, handle_classifiers
 
 
@@ -42,7 +41,7 @@ def handle_toml(file_data: str) -> Result:
         "pkg_ver": "",
         "pkg_lic": ["Other"],
         "pkg_err": {},
-        "pkg_dep": {},
+        "pkg_dep": [],
         "timestamp": datetime.utcnow().isoformat(),
     }
     toml_parsed = dict(toml.loads(file_data))
@@ -86,7 +85,7 @@ def handle_otherpy(file_data: str, file_name: str) -> Result:
         "pkg_ver": "",
         "pkg_lic": ["Other"],
         "pkg_err": {},
-        "pkg_dep": {},
+        "pkg_dep": [],
         "timestamp": datetime.utcnow().isoformat(),
     }
     df = dparse2.parse(file_data, file_name=file_name)

@@ -8,7 +8,8 @@ from typing import Any, List, Optional, Set, Tuple
 from tldextract import extract
 
 from constants import REGISTRY
-from dep_helper import Result, requests
+from dep_helper import requests
+from dependencies.dep_types import Result
 from dependencies.helper import (
     fix_constraint,
     go_versions,
@@ -127,7 +128,7 @@ def make_single_request(
     force_schema: bool = True,
     all_ver: bool = False,
     ver_spec=None,
-) -> Tuple[dict | Result | List[Result], list[str]]:
+) -> Tuple[dict | Result | List[Result], List[str]]:
     """
     Obtain package license and dependency information.
     :param language: python, javascript or go
@@ -149,7 +150,7 @@ def make_single_request(
         "pkg_ver": "",
         "pkg_lic": ["Other"],
         "pkg_err": {},
-        "pkg_dep": {},
+        "pkg_dep": [],
         "timestamp": datetime.utcnow().isoformat(),
     }
     if not version:
@@ -228,7 +229,7 @@ def make_single_request(
                     repo = find_github(response.text)
                 if repo:
                     handle_vcs(language, repo, result)
-        for dep in result.get("pkg_dep", {}):
+        for dep in result.get("pkg_dep", []):
             rem_dep.add(dep)
         result_list.append(result)
     if force_schema:

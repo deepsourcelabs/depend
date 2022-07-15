@@ -39,7 +39,7 @@ def result_payload():
         "pkg_ver": "",
         "pkg_lic": ["Other"],
         "pkg_err": {},
-        "pkg_dep": {},
+        "pkg_dep": [],
         "timestamp": datetime.utcnow().isoformat(),
     }
     return result

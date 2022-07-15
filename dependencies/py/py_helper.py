@@ -1,10 +1,9 @@
 """Helper functions for Python Dependencies"""
-from collections import defaultdict
 from datetime import datetime
 
 from pkg_resources import parse_requirements
 
-from dep_helper import Result
+from dependencies.dep_types import Result
 
 
 def handle_requirements_txt(req_file_data: str) -> Result:
@@ -20,15 +19,13 @@ def handle_requirements_txt(req_file_data: str) -> Result:
         "pkg_ver": "",
         "pkg_lic": ["Other"],
         "pkg_err": {},
-        "pkg_dep": {},
+        "pkg_dep": [],
         "timestamp": datetime.utcnow().isoformat(),
     }
-    pkg_dep = defaultdict(list)
     install_reqs = parse_requirements(req_file_data)
     for ir in install_reqs:
         if not ir.specs:
-            pkg_dep[ir.key].append("latest")
+            res["pkg_dep"].append("latest")
         else:
-            pkg_dep[ir.key].append(str(ir.specs))
-
+            res["pkg_dep"].append(str(ir.specs))
     return res

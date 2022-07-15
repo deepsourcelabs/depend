@@ -1,24 +1,12 @@
 """Functions to handle JavaScript files"""
 import json
-from collections import defaultdict
 from datetime import datetime
-from typing import Any, Optional, TypedDict
+from typing import Any
 
 import yaml
 from pyarn import lockfile
 
-
-class Result(TypedDict):
-    """Current result structure"""
-
-    import_name: Optional[str]
-    lang_ver: list[str]
-    pkg_name: str
-    pkg_ver: str
-    pkg_lic: list[str]
-    pkg_err: dict
-    pkg_dep: dict
-    timestamp: str
+from dependencies.dep_types import Result
 
 
 def handle_yarn_lock(req_file_data: str) -> Result:
@@ -34,10 +22,9 @@ def handle_yarn_lock(req_file_data: str) -> Result:
         "pkg_ver": "",
         "pkg_lic": ["Other"],
         "pkg_err": {},
-        "pkg_dep": {},
+        "pkg_dep": [],
         "timestamp": datetime.utcnow().isoformat(),
     }
-    pkg_dep = defaultdict(list)
     if "lockfile v1" in req_file_data:
         parsed_lockfile = lockfile.Lockfile.from_str(req_file_data)
         unfiltered_content: dict = json.loads(parsed_lockfile.to_json())
@@ -46,10 +33,11 @@ def handle_yarn_lock(req_file_data: str) -> Result:
     for package in unfiltered_content.keys():
         if package.startswith("_"):
             continue
-        pkg_dep[str(package.split(",")[0].rsplit("@", 1)[0])].append(
-            str(unfiltered_content[package].get("version", "latest"))
+        res["pkg_dep"].append(
+            str(package.split(",")[0].rsplit("@", 1)[0])
+            + ";"
+            + str(unfiltered_content[package].get("version", ""))
         )
-    res["pkg_dep"] = pkg_dep
     return res
 
 
@@ -75,11 +63,6 @@ def handle_json(req_file_data: str) -> Result:
             handle_json_dep(filter_dict, k, v)
         elif k not in ["lang_ver", "pkg_lic"]:
             flatten_content(filter_dict, k, v)
-    pkg_dep = defaultdict(list)
-    for k in filter_dict["pkg_dep"]:
-        v = k.split(";")
-        pkg_dep[v[0]].append(v[1])
-    filter_dict["pkg_dep"] = pkg_dep
     filter_dict["pkg_err"] = {}
     return filter_dict
 

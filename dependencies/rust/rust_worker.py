@@ -1,6 +1,5 @@
 """Functions to handle Rust dependency files."""
 import re
-from collections import defaultdict
 from datetime import datetime
 
 import toml
@@ -17,21 +16,19 @@ def handle_cargo_toml(file_data: str) -> dict:
         "pkg_ver": "",
         "pkg_lic": ["Other"],
         "pkg_err": {},
-        "pkg_dep": {},
+        "pkg_dep": [],
         "timestamp": datetime.utcnow().isoformat(),
     }
     toml_parsed = dict(toml.loads(file_data))
     package_data = toml_parsed.get("package")
     package_dep = toml_parsed.get("dependencies")
-    pkg_dep = defaultdict(list)
     for (ir, spec) in package_dep.items():
         if isinstance(spec, str):
-            pkg_dep[ir].append(spec)
+            res["pkg_dep"].append(ir + ";" + spec.split(",")[0])
         elif isinstance(spec, dict):
             if git_url := spec.get("git", None):
                 git_branch = git_url + "||" + spec.get("branch", "")
-                pkg_dep[ir].append(git_branch)
-    res["pkg_dep"] = pkg_dep
+                res["pkg_dep"].append(ir + ";" + git_branch)
     res["pkg_name"] = package_data.get("name", "")
     res["pkg_ver"] = package_data.get("version", "")
     res["pkg_lic"] = [package_data.get("license", "Other")]
@@ -50,15 +47,13 @@ def handle_lock(file_data: str) -> dict:
         "pkg_ver": "",
         "pkg_lic": ["Other"],
         "pkg_err": {},
-        "pkg_dep": {},
+        "pkg_dep": [],
         "timestamp": datetime.utcnow().isoformat(),
     }
     dependencies_regex = re.compile(
         r'name = \"([^"]+)\"[\n\r]version = \"([^"]+)\"', re.MULTILINE
     )
     matches = [m.groups() for m in dependencies_regex.finditer(file_data)]
-    pkg_dep = defaultdict(list)
     for name, specs in matches:
-        pkg_dep[name].append(specs)
-    res["pkg_dep"] = pkg_dep
+        res["pkg_dep"].append(name + ";" + str(specs))
     return res

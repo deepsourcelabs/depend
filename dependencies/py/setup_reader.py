@@ -15,7 +15,7 @@ from github.ContentFile import ContentFile
 from poetry.core.semver import Version, exceptions
 from poetry.utils.setup_reader import SetupReader
 
-from dep_helper import Result
+from dependencies.dep_types import Result
 from dependencies.py.py_helper import handle_requirements_txt
 from handle_env import get_github
 
@@ -71,7 +71,7 @@ class LaxSetupReader(SetupReader):
             "pkg_ver": "",
             "pkg_lic": ["Other"],
             "pkg_err": {},
-            "pkg_dep": {},
+            "pkg_dep": [],
             "timestamp": datetime.utcnow().isoformat(),
         }
         body = ast.parse(content).body
@@ -98,7 +98,7 @@ class LaxSetupReader(SetupReader):
                 if isinstance(repo_file_content, ContentFile):
                     dep_file = repo_file_content.decoded_content.decode()
                     res["pkg_dep"] = handle_requirements_txt(dep_file).get(
-                        "pkg_dep", {}
+                        "pkg_dep", []
                     )
             except github.GithubException as e:
                 logging.error(e)
@@ -275,7 +275,7 @@ class LaxSetupReader(SetupReader):
             "pkg_ver": "",
             "pkg_lic": ["Other"],
             "pkg_err": {},
-            "pkg_dep": {},
+            "pkg_dep": [],
             "timestamp": datetime.utcnow().isoformat(),
         }
         parser = ConfigParser()
@@ -291,7 +291,7 @@ class LaxSetupReader(SetupReader):
             res["pkg_ver"] = ""
         res["pkg_dep"] = handle_requirements_txt(
             parser.get("options", "install_requires", fallback="")
-        ).get("pkg_dep", {})
+        ).get("pkg_dep", [])
         res["lang_ver"] = parser.get("options", "python_requires", fallback="").split(
             ","
         )

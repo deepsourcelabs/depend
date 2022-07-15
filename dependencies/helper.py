@@ -2,21 +2,21 @@
 import datetime
 import logging
 import re
-from collections import defaultdict
 from typing import List, Optional
 
 import jmespath
 import requests
 import xmltodict
 from bs4 import BeautifulSoup
-from packaging.specifiers import SpecifierSet
+from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.version import Version
 from requests import Response
 
-from dep_helper import Result, requests
+from dep_helper import requests
 from error import FileNotSupportedError
 
-from .cs.cs_worker import findkeys, handle_nuspec
+from .cs.cs_worker import find_keys, handle_nuspec
+from .dep_types import Result
 from .go.go_worker import handle_go_mod
 from .js.js_worker import handle_json, handle_yarn_lock
 from .php.php_worker import handle_composer_json
@@ -99,7 +99,7 @@ def parse_dep_response(
                     if isinstance(ec.get("pkg_lic"), str)
                     else ec.get("pkg_lic"),
                     "pkg_err": ec.get("pkg_err") or {},
-                    "pkg_dep": ec.get("pkg_dep") or {},
+                    "pkg_dep": ec.get("pkg_dep") or [],
                     "timestamp": ec.get("timestamp").strftime("%Y-%m-%dT%H:%M:%S.%f")
                     if isinstance(ec.get("timestamp"), datetime.datetime)
                     else ec.get("timestamp"),
@@ -144,23 +144,31 @@ def handle_cs(api_response: Response, queries: dict, result: Result):
     if api_response.status_code == 404:
         return ""
     req_file_data = api_response.text
+    pkg_dep, root = parse_nuspec(req_file_data, result)
+    result["pkg_dep"] = list(pkg_dep)
+    # @type = git
+    return root.get("repository", {}).get("@url")
+
+
+def parse_nuspec(req_file_data, result):
+    """Get list of packages from NuSpec"""
+
     root = xmltodict.parse(req_file_data).get("package", {}).get("metadata")
     result["pkg_name"] = root.get("id")
     result["pkg_ver"] = root.get("version")
     # ignores "file" type
     if root.get("license", {}).get("@type") == "expression":
         result["pkg_lic"] = [root.get("license", {}).get("#text")]
-    pkg_dep = defaultdict(list)
-    for gen_e in findkeys(root.get("dependencies"), "dependency"):
+    pkg_dep = set()
+    for gen_e in find_keys(root.get("dependencies"), "dependency"):
         if isinstance(gen_e, list):
             for dep_e in gen_e:
-                pkg_dep[dep_e.get("@id")].append(dep_e.get("@version"))
+                dep_entry = dep_e.get("@id") + ";" + dep_e.get("@version")
+                pkg_dep.add(dep_entry)
         else:
-            pkg_dep[gen_e.get("@id")].append(gen_e.get("@version"))
-
-    result["pkg_dep"] = pkg_dep
-    # @type = git
-    return root.get("repository", {}).get("@url")
+            dep_entry = gen_e.get("@id") + ";" + gen_e.get("@version")
+            pkg_dep.add(dep_entry)
+    return pkg_dep, root
 
 
 def handle_npmjs(api_response: Response, queries: dict, result: Result):
@@ -188,10 +196,7 @@ def handle_npmjs(api_response: Response, queries: dict, result: Result):
     result["pkg_lic"] = license_q.search(data) or ["Other"]
     dep_data = dependencies_q.search(data)
     if dep_data:
-        pkg_dep = defaultdict(list)
-        for tup in dep_data.items():
-            pkg_dep[tup[0]].append(tup[1])
-        result["pkg_dep"] = pkg_dep
+        result["pkg_dep"] = [";".join(tup) for tup in dep_data.items()]
     repo = repo_q.search(data) or ""
     return repo
 
@@ -213,10 +218,7 @@ def handle_php(api_response: Response, queries: dict, result: Result, ver: str):
     dep_data = ver_data.get(queries["dependency_key"], {})
     lang_ver = dep_data.pop("php", "")
     result["lang_ver"] = [lang_ver]
-    pkg_dep = defaultdict(list)
-    for k, v in dep_data.items():
-        pkg_dep[k].append(v)
-    result["pkg_dep"] = pkg_dep
+    result["pkg_dep"] = [key + ";" + value for (key, value) in dep_data.items()]
 
 
 def handle_rust(api_response: Response, queries: dict, result: Result, url: str):
@@ -239,10 +241,7 @@ def handle_rust(api_response: Response, queries: dict, result: Result, url: str)
     result["pkg_ver"] = version_q.search(data) or ""
     result["pkg_lic"] = [license_q.search(data) or "Other"]
     req_file_data = dependencies_q.search(dep) or []
-    pkg_dep = defaultdict(list)
-    for k, v in req_file_data.split(";"):
-        pkg_dep[k].append(v)
-    result["pkg_dep"] = pkg_dep
+    result["pkg_dep"] = req_file_data
 
 
 def scrape_go(response: Response, queries: dict, result: Result, url: str):
@@ -266,19 +265,20 @@ def scrape_go(response: Response, queries: dict, result: Result, url: str):
     key_element = soup.find(key_parse[0], class_=key_parse[1]).getText()
     key_data = re.findall(r"([^ \n:]+): ([- ,.\w]+)", key_element)
     data = dict(key_data)
-    pkg_dep = defaultdict(list)
+    dependencies_tag = []
     # requirements not version specific
     non_ver_url = url.split("@")[0] + "?tab=imports"
     dep_res = requests.get(non_ver_url, allow_redirects=False)
     if dep_res.status_code == 200:
         dep_soup = BeautifulSoup(dep_res.text, "html.parser")
-        for dependency in dep_soup.findAll(dep_parse[0], class_=dep_parse[1]):
-            pkg_dep[dependency.getText().strip()].append("latest")
-
+        dependencies_tag = [
+            dependency.getText().strip()
+            for dependency in dep_soup.findAll(dep_parse[0], class_=dep_parse[1])
+        ]
     result["pkg_name"] = package_name
     result["pkg_ver"] = data[queries["version"]] or ""
     result["pkg_lic"] = [data[queries["license"]] or "Other"]
-    result["pkg_dep"] = pkg_dep
+    result["pkg_dep"] = dependencies_tag
 
 
 def go_versions(url: str, queries: dict) -> list:
@@ -307,6 +307,11 @@ def rust_versions(api_response: Response, queries: dict) -> list:
     :param api_response: registry response
     :return: list of versions
     """
+    return default_versions(api_response, queries)
+
+
+def default_versions(api_response, queries):
+    """Default API query structure for obtaining versions"""
     if api_response.status_code == 404:
         return []
     data = api_response.json()
@@ -324,14 +329,7 @@ def js_versions(api_response: Response, queries: dict) -> list:
     :param api_response: registry response
     :return: list of versions
     """
-    if api_response.status_code == 404:
-        return []
-    data = api_response.json()
-    versions_q: jmespath.parser.ParsedResult = queries["versions"]
-    versions = versions_q.search(data)
-    if not versions:
-        return []
-    return versions
+    return default_versions(api_response, queries)
 
 
 def py_versions(api_response: Response, queries: dict) -> list:
@@ -341,14 +339,7 @@ def py_versions(api_response: Response, queries: dict) -> list:
     :param api_response: registry response
     :return: list of versions
     """
-    if api_response.status_code == 404:
-        return []
-    data = api_response.json()
-    versions_q: jmespath.parser.ParsedResult = queries["versions"]
-    versions = versions_q.search(data)
-    if not versions:
-        return []
-    return versions
+    return default_versions(api_response, queries)
 
 
 def ruby_versions(api_response: Response, queries: dict) -> list:
@@ -375,14 +366,7 @@ def nuget_versions(api_response: Response, queries: dict) -> list:
     :param api_response: registry response
     :return: list of versions
     """
-    if api_response.status_code == 404:
-        return []
-    data = api_response.json()
-    versions_q: jmespath.parser.ParsedResult = queries["versions"]
-    versions = versions_q.search(data)
-    if not versions:
-        return []
-    return versions
+    return default_versions(api_response, queries)
 
 
 def php_versions(api_response: Response, queries: dict) -> list:
@@ -392,14 +376,24 @@ def php_versions(api_response: Response, queries: dict) -> list:
     :param api_response: registry response
     :return: list of versions
     """
-    if api_response.status_code == 404:
-        return []
-    data = api_response.json()
-    versions_q: jmespath.parser.ParsedResult = queries["versions"]
-    versions = versions_q.search(data)
-    if not versions:
-        return []
-    return versions
+    return default_versions(api_response, queries)
+
+
+def handle_lax_specifier(all_constraints: list[str]) -> list[SpecifierSet]:
+    proper_specifiers = []
+    for constraint in all_constraints:
+        spec = SpecifierSet("==*")
+        try:
+            spec = SpecifierSet(constraint)
+        except InvalidSpecifier:
+            try:
+                spec = SpecifierSet("==" + constraint.strip())
+            except InvalidSpecifier:
+                logging.warning(
+                    f"Failed to resolve version specification '{constraint}'"
+                )
+        proper_specifiers.append(spec)
+    return proper_specifiers
 
 
 def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
@@ -411,7 +405,7 @@ def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
     all_constraints = []
     fixed_constraint = reqs.strip()
     if fixed_constraint == "latest":
-        all_constraints = [SpecifierSet("==*")]
+        return [SpecifierSet("==*")]
     match language:
         case "python":
             all_constraints = [SpecifierSet(fixed_constraint)]
@@ -429,7 +423,7 @@ def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
                     sub_constraint = sub_constraint.split(" - ", 1)
                     sub_constraint = f">={sub_constraint[0]}, <={sub_constraint[1]}"
                 # handle remaining logical ands
-                sub_constraint = re.sub(r"(\s)+(?![A-Za-z0-9])", ",", sub_constraint)
+                sub_constraint = re.sub(r"(\s)+(?!\w)", ",", sub_constraint)
                 all_constraints.append(SpecifierSet(sub_constraint))
         case "go":
             # https://go.dev/ref/mod#go-mod-file-require
@@ -488,7 +482,7 @@ def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
                     sub_constraint = sub_constraint.split(" - ", 1)
                     sub_constraint = f">={sub_constraint[0]}, <={sub_constraint[1]}"
                 # handle remaining logical ands
-                sub_constraint = re.sub(r"(\s)+(?![A-Za-z0-9])", ",", sub_constraint)
+                sub_constraint = re.sub(r"(\s)+(?!\w)", ",", sub_constraint)
                 all_constraints.append(SpecifierSet(sub_constraint))
         case "rust":
             # https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html
@@ -496,7 +490,7 @@ def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
             if fixed_constraint[:1].isalnum():
                 fixed_constraint = "^" + fixed_constraint
             all_constraints = [SpecifierSet(fixed_constraint)]
-    return all_constraints
+    return handle_lax_specifier(all_constraints)
 
 
 def resolve_version(vers: List[str], reqs: List[SpecifierSet] = None) -> Optional[str]:

@@ -1,22 +1,7 @@
 """Type hinting and request helper"""
 from datetime import timedelta
-from typing import Optional, TypedDict
 
 from requests_cache import CachedSession
-
-
-class Result(TypedDict):
-    """Current result structure"""
-
-    import_name: Optional[str]
-    lang_ver: list[str]
-    pkg_name: str
-    pkg_ver: str
-    pkg_lic: list[str]
-    pkg_err: dict
-    pkg_dep: dict
-    timestamp: str
-
 
 requests = CachedSession(
     "murdock_cache",
