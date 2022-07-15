@@ -9,7 +9,7 @@ import requests
 import xmltodict
 from bs4 import BeautifulSoup
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
-from packaging.version import Version, InvalidVersion
+from packaging.version import InvalidVersion, Version
 from requests import Response
 
 from dep_helper import requests
