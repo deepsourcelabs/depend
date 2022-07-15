@@ -520,4 +520,4 @@ def try_version(value):
     try:
         return Version(value)
     except InvalidVersion:
-        return Version("999.999.999")
+        return Version("9999.9999.9999")

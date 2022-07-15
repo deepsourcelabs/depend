@@ -16,13 +16,13 @@ def dependency_payload():
     :return: List of dependencies with language as key
     """
     return {
-        "javascript": ["jQuery"],
-        # "python": ["pygithub"],
-        # "go": [
-        #     "https://github.com/go-yaml/yaml",
-        #     "github.com/getsentry/sentry-go",
-        #     "github.com/cactus/go-statsd-client/v5/statsd",
-        # ],
+        "javascript": ["react;0.12.0", "react;17.0.2", "jQuery;1.7.4", "jQuery"],
+        "python": ["pygithub"],
+        "go": [
+            "https://github.com/go-yaml/yaml",
+            "github.com/getsentry/sentry-go",
+            "github.com/cactus/go-statsd-client/v5/statsd",
+        ],
     }
 
 
