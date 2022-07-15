@@ -2,6 +2,7 @@
 from datetime import datetime
 
 import dparse2
+import packaging.specifiers
 import toml
 from pkg_resources import parse_requirements
 
@@ -61,8 +62,9 @@ def handle_toml(file_data: str) -> Result:
             res["pkg_dep"] = []
         elif package_dep:
             install_reqs = parse_requirements("\n".join(package_dep))
+            ir: packaging.specifiers.SpecifierSet
             for ir in install_reqs:
-                res["pkg_dep"].append(str(ir.key) + "|" + str(ir.specs))
+                res["pkg_dep"].append(str(ir.key) + ";" + str(ir.specifier))
     res["pkg_name"] = package_data.get("name", "")
     res["pkg_ver"] = package_data.get("version", "")
     res["pkg_lic"] = [package_data.get("license", "Other")]

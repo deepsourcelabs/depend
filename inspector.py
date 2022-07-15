@@ -271,7 +271,7 @@ def make_multiple_requests(
                 dep_resp, deps = make_single_request(language, name_ver[0], name_ver[1])
         else:
             dep_resp, deps = make_single_request(
-                language, package, ver_spec=ast.literal_eval(ver_spec)
+                language, package, ver_spec=ver_spec
             )
         result.append(dep_resp)
     # higher levels may ignore version specifications

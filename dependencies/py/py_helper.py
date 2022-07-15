@@ -1,6 +1,7 @@
 """Helper functions for Python Dependencies"""
 from datetime import datetime
 
+import packaging.specifiers
 from pkg_resources import parse_requirements
 
 from dependencies.dep_types import Result
@@ -23,9 +24,10 @@ def handle_requirements_txt(req_file_data: str) -> Result:
         "timestamp": datetime.utcnow().isoformat(),
     }
     install_reqs = parse_requirements(req_file_data)
+    ir: packaging.specifiers.SpecifierSet
     for ir in install_reqs:
         if not ir.specs:
-            res["pkg_dep"].append("latest")
+            res["pkg_dep"].append(str(ir.key) + ";" + "latest")
         else:
-            res["pkg_dep"].append(str(ir.specs))
+            res["pkg_dep"].append(str(ir.key) + ";" + str(ir.specifier))
     return res
