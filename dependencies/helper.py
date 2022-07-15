@@ -502,9 +502,7 @@ def resolve_version(vers: List[str], reqs: List[SpecifierSet] = None) -> Optiona
     """
     compatible_vers = vers
     for req in reqs:
-        compatible_vers = [
-            ver for ver in compatible_vers if req.contains(ver)
-        ]
+        compatible_vers = [ver for ver in compatible_vers if req.contains(ver)]
     if compatible_vers:
         sorted_vers = sorted(
             compatible_vers,
@@ -514,6 +512,7 @@ def resolve_version(vers: List[str], reqs: List[SpecifierSet] = None) -> Optiona
         return sorted_vers[0]
     else:
         return None
+
 
 def try_version(value):
     """If version parsing fails defer the version"""
