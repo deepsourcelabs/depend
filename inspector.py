@@ -207,7 +207,7 @@ def make_single_request(
             response = requests.get(url)
             queries = REGISTRY[language]
             if response.status_code != 200:
-                logging.error("{}: {}".format(response.status_code, url))
+                logging.error(f"{response.status_code}: {url}")
             match language:
                 case "python":
                     repo = handle_pypi(response, queries, result)

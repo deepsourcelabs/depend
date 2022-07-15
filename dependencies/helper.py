@@ -508,7 +508,7 @@ def resolve_version(vers: List[str], reqs: List[SpecifierSet] = None) -> Optiona
     if compatible_vers:
         sorted_vers = sorted(
             compatible_vers,
-            key=lambda i: try_version(i),
+            key=try_version,
             reverse=True,
         )
         return sorted_vers[0]
