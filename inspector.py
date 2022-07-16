@@ -231,6 +231,8 @@ def make_single_request(
         for dep in result.get("pkg_dep", []):
             rem_dep.add(dep)
         result_list.append(result)
+    if not result_list:
+        result_list = [result]
     if force_schema:
         return parse_dep_response(result_list), list(rem_dep)
     else:
@@ -255,7 +257,7 @@ def make_multiple_requests(
     if result is None:
         result = []
     for package_d in packages:
-        name_ver = (package_d.replace("@", ";")).rsplit(";", 1)
+        name_ver = package_d.rsplit(";", 1)
         if len(name_ver) == 1:
             dep_resp, deps = make_single_request(language, name_ver[0])
         else:

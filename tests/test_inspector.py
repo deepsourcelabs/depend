@@ -19,7 +19,7 @@ def dependency_payload():
         "javascript": ["react;0.12.0"],
         "python": ["pygithub"],
         "go": [
-            "https://github.com/go-yaml/yaml",
+            "https://github.com/go-yaml/yaml;https://github.com/go-yaml/yaml",
             "github.com/cactus/go-statsd-client/v5/statsd",
         ],
     }
