@@ -521,7 +521,7 @@ def resolve_version(vers: List[str], reqs: List[SpecifierSet] = None) -> Optiona
 
 def handle_caret(req) -> SpecifierSet:
     """Handle caret based requirement constraints"""
-    op, version = str(req).split("^",1)
+    _, version = str(req).split("^", 1)
     major, minor, patch, *_ = (version + "...").split(".")
     if patch:
         if minor == "0" and major == "0":

@@ -227,7 +227,9 @@ def make_single_request(
                 logging.warning(f"Unable to use VCS as unsupported: {repo}")
         else:
             if response.status_code != 200:
-                logging.error(f"{response.status_code}: {url} maybe git: {find_github(response.text)}")
+                logging.error(
+                    f"{response.status_code}: {url} maybe git: {find_github(response.text)}"
+                )
         for dep in result.get("pkg_dep", []):
             rem_dep.add(dep)
         result_list.append(result)
