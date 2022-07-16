@@ -1,14 +1,13 @@
 """License & Version Extractor"""
-import ast
 import logging
 import re
 from datetime import datetime
 from typing import Any, List, Optional, Set, Tuple
 
-from tldextract import extract
+from requests import Response
 
 from constants import REGISTRY
-from dep_helper import requests
+from dep_helper import red_req, requests
 from dependencies.dep_types import Result
 from dependencies.helper import (
     fix_constraint,
@@ -108,7 +107,7 @@ def find_github(text: str) -> str:
     :param text: string to check
     """
     repo_identifier = re.search(
-        r"github.com/([^/]+)/([^/.\r\n]+)(?:/tree/|)?([^/.\r\n]+)?", text
+        r"github.com/([^/]+)/([^/.\r\n]+)(?:/tree/|)?([^/.,\s\r\n]+)?", text
     )
     if repo_identifier:
         return (
@@ -127,7 +126,6 @@ def make_single_request(
     version: str = "",
     force_schema: bool = True,
     all_ver: bool = False,
-    ver_spec=None,
 ) -> Tuple[dict | Result | List[Result], List[str]]:
     """
     Obtain package license and dependency information.
@@ -136,12 +134,9 @@ def make_single_request(
     :param version: check for specific version
     :param force_schema: returns schema compliant response if true
     :param all_ver: all versions queried if version not supplied
-    :param ver_spec: version specifier used
     :return: result object with name version license and dependencies
     """
     rem_dep: Set[str] = set()
-    if ver_spec is None:
-        ver_spec = "latest"
     result_list = []
     result: Result = {
         "import_name": "",
@@ -153,88 +148,86 @@ def make_single_request(
         "pkg_dep": [],
         "timestamp": datetime.utcnow().isoformat(),
     }
-    if not version:
-        vers = []
-        url = make_url(language, package, version)
+    repo = ""
+    vers = []
+    response: Response
+    supported_domains = [
+        "github.com",
+    ]
+    # Single request is meant to be handled by VCS provider
+    if any(domain in version for domain in supported_domains):
+        if "||" in version:
+            git_url, git_branch = version.split("||")
+            repo = git_url + "/tree/" + git_branch
+        else:
+            repo = version
+        vers = [repo]
+    # Requested for a version using a version constraint
+    else:
+        version_constraints = fix_constraint(language, version)
+        url = make_url(language, package)
         queries = REGISTRY[language]
+        # Get all available versions for specified package
+        red_url, response = red_req(url)
         match language:
             case "python":
-                response = requests.get(url)
                 vers = py_versions(response, queries)
             case "javascript":
-                response = requests.get(url)
                 vers = js_versions(response, queries)
             case "go":
-                vers = go_versions(url, queries)
+                vers = go_versions(red_url, queries)
             case "cs":
-                response = requests.get(url)
                 vers = nuget_versions(response, queries)
             case "php":
-                response = requests.get(url)
                 vers = php_versions(response, queries)
             case "rust":
-                response = requests.get(url)
                 vers = rust_versions(response, queries)
+        # Parse only one version resolved from constraint provided
         if not all_ver and vers:
-            version_constraints = fix_constraint(language, ver_spec)
             resolved_version = resolve_version(vers, version_constraints)
             if resolved_version is not None:
                 vers = [resolved_version]
             else:
                 vers = []
-    else:
-        vers = [version]
-    if not vers:
-        vers = [""]
-        logging.warning(
-            f"No version could be resolved for package {package} with version constraint {ver_spec}"
-        )
+                logging.warning(
+                    f"No version could be resolved for package {package} with version constraint {version}"
+                )
+    # Check multiple versions of specified package
     for ver in vers:
-        repo = ""
-        response = ""
-        supported_domains = [
-            "github.com",
-        ]
-        if any(domain in version for domain in supported_domains):
-            if "||" in version:
-                git_url, git_branch = version.split("||")
-                repo = git_url + "/tree/" + git_branch
-            else:
-                repo = version
-        else:
-            url = make_url(language, package, ver)
-            logging.info(url)
-            response = requests.get(url)
-            queries = REGISTRY[language]
-            if response.status_code != 200:
-                logging.error(f"{response.status_code}: {url}")
-            match language:
-                case "python":
-                    repo = handle_pypi(response, queries, result)
-                case "javascript":
-                    repo = handle_npmjs(response, queries, result)
-                case "cs":
-                    repo = handle_cs(response, queries, result)
-                case "php":
-                    handle_php(response, queries, result, ver)
-                case "rust":
-                    handle_rust(response, queries, result, url)
-                case "go":
-                    if response.status_code == 200:
-                        # Handle 302: Redirection
-                        red_url = url
-                        if response.history:
-                            red_url = response.url + "@" + version
-                            response = requests.get(red_url)
-                        scrape_go(response, queries, result, red_url)
-                    else:
-                        repo = package
+        # Construct URL for version specific data
+        url = make_url(language, package, ver)
+        logging.info(url)
+        response = requests.get(url)
+        queries = REGISTRY[language]
+        # Collect repo if available to do vcs query if data incomplete
+        match language:
+            case "python":
+                repo = handle_pypi(response, queries, result)
+            case "javascript":
+                repo = handle_npmjs(response, queries, result)
+            case "cs":
+                repo = handle_cs(response, queries, result)
+            case "php":
+                handle_php(response, queries, result, ver)
+            case "rust":
+                handle_rust(response, queries, result, url)
+            case "go":
+                if response.status_code == 200:
+                    red_url = url
+                    if response.history:
+                        red_url = response.url + "@" + version
+                        response = requests.get(red_url)
+                    scrape_go(response, queries, result, red_url)
+                elif not repo:
+                    repo = package
         if repo:
-            c_domain = extract(str(repo)).domain + "." + extract(str(repo)).suffix
-            if c_domain not in supported_domains or extract(str(repo)).subdomain:
-                repo = find_github(response.text)
-            if repo:
+            try:
                 handle_vcs(language, repo, result)
+            except VCSNotSupportedError:
+                logging.warning(f"Unable to use VCS as unsupported: {repo}")
+        else:
+            if response.status_code != 200:
+                logging.error(f"{response.status_code}: {url} maybe git: {find_github(response.text)}")
         for dep in result.get("pkg_dep", []):
             rem_dep.add(dep)
         result_list.append(result)
@@ -262,15 +255,11 @@ def make_multiple_requests(
     if result is None:
         result = []
     for package_d in packages:
-        package, ver_spec, *_ = package_d.rsplit("|", 1) + [""]
-        if not ver_spec:
-            name_ver = (package[0] + package[1:].replace("@", ";")).rsplit(";", 1)
-            if len(name_ver) == 1:
-                dep_resp, deps = make_single_request(language, package)
-            else:
-                dep_resp, deps = make_single_request(language, name_ver[0], name_ver[1])
+        name_ver = (package_d.replace("@", ";")).rsplit(";", 1)
+        if len(name_ver) == 1:
+            dep_resp, deps = make_single_request(language, name_ver[0])
         else:
-            dep_resp, deps = make_single_request(language, package, ver_spec=ver_spec)
+            dep_resp, deps = make_single_request(language, name_ver[0], name_ver[1])
         result.append(dep_resp)
     # higher levels may ignore version specifications
     if depth is None and deps:

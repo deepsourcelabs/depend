@@ -401,11 +401,14 @@ def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
     """
     all_constraints = []
     fixed_constraint = reqs.strip()
-    if fixed_constraint == "latest":
+    if fixed_constraint == "latest" or not fixed_constraint:
         return [SpecifierSet()]
     match language:
         case "python":
-            all_constraints = [SpecifierSet(fixed_constraint)]
+            # handle poetry spec of tilde requirements
+            fixed_constraint = re.sub(r"=*~(?!=)", "~=", fixed_constraint)
+            # caret requirements handled downstream
+            all_constraints = [fixed_constraint]
         case "javascript":
             # JS supports * or x as a direct major ver wildcard
             if fixed_constraint in ("x", "*"):
@@ -424,10 +427,10 @@ def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
                     sub_constraint = f">={sub_constraint[0]}, <={sub_constraint[1]}"
                 # handle remaining logical ands
                 sub_constraint = re.sub(r"(\s)+(?!\w)", ",", sub_constraint)
-                all_constraints.append(SpecifierSet(sub_constraint))
+                all_constraints.append(sub_constraint)
         case "go":
             # https://go.dev/ref/mod#go-mod-file-require
-            all_constraints = [SpecifierSet(fixed_constraint)]
+            all_constraints = [fixed_constraint]
             logging.warning(
                 "Lexical comparison used instead of Minimum Version Selection"
             )
@@ -467,7 +470,7 @@ def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
                         fixed_constraint = ">=" + ver_spec[0] + ",<=" + ver_spec[1]
             else:
                 fixed_constraint = ">=" + fixed_constraint
-            all_constraints = [SpecifierSet(fixed_constraint)]
+            all_constraints = [fixed_constraint]
         case "php":
             # https://getcomposer.org/doc/articles/versions.md#writing-version-constraints
             # handle logical or
@@ -483,13 +486,13 @@ def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
                     sub_constraint = f">={sub_constraint[0]}, <={sub_constraint[1]}"
                 # handle remaining logical ands
                 sub_constraint = re.sub(r"(\s)+(?!\w)", ",", sub_constraint)
-                all_constraints.append(SpecifierSet(sub_constraint))
+                all_constraints.append(sub_constraint)
         case "rust":
             # https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html
             # Default works like caret
             if fixed_constraint[:1].isalnum():
                 fixed_constraint = "^" + fixed_constraint
-            all_constraints = [SpecifierSet(fixed_constraint)]
+            all_constraints = [fixed_constraint]
     return handle_lax_specifier(all_constraints)
 
 
@@ -502,6 +505,8 @@ def resolve_version(vers: List[str], reqs: List[SpecifierSet] = None) -> Optiona
     """
     compatible_vers = vers
     for req in reqs:
+        if "^" in str(req):
+            req = handle_caret(req)
         compatible_vers = [ver for ver in compatible_vers if req.contains(ver)]
     if compatible_vers:
         sorted_vers = sorted(
@@ -512,6 +517,28 @@ def resolve_version(vers: List[str], reqs: List[SpecifierSet] = None) -> Optiona
         return sorted_vers[0]
     else:
         return None
+
+
+def handle_caret(req) -> SpecifierSet:
+    """Handle caret based requirement constraints"""
+    op, version = str(req).split("^",1)
+    major, minor, patch, *_ = (version + "...").split(".")
+    if patch:
+        if minor == "0" and major == "0":
+            limit = f"0.0.{int(patch) + 1}"
+        elif major == "0":
+            limit = f"0.{int(minor) + 1}.0"
+        else:
+            limit = f"{int(major) + 1}.0.0"
+    elif minor:
+        if major == "0":
+            limit = f"0.{int(minor) + 1}.0"
+        else:
+            limit = f"{int(major) + 1}.0.0"
+    else:
+        limit = f"{int(major) + 1}.0.0"
+    req = SpecifierSet(f">={version},<{limit}")
+    return req
 
 
 def try_version(value):

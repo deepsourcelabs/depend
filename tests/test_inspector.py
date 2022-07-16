@@ -16,11 +16,10 @@ def dependency_payload():
     :return: List of dependencies with language as key
     """
     return {
-        "javascript": ["react;0.12.0", "react;17.0.2", "jQuery;1.7.4", "jQuery"],
+        "javascript": ["react;0.12.0"],
         "python": ["pygithub"],
         "go": [
             "https://github.com/go-yaml/yaml",
-            "github.com/getsentry/sentry-go",
             "github.com/cactus/go-statsd-client/v5/statsd",
         ],
     }
@@ -119,9 +118,8 @@ def test_make_single_request_go_redirect():
 def test_make_single_request_go_github():
     """Test version and license for go GitHub fallthrough"""
     result, _ = inspector.make_single_request(
-        "go", "https://github.com/go-yaml/yaml", force_schema=False
+        "go", "gopkg.in/yaml.v3", "https://github.com/go-yaml/yaml", force_schema=False
     )
-    assert result[0]["pkg_name"] == "https://github.com/go-yaml/yaml"
     assert result[0]["pkg_lic"][0] == "Apache Software License"
     assert len(result[0]["pkg_dep"]) != 0
 
@@ -154,7 +152,7 @@ def test_make_single_request_rust_git():
 def test_make_multiple_requests(dependency_payload):
     """Multiple package requests for JavaScript NPM and Go"""
     result = [
-        inspector.make_multiple_requests(lang, dependencies)
+        inspector.make_multiple_requests(lang, dependencies, 1)
         for lang, dependencies in dependency_payload.items()
     ]
     assert len(result) == 3
