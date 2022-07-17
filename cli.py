@@ -25,7 +25,7 @@ def main(
     """
     Dependency Inspector
 
-    Retrieves licenses and dependencies of Python, JavaScript and Go packages.
+    Retrieves licenses and dependencies of Python, JavaScript, C#, PHP, Rust and Go packages.
     Uses Package Indexes for Python and Javascript
     Go is temporarily handled by scraping pkg.go.dev and VCS
     VCS support is currently limited to GitHub for fallthrough cases in Go
