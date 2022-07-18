@@ -20,6 +20,8 @@ from dependencies.helper import fix_constraint, resolve_version
         ("python", "~1.2.3", ">=1.2.3,<1.3.0"),
         ("python", "~1.2", ">=1.2.0,<1.3.0"),
         ("python", "~1", ">=1.0.0,<2.0.0"),
+        ("python", "~0.3.2", ">=0.3.2,<0.4.0"),
+        ("python", "~0.0.5", ">=0.0.5,<0.1.0"),
         # exact same logic for JavaScript
         ("javascript", "^1.2.3", ">=1.2.3,<2.0.0"),
         ("javascript", "^1.2", ">=1.2.0,<2.0.0"),
@@ -28,6 +30,8 @@ from dependencies.helper import fix_constraint, resolve_version
         ("javascript", "^0.0.3", ">=0.0.3,<0.0.4"),
         ("javascript", "^0.0", ">=0.0.0,<0.1.0"),
         ("javascript", "^0", ">=0.0.0,<1.0.0"),
+        ("javascript", "~1.2.3", ">=1.2.3,<1.3.0"),
+        ("javascript", "~0.3.2", ">=0.3.2,<0.4.0"),
         # exact requirements
         ("javascript", "1.2.3", "==1.2.3"),
         # wildcard requirements
@@ -80,10 +84,6 @@ def test_simple_dependency_parsing(language, ver_constraint, expected_output):
 @pytest.mark.parametrize(
     ("language", "ver_constraint", "req_constraint"),
     [
-        # # Tilde requirements
-        # ("python", "~1.2.3",	">=1.2.3,<1.3.0"),
-        # ("python", "~1.2",	">=1.2.0,<1.3.0"),
-        # ("python", "~1",	">=1.0.0,<2.0.0")
         # logical ORs
         ("javascript", "<1.2.3 || <1.2.2", "<1.2.3"),
         ("php", "1.0.*", ">=1.0,<1.1"),
