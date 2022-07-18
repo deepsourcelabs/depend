@@ -52,6 +52,8 @@ def handle_json(req_file_data: str) -> Result:
     if isinstance(engines, dict):
         lang_ver = [engines.get("node", "")]
     else:
+        # The documentation specifies that this entry must be a dictionary
+        # This was added because of a failing case in tests
         lang_ver = []
     filter_dict: Result = {
         "import_name": "",

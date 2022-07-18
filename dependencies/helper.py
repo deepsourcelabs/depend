@@ -15,7 +15,7 @@ from requests import Response
 from dep_helper import requests
 from error import FileNotSupportedError
 
-from .cs.cs_worker import find_keys, handle_nuspec
+from .cs.cs_worker import findkeys, handle_nuspec
 from .dep_types import Result
 from .go.go_worker import handle_go_mod
 from .js.js_worker import handle_json, handle_yarn_lock
@@ -128,7 +128,7 @@ def handle_pypi(api_response: Response, queries: dict, result: Result):
     result["pkg_ver"] = version_q.search(data) or ""
     result["pkg_lic"] = [license_q.search(data) or "Other"]
     req_file_data = "\n".join(dependencies_q.search(data) or "")
-    result["pkg_dep"] = handle_requirements_txt(req_file_data).get("pkg_dep", {})
+    result["pkg_dep"] = handle_requirements_txt(req_file_data).get("pkg_dep", [])
     repo = repo_q.search(data) or ""
     return repo
 
@@ -160,7 +160,7 @@ def parse_nuspec(req_file_data, result):
     if root.get("license", {}).get("@type") == "expression":
         result["pkg_lic"] = [root.get("license", {}).get("#text")]
     pkg_dep = set()
-    for gen_e in find_keys(root.get("dependencies"), "dependency"):
+    for gen_e in findkeys(root.get("dependencies"), "dependency"):
         if isinstance(gen_e, list):
             for dep_e in gen_e:
                 dep_entry = dep_e.get("@id") + ";" + dep_e.get("@version")

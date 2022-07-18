@@ -4,19 +4,19 @@ from datetime import datetime
 import xmltodict
 
 
-def find_keys(node, kv):
+def findkeys(node, kv):
     """
     Find nested keys by key id
     """
     if isinstance(node, list):
         for i in node:
-            for x in find_keys(i, kv):
+            for x in findkeys(i, kv):
                 yield x
     elif isinstance(node, dict):
         if kv in node:
             yield node[kv]
         for j in node.values():
-            for x in find_keys(j, kv):
+            for x in findkeys(j, kv):
                 yield x
 
 
@@ -41,7 +41,7 @@ def handle_nuspec(req_file_data: str) -> dict:
     if root.get("license", {}).get("@type") == "expression":
         res["pkg_lic"] = [root.get("license", {}).get("#text")]
     pkg_dep = []
-    for dep in sum(list(find_keys(root.get("dependencies"), "dependency")), []):
+    for dep in sum(list(findkeys(root.get("dependencies"), "dependency")), []):
         pkg_dep.append(dep.get("@id") + ";" + dep.get("@version"))
     res["pkg_dep"] = pkg_dep
     return res
