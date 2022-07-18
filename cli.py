@@ -71,7 +71,9 @@ def main(
             logging.error("Unknown Response")
         try:
             if file_extension == "lock":
-                result.extend(make_multiple_requests(language, dep_list, 1))
+                # For a lockfile, we just want to fetch details of the dependencies
+                # given, and not recurse any further. Hence depth=1
+                result.extend(make_multiple_requests(language, dep_list, depth=1))
             else:
                 result.extend(make_multiple_requests(language, dep_list, depth))
         except (LanguageNotSupportedError, VCSNotSupportedError, ParamMissing) as e:
