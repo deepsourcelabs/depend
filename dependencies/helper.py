@@ -401,99 +401,156 @@ def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
     """
     all_constraints = []
     fixed_constraint = reqs.strip()
-    if fixed_constraint == "latest" or not fixed_constraint:
+    if fixed_constraint in ("latest", "*", "") or not fixed_constraint:
         return [SpecifierSet()]
     match language:
         case "python":
-            # handle poetry spec of tilde requirements
-            fixed_constraint = re.sub(r"=*~(?!=)", "~=", fixed_constraint)
-            # caret requirements handled downstream
-            all_constraints = [fixed_constraint]
+            all_constraints = [
+                ",".join(
+                    [
+                        fix_constraint_py(constraint)
+                        for constraint in fixed_constraint.split(",")
+                    ]
+                )
+            ]
         case "javascript":
             # JS supports * or x as a direct major ver wildcard
-            if fixed_constraint in ("x", "*"):
-                return SpecifierSet()
             # https://docs.npmjs.com/cli/v8/configuring-npm/package-json#dependencies
             # handle logical or
             for sub_constraint in fixed_constraint.split("||"):
-                # JavaScript uses `x` as its wildcard character.
-                # Replacing '.x' with '.*' should be fine, as `package=x` isn't valid
-                # (use `package=*` for that), and for cases like `1.2.3-pre.x`, i think
-                # it's fine to have it replaced with `1.2.3-pre.*`.
-                sub_constraint = sub_constraint.strip().replace(".x", ".*")
-                # range constraints alternative
-                if " - " in sub_constraint:
-                    sub_constraint = sub_constraint.split(" - ", 1)
-                    sub_constraint = f">={sub_constraint[0]}, <={sub_constraint[1]}"
-                # handle remaining logical ands
-                sub_constraint = re.sub(r"(\s)+(?!\w)", ",", sub_constraint)
+                sub_constraint = ",".join(
+                    [
+                        fix_constraint_js(constraint)
+                        for constraint in sub_constraint.split(",")
+                    ]
+                )
                 all_constraints.append(sub_constraint)
         case "go":
             # https://go.dev/ref/mod#go-mod-file-require
-            all_constraints = [fixed_constraint]
-            logging.warning(
-                "Lexical comparison used instead of Minimum Version Selection"
-            )
+            all_constraints = [">=" + fixed_constraint]
         case "cs":
             # https://docs.microsoft.com/en-us/nuget/concepts/package-versioning#version-ranges
-            if fixed_constraint[0] == "(":
-                ver_spec = fixed_constraint[1:-1].split(",")
-                if fixed_constraint[-1] == ")":
-                    if ver_spec[0] and not ver_spec[1]:
-                        fixed_constraint = ">" + ver_spec[0]
-                    elif not ver_spec[0] and ver_spec[1]:
-                        fixed_constraint = "<" + ver_spec[1]
-                    else:
-                        fixed_constraint = ">" + ver_spec[0] + ",<" + ver_spec[1]
-                else:
-                    if ver_spec[0] and not ver_spec[1]:
-                        fixed_constraint = ">" + ver_spec[0]
-                    elif not ver_spec[0] and ver_spec[1]:
-                        fixed_constraint = "<=" + ver_spec[1]
-                    else:
-                        fixed_constraint = ">" + ver_spec[0] + ",<=" + ver_spec[1]
-            elif fixed_constraint[0] == "[":
-                ver_spec = fixed_constraint[1:-1].split(",")
-                if fixed_constraint[-1] == ")":
-                    if ver_spec[0] and not ver_spec[1]:
-                        fixed_constraint = ">=" + ver_spec[0]
-                    elif not ver_spec[0] and ver_spec[1]:
-                        fixed_constraint = "<" + ver_spec[1]
-                    else:
-                        fixed_constraint = ">=" + ver_spec[0] + ",<" + ver_spec[1]
-                else:
-                    if ver_spec[0] and not ver_spec[1]:
-                        fixed_constraint = ">=" + ver_spec[0]
-                    elif not ver_spec[0] and ver_spec[1]:
-                        fixed_constraint = "<=" + ver_spec[1]
-                    else:
-                        fixed_constraint = ">=" + ver_spec[0] + ",<=" + ver_spec[1]
-            else:
-                fixed_constraint = ">=" + fixed_constraint
-            all_constraints = [fixed_constraint]
+            all_constraints = fix_constraint_cs(fixed_constraint)
         case "php":
             # https://getcomposer.org/doc/articles/versions.md#writing-version-constraints
             # handle logical or
             for sub_constraint in fixed_constraint.replace("||", "|").split("|"):
-                # JavaScript uses `x` as its wildcard character.
-                # Replacing '.x' with '.*' should be fine, as `package=x` isn't valid
-                # (use `package=*` for that), and for cases like `1.2.3-pre.x`, i think
-                # it's fine to have it replaced with `1.2.3-pre.*`.
-                sub_constraint = sub_constraint.strip()
-                # range constraints alternative
-                if " - " in sub_constraint:
-                    sub_constraint = sub_constraint.split(" - ", 1)
-                    sub_constraint = f">={sub_constraint[0]}, <={sub_constraint[1]}"
-                # handle remaining logical ands
-                sub_constraint = re.sub(r"(\s)+(?!\w)", ",", sub_constraint)
+                sub_constraint = ",".join(
+                    [
+                        fix_constraint_php(constraint)
+                        for constraint in sub_constraint.split(",")
+                    ]
+                )
                 all_constraints.append(sub_constraint)
         case "rust":
             # https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html
-            # Default works like caret
-            if fixed_constraint[:1].isalnum():
-                fixed_constraint = "^" + fixed_constraint
-            all_constraints = [fixed_constraint]
+            all_constraints = [
+                ",".join(
+                    [
+                        fix_constraint_rust(constraint)
+                        for constraint in fixed_constraint.split(",")
+                    ]
+                )
+            ]
     return handle_lax_specifier(all_constraints)
+
+
+def fix_constraint_rust(fixed_constraint):
+    # Default works like caret
+    if "*" not in fixed_constraint:
+        if "~" in fixed_constraint:
+            fixed_constraint = handle_tilde(fixed_constraint)
+        elif fixed_constraint[:1].isalnum():
+            fixed_constraint = "^" + fixed_constraint
+        if "^" in fixed_constraint:
+            fixed_constraint = handle_caret(fixed_constraint)
+    return fixed_constraint
+
+
+def fix_constraint_php(sub_constraint):
+    sub_constraint = sub_constraint.strip()
+    # range constraints alternative
+    if " - " in sub_constraint:
+        sub_constraint = sub_constraint.split(" - ", 1)
+        sub_constraint = f">={sub_constraint[0]}, <={sub_constraint[1]}"
+    if "^" in sub_constraint:
+        sub_constraint = handle_caret(sub_constraint)
+    if "~" in sub_constraint:
+        sub_constraint = handle_tilde(sub_constraint, True)
+    # handle remaining logical ands
+    sub_constraint = re.sub(r"(\s)+(?!\w)", ",", sub_constraint)
+    return sub_constraint
+
+
+def fix_constraint_cs(fixed_constraint):
+    if fixed_constraint[0] == "(":
+        ver_spec = fixed_constraint[1:-1].split(",")
+        if fixed_constraint[-1] == ")":
+            if ver_spec[0] and not ver_spec[1]:
+                fixed_constraint = ">" + ver_spec[0]
+            elif not ver_spec[0] and ver_spec[1]:
+                fixed_constraint = "<" + ver_spec[1]
+            else:
+                fixed_constraint = ">" + ver_spec[0] + ",<" + ver_spec[1]
+        else:
+            if ver_spec[0] and not ver_spec[1]:
+                fixed_constraint = ">" + ver_spec[0]
+            elif not ver_spec[0] and ver_spec[1]:
+                fixed_constraint = "<=" + ver_spec[1]
+            else:
+                fixed_constraint = ">" + ver_spec[0] + ",<=" + ver_spec[1]
+    elif fixed_constraint[0] == "[":
+        ver_spec = fixed_constraint[1:-1].split(",")
+        if len(ver_spec) == 1:
+            fixed_constraint = "==" + ver_spec[0]
+        elif fixed_constraint[-1] == ")":
+            if ver_spec[0] and not ver_spec[1]:
+                fixed_constraint = ">=" + ver_spec[0]
+            elif not ver_spec[0] and ver_spec[1]:
+                fixed_constraint = "<" + ver_spec[1]
+            else:
+                fixed_constraint = ">=" + ver_spec[0] + ",<" + ver_spec[1]
+        else:
+            if ver_spec[0] and not ver_spec[1]:
+                fixed_constraint = ">=" + ver_spec[0]
+            elif not ver_spec[0] and ver_spec[1]:
+                fixed_constraint = "<=" + ver_spec[1]
+            else:
+                fixed_constraint = ">=" + ver_spec[0] + ",<=" + ver_spec[1]
+    else:
+        fixed_constraint = ">=" + fixed_constraint
+    all_constraints = [fixed_constraint]
+    return all_constraints
+
+
+def fix_constraint_js(sub_constraint):
+    # JavaScript uses `x` as its wildcard character.
+    # Replacing '.x' with '.*' should be fine, as `package=x` isn't valid
+    # (use `package=*` for that), and for cases like `1.2.3-pre.x`, i think
+    # it's fine to have it replaced with `1.2.3-pre.*`.
+    sub_constraint = sub_constraint.strip().replace(".x", ".*")
+    if "^" in sub_constraint:
+        sub_constraint = handle_caret(sub_constraint)
+    if "~" in sub_constraint:
+        sub_constraint = handle_tilde(sub_constraint)
+    # range constraints alternative
+    if " - " in sub_constraint:
+        sub_constraint = sub_constraint.split(" - ", 1)
+        sub_constraint = f">={sub_constraint[0]}, <={sub_constraint[1]}"
+    # handle remaining logical ands
+    sub_constraint = re.sub(r"(\s)+(?!\w)", ",", sub_constraint)
+    return sub_constraint
+
+
+def fix_constraint_py(fixed_constraint):
+    # handle poetry spec of tilde requirements
+    # fixed_constraint = re.sub(r"=*~(?!=)", "~=", fixed_constraint)
+    # caret requirements
+    if "^" in fixed_constraint:
+        fixed_constraint = handle_caret(fixed_constraint)
+    if "~" in fixed_constraint and "~=" not in fixed_constraint:
+        fixed_constraint = handle_tilde(fixed_constraint)
+    return fixed_constraint
 
 
 def resolve_version(vers: List[str], reqs: List[SpecifierSet] = None) -> Optional[str]:
@@ -504,13 +561,12 @@ def resolve_version(vers: List[str], reqs: List[SpecifierSet] = None) -> Optiona
     :return: specific version to query defaults to latest
     """
     compatible_vers = vers
+    or_compatible = []
     for req in reqs:
-        if "^" in str(req):
-            req = handle_caret(req)
-        compatible_vers = [ver for ver in compatible_vers if req.contains(ver)]
-    if compatible_vers:
+        or_compatible.extend([ver for ver in compatible_vers if req.contains(ver)])
+    if or_compatible:
         sorted_vers = sorted(
-            compatible_vers,
+            or_compatible,
             key=try_version,
             reverse=True,
         )
@@ -519,9 +575,9 @@ def resolve_version(vers: List[str], reqs: List[SpecifierSet] = None) -> Optiona
         return None
 
 
-def handle_caret(req) -> SpecifierSet:
+def handle_caret(req: str) -> str:
     """Handle caret based requirement constraints"""
-    _, version = str(req).split("^", 1)
+    _, version = req.split("^", 1)
     major, minor, patch, *_ = (version + "...").split(".")
     if patch:
         if minor == "0" and major == "0":
@@ -537,8 +593,20 @@ def handle_caret(req) -> SpecifierSet:
             limit = f"{int(major) + 1}.0.0"
     else:
         limit = f"{int(major) + 1}.0.0"
-    req = SpecifierSet(f">={version},<{limit}")
-    return req
+    return f">={version},<{limit}"
+
+
+def handle_tilde(req: str, is_php: bool = False) -> str:
+    """Handle caret based requirement constraints"""
+    _, version = req.split("~", 1)
+    major, minor, patch, *_ = (version + "...").split(".")
+    if patch:
+        limit = f"{major}.{int(minor) + 1}.0"
+    elif minor and not is_php:
+        limit = f"{major}.{int(minor) + 1}.0"
+    else:
+        limit = f"{int(major) + 1}.0.0"
+    return f">={version},<{limit}"
 
 
 def try_version(value):
