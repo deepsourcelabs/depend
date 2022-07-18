@@ -603,12 +603,13 @@ def handle_caret(req: str) -> str:
 
 
 def handle_tilde(req: str, is_php: bool = False) -> str:
-    """Handle caret based requirement constraints"""
+    """Handle tilde based requirement constraints"""
     _, version = req.split("~", 1)
     major, minor, patch, *_ = (version + "...").split(".")
     if patch:
         limit = f"{major}.{int(minor) + 1}.0"
     elif minor and not is_php:
+        # if major.minor is given php wont lock the minor version
         limit = f"{major}.{int(minor) + 1}.0"
     else:
         limit = f"{int(major) + 1}.0.0"
