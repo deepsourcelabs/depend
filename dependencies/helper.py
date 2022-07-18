@@ -377,6 +377,7 @@ def php_versions(api_response: Response, queries: dict) -> list:
 
 
 def handle_lax_specifier(all_constraints: list[str]) -> list[SpecifierSet]:
+    """Attempt to convert list of strings to SpecifierSets"""
     proper_specifiers = []
     for constraint in all_constraints:
         spec = SpecifierSet()
@@ -455,7 +456,8 @@ def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
     return handle_lax_specifier(all_constraints)
 
 
-def fix_constraint_rust(fixed_constraint):
+def fix_constraint_rust(fixed_constraint: str) -> str:
+    """Rust version constrains to Python"""
     # Default works like caret
     if "*" not in fixed_constraint:
         if "~" in fixed_constraint:
@@ -467,7 +469,8 @@ def fix_constraint_rust(fixed_constraint):
     return fixed_constraint
 
 
-def fix_constraint_php(sub_constraint):
+def fix_constraint_php(sub_constraint: str) -> str:
+    """PHP version constrains to Python"""
     sub_constraint = sub_constraint.strip()
     # range constraints alternative
     if " - " in sub_constraint:
@@ -482,7 +485,8 @@ def fix_constraint_php(sub_constraint):
     return sub_constraint
 
 
-def fix_constraint_cs(fixed_constraint):
+def fix_constraint_cs(fixed_constraint: str) -> str:
+    """C# version constrains to Python"""
     if fixed_constraint[0] == "(":
         ver_spec = fixed_constraint[1:-1].split(",")
         if fixed_constraint[-1] == ")":
@@ -523,7 +527,8 @@ def fix_constraint_cs(fixed_constraint):
     return all_constraints
 
 
-def fix_constraint_js(sub_constraint):
+def fix_constraint_js(sub_constraint: str) -> str:
+    """JavaScript version constrains to Python"""
     # JavaScript uses `x` as its wildcard character.
     # Replacing '.x' with '.*' should be fine, as `package=x` isn't valid
     # (use `package=*` for that), and for cases like `1.2.3-pre.x`, i think
@@ -542,7 +547,8 @@ def fix_constraint_js(sub_constraint):
     return sub_constraint
 
 
-def fix_constraint_py(fixed_constraint):
+def fix_constraint_py(fixed_constraint: str) -> str:
+    """Python non standard version constrains handling"""
     # handle poetry spec of tilde requirements
     # fixed_constraint = re.sub(r"=*~(?!=)", "~=", fixed_constraint)
     # caret requirements

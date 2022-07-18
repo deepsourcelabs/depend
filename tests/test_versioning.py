@@ -94,9 +94,8 @@ def test_simple_dependency_parsing(language, ver_constraint, expected_output):
     ],
 )
 def test_equivalent_dependency_parsing(language, ver_constraint, req_constraint):
-    """Tests equivalent version resolutions when most recent compatible is to be considered"""
+    """Tests equivalent version resolutions when latest compatible ver is to be considered"""
     vers = [".".join(list(str(ver).rjust(3, "0"))) for ver in range(0, 1000)]
-    """Test equivalent logical conversion of requirement constraints"""
     assert resolve_version(
         vers, fix_constraint(language, ver_constraint)
     ) == resolve_version(vers, fix_constraint(language, req_constraint))
