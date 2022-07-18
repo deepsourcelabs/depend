@@ -48,9 +48,14 @@ def handle_json(req_file_data: str) -> Result:
     :return: list of requirement and specs
     """
     package_data = json.loads(req_file_data)
+    engines = package_data.get("engines", {})
+    if isinstance(engines, dict):
+        lang_ver = [engines.get("node", "")]
+    else:
+        lang_ver = []
     filter_dict: Result = {
         "import_name": "",
-        "lang_ver": [package_data.get("engines", {}).get("node", "")],
+        "lang_ver": lang_ver,
         "pkg_name": package_data.get("name", ""),
         "pkg_ver": package_data.get("version", ""),
         "pkg_lic": package_data.get("license", "Other").split(","),

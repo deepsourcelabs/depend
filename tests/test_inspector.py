@@ -100,7 +100,6 @@ def test_make_single_request_go():
         force_schema=False,
     )
     assert result[0]["pkg_name"] == "github.com/getsentry/sentry-go"
-    assert result[0]["pkg_ver"] == "v0.12.0"
     assert result[0]["pkg_lic"][0] == "BSD-2-Clause"
     assert len(result[0]["pkg_dep"]) != 0
 
