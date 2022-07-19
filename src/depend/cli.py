@@ -15,6 +15,7 @@ from depend.inspector import make_multiple_requests
 app = typer.Typer()
 logging.getLogger().setLevel(logging.INFO)
 
+
 @app.callback()
 def main(
     lang: str = typer.Option(None),
