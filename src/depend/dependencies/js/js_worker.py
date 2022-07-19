@@ -55,12 +55,22 @@ def handle_json(req_file_data: str) -> Result:
         # The documentation specifies that this entry must be a dictionary
         # This was added because of a failing case in tests
         lang_ver = []
+    pkg_lic = ["Other"]
+    lic_info = package_data.get("license", "Other")
+    if isinstance(lic_info, str):
+        pkg_lic = lic_info.split(",")
+    elif isinstance(lic_info, dict):
+        pkg_lic = [lic_info.get("type", "Other")]
+    elif isinstance(lic_info, list):
+        pkg_lic = list(
+            set([single_lic.get("type", "Other") for single_lic in lic_info])
+        )
     filter_dict: Result = {
         "import_name": "",
         "lang_ver": lang_ver,
         "pkg_name": package_data.get("name", ""),
         "pkg_ver": package_data.get("version", ""),
-        "pkg_lic": package_data.get("license", "Other").split(","),
+        "pkg_lic": pkg_lic,
         "pkg_dep": package_data.get("dependencies", {}),
         "pkg_err": {},
         "timestamp": datetime.utcnow().isoformat(),
