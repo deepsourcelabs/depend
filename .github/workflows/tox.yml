@@ -20,12 +20,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x64
-      - name: Install dependencies
-        run: pip install -r requirements-dev.txt
       - name: Run tests and type checking
         env:
           GITHUB_TOKEN: ${{ secrets.PUBLIC_PAT }}
-        run: tox
+        run: |
+          pip install tox
+          tox
       - name: Report test coverage to DeepSource
         uses: deepsourcelabs/test-coverage-action@master
         with:
