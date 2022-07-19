@@ -2,7 +2,6 @@
 
 Package to extract license and latest version for third-party dependencies.
 
-
 ## Local Development / Testing
 
 - Create and activate a virtual environment
