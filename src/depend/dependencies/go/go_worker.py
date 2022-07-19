@@ -6,7 +6,7 @@ import sys
 from ctypes import c_char_p, c_void_p, cdll, string_at
 from datetime import datetime
 
-from dependencies.dep_types import Result
+from depend.dependencies.dep_types import Result
 
 match platform.system():
     case "Darwin":

@@ -6,7 +6,7 @@ from typing import Any
 import yaml
 from pyarn import lockfile
 
-from dependencies.dep_types import Result
+from depend.dependencies.dep_types import Result
 
 
 def handle_yarn_lock(req_file_data: str) -> Result:

@@ -8,9 +8,9 @@ from typing import Any, Dict, List, Optional, Union
 
 import typer
 
-from dependencies.helper import handle_dep_file, parse_dep_response
-from error import LanguageNotSupportedError, ParamMissing, VCSNotSupportedError
-from inspector import make_multiple_requests
+from depend.dependencies.helper import handle_dep_file, parse_dep_response
+from depend.error import LanguageNotSupportedError, ParamMissing, VCSNotSupportedError
+from depend.inspector import make_multiple_requests
 
 app = typer.Typer(add_completion=False)
 

@@ -6,10 +6,10 @@ from typing import Any, List, Optional, Set, Tuple
 
 from requests import Response
 
-from constants import REGISTRY
-from dep_helper import red_req, requests
-from dependencies.dep_types import Result
-from dependencies.helper import (
+from depend.constants import REGISTRY
+from depend.dep_helper import red_req, requests
+from depend.dependencies.dep_types import Result
+from depend.dependencies.helper import (
     fix_constraint,
     go_versions,
     handle_cs,
@@ -26,8 +26,8 @@ from dependencies.helper import (
     rust_versions,
     scrape_go,
 )
-from error import LanguageNotSupportedError, VCSNotSupportedError
-from vcs.github_worker import handle_github
+from depend.error import LanguageNotSupportedError, VCSNotSupportedError
+from depend.vcs.github_worker import handle_github
 
 
 def handle_vcs(
