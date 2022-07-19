@@ -1,6 +1,6 @@
 # depend
 
-Package to extract license and latest version for third-party dependencies.
+A dependency analysis tool for various languages and package managers.
 
 ## Local Development / Testing
 
