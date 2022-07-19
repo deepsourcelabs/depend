@@ -12,10 +12,10 @@ from depend.dependencies.helper import handle_dep_file, parse_dep_response
 from depend.error import LanguageNotSupportedError, ParamMissing, VCSNotSupportedError
 from depend.inspector import make_multiple_requests
 
-app = typer.Typer(add_completion=False)
+app = typer.Typer()
+logging.getLogger().setLevel(logging.INFO)
 
-
-@app.callback(invoke_without_command=True)
+@app.callback()
 def main(
     lang: str = typer.Option(None),
     packages: Optional[str] = typer.Option(None),
@@ -81,8 +81,3 @@ def main(
             sys.exit(-1)
     logging.info(json.dumps(result, indent=3))
     return result
-
-
-if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.INFO)
-    app()
