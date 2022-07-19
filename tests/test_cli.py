@@ -4,8 +4,8 @@ from pathlib import Path
 import pytest
 from jsonschema import validate
 
-from cli import main
-from error import FileNotSupportedError
+from depend.cli import main
+from depend.error import FileNotSupportedError
 
 
 class Helpers:

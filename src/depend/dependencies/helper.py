@@ -12,8 +12,8 @@ from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.version import InvalidVersion, Version
 from requests import Response
 
-from dep_helper import requests
-from error import FileNotSupportedError
+from depend.dep_helper import requests
+from depend.error import FileNotSupportedError
 
 from .cs.cs_worker import findkeys, handle_nuspec
 from .dep_types import Result
@@ -431,7 +431,7 @@ def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
             all_constraints = [">=" + fixed_constraint]
         case "cs":
             # https://docs.microsoft.com/en-us/nuget/concepts/package-versioning#version-ranges
-            all_constraints = fix_constraint_cs(fixed_constraint)
+            all_constraints = [fix_constraint_cs(fixed_constraint)]
         case "php":
             # https://getcomposer.org/doc/articles/versions.md#writing-version-constraints
             # handle logical or
@@ -523,8 +523,7 @@ def fix_constraint_cs(fixed_constraint: str) -> str:
                 fixed_constraint = ">=" + ver_spec[0] + ",<=" + ver_spec[1]
     else:
         fixed_constraint = ">=" + fixed_constraint
-    all_constraints = [fixed_constraint]
-    return all_constraints
+    return fixed_constraint
 
 
 def fix_constraint_js(sub_constraint: str) -> str:

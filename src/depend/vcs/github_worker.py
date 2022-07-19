@@ -9,9 +9,9 @@ from typing import Iterable
 import github.GithubException
 from github.ContentFile import ContentFile
 
-import constants
-from dependencies.helper import Result, handle_dep_file, parse_license
-from handle_env import get_github
+import depend.constants as constants
+from depend.dependencies.helper import Result, handle_dep_file, parse_license
+from depend.handle_env import get_github
 
 
 def verify_run(language, result, file_extension="git") -> list[str]:

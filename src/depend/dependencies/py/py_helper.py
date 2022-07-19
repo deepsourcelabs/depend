@@ -4,7 +4,7 @@ from datetime import datetime
 import packaging.specifiers
 from pkg_resources import parse_requirements
 
-from dependencies.dep_types import Result
+from depend.dependencies.dep_types import Result
 
 
 def handle_requirements_txt(req_file_data: str) -> Result:

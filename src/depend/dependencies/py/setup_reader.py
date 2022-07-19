@@ -15,9 +15,9 @@ from github.ContentFile import ContentFile
 from poetry.core.semver import Version, exceptions
 from poetry.utils.setup_reader import SetupReader
 
-from dependencies.dep_types import Result
-from dependencies.py.py_helper import handle_requirements_txt
-from handle_env import get_github
+from depend.dependencies.dep_types import Result
+from depend.dependencies.py.py_helper import handle_requirements_txt
+from depend.handle_env import get_github
 
 
 def find_github(text: str) -> Match[str] | None:

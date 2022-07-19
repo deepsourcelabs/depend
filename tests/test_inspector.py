@@ -4,9 +4,9 @@ from datetime import datetime
 
 import pytest
 
-import inspector
-from dependencies.dep_types import Result
-from error import LanguageNotSupportedError, VCSNotSupportedError
+import depend.inspector as inspector
+from depend.dependencies.dep_types import Result
+from depend.error import LanguageNotSupportedError, VCSNotSupportedError
 
 
 @pytest.fixture

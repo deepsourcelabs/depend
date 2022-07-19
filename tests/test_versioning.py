@@ -2,7 +2,7 @@
 import pytest
 from packaging.specifiers import SpecifierSet
 
-from dependencies.helper import fix_constraint, resolve_version
+from depend.dependencies.helper import fix_constraint, resolve_version
 
 
 @pytest.mark.parametrize(
