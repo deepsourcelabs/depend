@@ -1,6 +1,7 @@
 """Functions to handle Go files"""
 import json
 import logging
+import os.path
 import platform
 import sys
 from ctypes import c_char_p, c_void_p, cdll, string_at
@@ -8,13 +9,14 @@ from datetime import datetime
 
 from depend.dependencies.dep_types import Result
 
+current_dir = os.path.dirname(__file__)
 match platform.system():
     case "Darwin":
-        lib_go = cdll.LoadLibrary("dependencies/go/darwin/libgomod.dylib")
+        lib_go = cdll.LoadLibrary(os.path.join(current_dir, "darwin/libgomod.dylib"))
     case "Linux":
-        lib_go = cdll.LoadLibrary("dependencies/go/linux/libgomod.so")
+        lib_go = cdll.LoadLibrary(os.path.join(current_dir, "linux/libgomod.so"))
     case "Windows":
-        lib_go = cdll.LoadLibrary("dependencies/go/win64/_gomod.dll")
+        lib_go = cdll.LoadLibrary(os.path.join(current_dir, "win64/_gomod.dll"))
     case _:
         logging.error("Not supported on current platform")
         sys.exit(-1)
