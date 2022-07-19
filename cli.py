@@ -10,7 +10,6 @@ import typer
 
 from dependencies.helper import handle_dep_file, parse_dep_response
 from error import LanguageNotSupportedError, ParamMissing, VCSNotSupportedError
-from handle_env import get_db
 from inspector import make_multiple_requests
 
 app = typer.Typer(add_completion=False)
@@ -21,13 +20,12 @@ def main(
     lang: str = typer.Option(None),
     packages: Optional[str] = typer.Option(None),
     dep_file: Optional[Path] = typer.Option(None),
-    db_name: Optional[str] = typer.Option(None),
-    deep_search: Optional[bool] = typer.Option(False),
+    depth: Optional[int] = typer.Option(None),
 ) -> List[Any]:
     """
     Dependency Inspector
 
-    Retrieves licenses and dependencies of Python, JavaScript and Go packages.
+    Retrieves licenses and dependencies of Python, JavaScript, C#, PHP, Rust and Go packages.
     Uses Package Indexes for Python and Javascript
     Go is temporarily handled by scraping pkg.go.dev and VCS
     VCS support is currently limited to GitHub for fallthrough cases in Go
@@ -40,28 +38,28 @@ def main(
 
     :param dep_file: location of file to parse for packages
 
-    :param deep_search: when true populating all fields is attempted
+    :param depth: dependency query recursion level
 
     """
     payload: Dict[str, Union[None, str, list[str]]] = {}
     result: List[Any] = []
+    file_extension = ""
     if dep_file:
         payload = {}
         if not dep_file.is_file():
             logging.error("Dependency file cannot be read")
             sys.exit(-1)
+        file_extension = os.path.basename(dep_file).split(".")[-1]
         dep_content = handle_dep_file(os.path.basename(dep_file), dep_file.read_text())
         payload[lang] = dep_content.get("pkg_dep")
         result.append(parse_dep_response([dep_content]))
-        if not deep_search:
+        if depth == 0:
             logging.info(result)
             return result
     else:
         payload[lang] = packages
     if lang not in ["go", "python", "javascript", "rust", "php", "cs"]:
         raise LanguageNotSupportedError(lang)
-    if psql := get_db():
-        logging.info("Postgres DB connected")
     for language, dependencies in payload.items():
         if isinstance(dependencies, str):
             dep_list = dependencies.replace(",", "\n").split("\n")
@@ -72,14 +70,17 @@ def main(
             dep_list = []
             logging.error("Unknown Response")
         try:
-            if dep_list:
-                result.extend(make_multiple_requests(psql, language, dep_list))
-                logging.info(json.dumps(result, indent=3))
-                return result
+            if file_extension == "lock":
+                # For a lockfile, we just want to fetch details of the dependencies
+                # given, and not recurse any further. Hence depth=1
+                result.extend(make_multiple_requests(language, dep_list, depth=1))
+            else:
+                result.extend(make_multiple_requests(language, dep_list, depth))
         except (LanguageNotSupportedError, VCSNotSupportedError, ParamMissing) as e:
             logging.error(e.msg)
             sys.exit(-1)
-    return []
+    logging.info(json.dumps(result, indent=3))
+    return result
 
 
 if __name__ == "__main__":

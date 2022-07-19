@@ -23,8 +23,6 @@ def handle_cargo_toml(file_data: str) -> dict:
     package_data = toml_parsed.get("package")
     package_dep = toml_parsed.get("dependencies")
     for (ir, spec) in package_dep.items():
-        # https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html
-        # ignores tilde, wildcard, comparison, multiple - TODO with python
         if isinstance(spec, str):
             res["pkg_dep"].append(ir + ";" + spec.split(",")[0])
         elif isinstance(spec, dict):

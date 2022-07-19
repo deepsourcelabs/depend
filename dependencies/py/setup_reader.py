@@ -15,7 +15,7 @@ from github.ContentFile import ContentFile
 from poetry.core.semver import Version, exceptions
 from poetry.utils.setup_reader import SetupReader
 
-from dep_types import Result
+from dependencies.dep_types import Result
 from dependencies.py.py_helper import handle_requirements_txt
 from handle_env import get_github
 
@@ -104,7 +104,7 @@ class LaxSetupReader(SetupReader):
                 logging.error(e)
         else:
             res["pkg_dep"] = handle_requirements_txt("\n".join(pkg_dep)).get(
-                "pkg_dep", []
+                "pkg_dep", {}
             )
         classifiers = self._find_single_string(setup_call, body, "classifiers")
         if classifiers:

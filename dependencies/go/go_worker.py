@@ -6,7 +6,7 @@ import sys
 from ctypes import c_char_p, c_void_p, cdll, string_at
 from datetime import datetime
 
-from dep_types import Result
+from dependencies.dep_types import Result
 
 match platform.system():
     case "Darwin":
@@ -56,7 +56,7 @@ def handle_go_mod(req_file_data: str) -> Result:
         if k in m:
             if k == "MinGoVer":
                 res[m[k]] = d[k].split(",")  # type: ignore
-            else:
+            elif d[k]:
                 res[m[k]] = d[k]  # type: ignore
     res["timestamp"] = datetime.utcnow().isoformat()
     return res

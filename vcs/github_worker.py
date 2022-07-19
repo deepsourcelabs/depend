@@ -38,6 +38,7 @@ def handle_github(
     result: Result,
 ):
     """VCS fallthrough for GitHub based GO"""
+    # Check if run is actually required
     if retrievable_keys := verify_run(language, result):
         g = get_github()
         rl = g.get_rate_limit()

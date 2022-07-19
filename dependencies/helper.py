@@ -1,19 +1,22 @@
 """Helper Functions for Inspector."""
 import datetime
-import functools
+import logging
 import re
-from typing import Callable, List, Optional
+from typing import List, Optional
 
 import jmespath
 import requests
 import xmltodict
 from bs4 import BeautifulSoup
+from packaging.specifiers import InvalidSpecifier, SpecifierSet
+from packaging.version import InvalidVersion, Version
+from requests import Response
 
-import laxsemver as semver
-from dep_types import Result
+from dep_helper import requests
 from error import FileNotSupportedError
 
 from .cs.cs_worker import findkeys, handle_nuspec
+from .dep_types import Result
 from .go.go_worker import handle_go_mod
 from .js.js_worker import handle_json, handle_yarn_lock
 from .php.php_worker import handle_composer_json
@@ -108,7 +111,7 @@ def parse_dep_response(
     return final_response
 
 
-def handle_pypi(api_response: requests.Response, queries: dict, result: Result):
+def handle_pypi(api_response: Response, queries: dict, result: Result):
     """
     Take api response and return required results object
     :param api_response: response from requests get
@@ -130,7 +133,7 @@ def handle_pypi(api_response: requests.Response, queries: dict, result: Result):
     return repo
 
 
-def handle_cs(api_response: requests.Response, queries: dict, result: Result):
+def handle_cs(api_response: Response, queries: dict, result: Result):
     """
     Take api response and return required results object
     :param api_response: response from requests get
@@ -141,6 +144,15 @@ def handle_cs(api_response: requests.Response, queries: dict, result: Result):
     if api_response.status_code == 404:
         return ""
     req_file_data = api_response.text
+    pkg_dep, root = parse_nuspec(req_file_data, result)
+    result["pkg_dep"] = list(pkg_dep)
+    # @type = git
+    return root.get("repository", {}).get("@url")
+
+
+def parse_nuspec(req_file_data, result):
+    """Get list of packages from NuSpec"""
+
     root = xmltodict.parse(req_file_data).get("package", {}).get("metadata")
     result["pkg_name"] = root.get("id")
     result["pkg_ver"] = root.get("version")
@@ -156,12 +168,10 @@ def handle_cs(api_response: requests.Response, queries: dict, result: Result):
         else:
             dep_entry = gen_e.get("@id") + ";" + gen_e.get("@version")
             pkg_dep.add(dep_entry)
-    result["pkg_dep"] = list(pkg_dep)
-    # @type = git
-    return root.get("repository", {}).get("@url")
+    return pkg_dep, root
 
 
-def handle_npmjs(api_response: requests.Response, queries: dict, result: Result):
+def handle_npmjs(api_response: Response, queries: dict, result: Result):
     """
     Take api response and return required results object
     :param api_response: response from requests get
@@ -179,10 +189,7 @@ def handle_npmjs(api_response: requests.Response, queries: dict, result: Result)
     if version:
         result["pkg_ver"] = version
     else:
-        latest_q: jmespath.parser.ParsedResult = queries["latest"]
-        latest = latest_q.search(data)
-        result["pkg_ver"] = latest
-        data = jmespath.search(queries["versions"].format(latest), data)
+        logging.error("Version query failed")
     result["pkg_lic"] = license_q.search(data) or ["Other"]
     dep_data = dependencies_q.search(data)
     if dep_data:
@@ -191,9 +198,7 @@ def handle_npmjs(api_response: requests.Response, queries: dict, result: Result)
     return repo
 
 
-def handle_php(
-    api_response: requests.Response, queries: dict, result: Result, ver: str
-):
+def handle_php(api_response: Response, queries: dict, result: Result, ver: str):
     """
     Take api response and return required results object
     :param api_response: response from requests get
@@ -213,9 +218,7 @@ def handle_php(
     result["pkg_dep"] = [key + ";" + value for (key, value) in dep_data.items()]
 
 
-def handle_rust(
-    api_response: requests.Response, queries: dict, result: Result, url: str
-):
+def handle_rust(api_response: Response, queries: dict, result: Result, url: str):
     """
     Take api response and return required results object
     :param api_response: response from requests get
@@ -238,7 +241,7 @@ def handle_rust(
     result["pkg_dep"] = req_file_data
 
 
-def scrape_go(response: requests.Response, queries: dict, result: Result, url: str):
+def scrape_go(response: Response, queries: dict, result: Result, url: str):
     """
     Take api response and return required results object
     :param response: response from requests get
@@ -294,13 +297,18 @@ def go_versions(url: str, queries: dict) -> list:
     return releases
 
 
-def rust_versions(api_response: requests.Response, queries: dict) -> list:
+def rust_versions(api_response: Response, queries: dict) -> list:
     """
     Get list of all versions for rust package
     :param queries: compiled jmespath queries
     :param api_response: registry response
     :return: list of versions
     """
+    return default_versions(api_response, queries)
+
+
+def default_versions(api_response, queries):
+    """Default API query structure for obtaining versions"""
     if api_response.status_code == 404:
         return []
     data = api_response.json()
@@ -311,187 +319,306 @@ def rust_versions(api_response: requests.Response, queries: dict) -> list:
     return versions
 
 
-def js_versions(api_response: requests.Response, queries: dict) -> list:
+def js_versions(api_response: Response, queries: dict) -> list:
     """
     Get list of all versions for js package
     :param queries: compiled jmespath queries
     :param api_response: registry response
     :return: list of versions
     """
-    if api_response.status_code == 404:
-        return []
-    data = api_response.json()
-    versions_q: jmespath.parser.ParsedResult = queries["versions"]
-    versions = versions_q.search(data)
-    if not versions:
-        return []
-    return versions
+    return default_versions(api_response, queries)
 
 
-def py_versions(api_response: requests.Response, queries: dict) -> list:
+def py_versions(api_response: Response, queries: dict) -> list:
     """
     Get list of all versions for py package
     :param queries: compiled jmespath queries
     :param api_response: registry response
     :return: list of versions
     """
+    return default_versions(api_response, queries)
+
+
+def ruby_versions(api_response: Response, queries: dict) -> list:
+    """
+    Get list of all versions for ruby package
+    :param queries: compiled jmespath queries
+    :param api_response: registry response
+    :return: list of versions
+    """
     if api_response.status_code == 404:
         return []
     data = api_response.json()
-    versions_q: jmespath.parser.ParsedResult = queries["versions"]
+    versions_q: jmespath.parser.ParsedResult = queries["version"]
     versions = versions_q.search(data)
     if not versions:
         return []
     return versions
 
 
-def nuget_versions(api_response: requests.Response, queries: dict) -> list:
+def nuget_versions(api_response: Response, queries: dict) -> list:
     """
     Get list of all versions for C# package
     :param queries: compiled jmespath queries
     :param api_response: registry response
     :return: list of versions
     """
-    if api_response.status_code == 404:
-        return []
-    data = api_response.json()
-    versions_q: jmespath.parser.ParsedResult = queries["versions"]
-    versions = versions_q.search(data)
-    if not versions:
-        return []
-    return versions
+    return default_versions(api_response, queries)
 
 
-def php_versions(api_response: requests.Response, queries: dict) -> list:
+def php_versions(api_response: Response, queries: dict) -> list:
     """
     Get list of all versions for php package
     :param queries: compiled jmespath queries
     :param api_response: registry response
     :return: list of versions
     """
-    if api_response.status_code == 404:
-        return []
-    data = api_response.json()
-    versions_q: jmespath.parser.ParsedResult = queries["versions"]
-    versions = versions_q.search(data)
-    if not versions:
-        return []
-    return versions
+    return default_versions(api_response, queries)
 
 
-def resolve_version(vers: List[str], reqs=None) -> Optional[str]:
+def handle_lax_specifier(all_constraints: list[str]) -> list[SpecifierSet]:
+    """Attempt to convert list of strings to SpecifierSets"""
+    proper_specifiers = []
+    for constraint in all_constraints:
+        spec = SpecifierSet()
+        try:
+            spec = SpecifierSet(constraint)
+        except InvalidSpecifier:
+            try:
+                spec = SpecifierSet("==" + constraint.strip())
+            except InvalidSpecifier:
+                logging.warning(
+                    f"Failed to resolve version specification '{constraint}'"
+                )
+        proper_specifiers.append(spec)
+    return proper_specifiers
+
+
+def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
+    """
+    Fixes requirement string to be parsed by python requirements
+    :param language: language of source code
+    :param reqs: requirement info associated with package
+    """
+    all_constraints = []
+    fixed_constraint = reqs.strip()
+    if fixed_constraint in ("latest", "*", "") or not fixed_constraint:
+        return [SpecifierSet()]
+    match language:
+        case "python":
+            all_constraints = [
+                ",".join(
+                    [
+                        fix_constraint_py(constraint)
+                        for constraint in fixed_constraint.split(",")
+                    ]
+                )
+            ]
+        case "javascript":
+            # JS supports * or x as a direct major ver wildcard
+            # https://docs.npmjs.com/cli/v8/configuring-npm/package-json#dependencies
+            # handle logical or
+            for sub_constraint in fixed_constraint.split("||"):
+                sub_constraint = ",".join(
+                    [
+                        fix_constraint_js(constraint)
+                        for constraint in sub_constraint.split(",")
+                    ]
+                )
+                all_constraints.append(sub_constraint)
+        case "go":
+            # https://go.dev/ref/mod#go-mod-file-require
+            all_constraints = [">=" + fixed_constraint]
+        case "cs":
+            # https://docs.microsoft.com/en-us/nuget/concepts/package-versioning#version-ranges
+            all_constraints = fix_constraint_cs(fixed_constraint)
+        case "php":
+            # https://getcomposer.org/doc/articles/versions.md#writing-version-constraints
+            # handle logical or
+            for sub_constraint in fixed_constraint.replace("||", "|").split("|"):
+                sub_constraint = ",".join(
+                    [
+                        fix_constraint_php(constraint)
+                        for constraint in sub_constraint.split(",")
+                    ]
+                )
+                all_constraints.append(sub_constraint)
+        case "rust":
+            # https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html
+            all_constraints = [
+                ",".join(
+                    [
+                        fix_constraint_rust(constraint)
+                        for constraint in fixed_constraint.split(",")
+                    ]
+                )
+            ]
+    return handle_lax_specifier(all_constraints)
+
+
+def fix_constraint_rust(fixed_constraint: str) -> str:
+    """Rust version constrains to Python"""
+    # Default works like caret
+    if "*" not in fixed_constraint:
+        if "~" in fixed_constraint:
+            fixed_constraint = handle_tilde(fixed_constraint)
+        elif fixed_constraint[:1].isalnum():
+            fixed_constraint = "^" + fixed_constraint
+        if "^" in fixed_constraint:
+            fixed_constraint = handle_caret(fixed_constraint)
+    return fixed_constraint
+
+
+def fix_constraint_php(sub_constraint: str) -> str:
+    """PHP version constrains to Python"""
+    sub_constraint = sub_constraint.strip()
+    # range constraints alternative
+    if " - " in sub_constraint:
+        sub_constraint = sub_constraint.split(" - ", 1)
+        sub_constraint = f">={sub_constraint[0]}, <={sub_constraint[1]}"
+    if "^" in sub_constraint:
+        sub_constraint = handle_caret(sub_constraint)
+    if "~" in sub_constraint:
+        sub_constraint = handle_tilde(sub_constraint, True)
+    # handle remaining logical ands
+    sub_constraint = re.sub(r"(\s)+(?!\w)", ",", sub_constraint)
+    return sub_constraint
+
+
+def fix_constraint_cs(fixed_constraint: str) -> str:
+    """C# version constrains to Python"""
+    if fixed_constraint[0] == "(":
+        ver_spec = fixed_constraint[1:-1].split(",")
+        if fixed_constraint[-1] == ")":
+            if ver_spec[0] and not ver_spec[1]:
+                fixed_constraint = ">" + ver_spec[0]
+            elif not ver_spec[0] and ver_spec[1]:
+                fixed_constraint = "<" + ver_spec[1]
+            else:
+                fixed_constraint = ">" + ver_spec[0] + ",<" + ver_spec[1]
+        else:
+            if ver_spec[0] and not ver_spec[1]:
+                fixed_constraint = ">" + ver_spec[0]
+            elif not ver_spec[0] and ver_spec[1]:
+                fixed_constraint = "<=" + ver_spec[1]
+            else:
+                fixed_constraint = ">" + ver_spec[0] + ",<=" + ver_spec[1]
+    elif fixed_constraint[0] == "[":
+        ver_spec = fixed_constraint[1:-1].split(",")
+        if len(ver_spec) == 1:
+            fixed_constraint = "==" + ver_spec[0]
+        elif fixed_constraint[-1] == ")":
+            if ver_spec[0] and not ver_spec[1]:
+                fixed_constraint = ">=" + ver_spec[0]
+            elif not ver_spec[0] and ver_spec[1]:
+                fixed_constraint = "<" + ver_spec[1]
+            else:
+                fixed_constraint = ">=" + ver_spec[0] + ",<" + ver_spec[1]
+        else:
+            if ver_spec[0] and not ver_spec[1]:
+                fixed_constraint = ">=" + ver_spec[0]
+            elif not ver_spec[0] and ver_spec[1]:
+                fixed_constraint = "<=" + ver_spec[1]
+            else:
+                fixed_constraint = ">=" + ver_spec[0] + ",<=" + ver_spec[1]
+    else:
+        fixed_constraint = ">=" + fixed_constraint
+    all_constraints = [fixed_constraint]
+    return all_constraints
+
+
+def fix_constraint_js(sub_constraint: str) -> str:
+    """JavaScript version constrains to Python"""
+    # JavaScript uses `x` as its wildcard character.
+    # Replacing '.x' with '.*' should be fine, as `package=x` isn't valid
+    # (use `package=*` for that), and for cases like `1.2.3-pre.x`, i think
+    # it's fine to have it replaced with `1.2.3-pre.*`.
+    sub_constraint = sub_constraint.strip().replace(".x", ".*")
+    if "^" in sub_constraint:
+        sub_constraint = handle_caret(sub_constraint)
+    if "~" in sub_constraint:
+        sub_constraint = handle_tilde(sub_constraint)
+    # range constraints alternative
+    if " - " in sub_constraint:
+        sub_constraint = sub_constraint.split(" - ", 1)
+        sub_constraint = f">={sub_constraint[0]}, <={sub_constraint[1]}"
+    # handle remaining logical ands
+    sub_constraint = re.sub(r"(\s)+(?!\w)", ",", sub_constraint)
+    return sub_constraint
+
+
+def fix_constraint_py(fixed_constraint: str) -> str:
+    """Python non standard version constrains handling"""
+    # handle poetry spec of tilde requirements
+    # fixed_constraint = re.sub(r"=*~(?!=)", "~=", fixed_constraint)
+    # caret requirements
+    if "^" in fixed_constraint:
+        fixed_constraint = handle_caret(fixed_constraint)
+    if "~" in fixed_constraint and "~=" not in fixed_constraint:
+        fixed_constraint = handle_tilde(fixed_constraint)
+    return fixed_constraint
+
+
+def resolve_version(vers: List[str], reqs: List[SpecifierSet] = None) -> Optional[str]:
     """
     Returns latest suitable version from available metadata
     :param vers: list of all available version
     :param reqs: requirement info associated with package
-    :return: specific version to query
+    :return: specific version to query defaults to latest
     """
-    compatible_vers: List[str] = vers
-    if reqs:
-        # Multiple requirements
-        for (sym, ver) in reqs:
-            # Exact requirements
-            if sym == "==":
-                compatible_vers = [ver]
-            # Inequality requirements
-            elif sym == "!=":
-                compatible_vers = list(filter(lambda x: x != ver, vers))
-            elif sym in ('>', '>=', '<', '<='):
-                version = semver.VersionInfo.parse(ver)
-                if sym == '>':
-                    compatible_vers = [x for x in vers if semver.VersionInfo.parse(x) > version]
-                if sym == '>=':
-                    compatible_vers = [x for x in vers if semver.VersionInfo.parse(x) >= version]
-                if sym == '<':
-                    compatible_vers = [x for x in vers if semver.VersionInfo.parse(x) < version]
-                if sym == '<=':
-                    compatible_vers = [x for x in vers if semver.VersionInfo.parse(x) <= version]
-            # Caret Requirements
-            elif sym == "^":
-                compatible_vers = handle_caret_requirements(ver, vers)
-            # Tilde requirements
-            elif sym == "~":
-                compatible_vers = handle_tilde_requirements(ver, vers)
-            # Wildcard requirements
-            elif sym == "*":
-                compatible_vers = handle_wildcard_requirements(ver, vers)
-    sorted_vers = sorted(
-        compatible_vers, key=functools.cmp_to_key(semver.compare), reverse=True
-    )
-    return sorted_vers[0] if sorted_vers else None
+    compatible_vers = vers
+    or_compatible = []
+    for req in reqs:
+        or_compatible.extend([ver for ver in compatible_vers if req.contains(ver)])
+    if or_compatible:
+        sorted_vers = sorted(
+            or_compatible,
+            key=try_version,
+            reverse=True,
+        )
+        return sorted_vers[0]
+    else:
+        return None
 
 
-def handle_wildcard_requirements(ver: str, vers: List[str]) -> List[str]:
-    """
-    Compatible versions based on wildcard position
-    *	    >=0.0.0
-    1.*	    >=1.0.0 <2.0.0
-    1.2.*	>=1.2.0 <1.3.0
-    """
-    ver = ver.split("*")[0]
-    dot_count = ver.count(".")
-    svi = semver.VersionInfo.parse(ver)
-    if dot_count == 1:
-        vers = [x for x in vers if semver.VersionInfo.parse(x).major == svi.major]
-    elif dot_count >= 2:
-        vers = [
-            x
-            for x in vers
-            if semver.VersionInfo.parse(x).minor == svi.minor
-            and semver.VersionInfo.parse(x).major == svi.major
-        ]
-    return vers
+def handle_caret(req: str) -> str:
+    """Handle caret based requirement constraints"""
+    _, version = req.split("^", 1)
+    major, minor, patch, *_ = (version + "...").split(".")
+    if patch:
+        if minor == "0" and major == "0":
+            limit = f"0.0.{int(patch) + 1}"
+        elif major == "0":
+            limit = f"0.{int(minor) + 1}.0"
+        else:
+            limit = f"{int(major) + 1}.0.0"
+    elif minor:
+        if major == "0":
+            limit = f"0.{int(minor) + 1}.0"
+        else:
+            limit = f"{int(major) + 1}.0.0"
+    else:
+        limit = f"{int(major) + 1}.0.0"
+    return f">={version},<{limit}"
 
 
-def handle_tilde_requirements(ver: str, vers: List[str]) -> List[str]:
-    """
-    Compatible versions based on specified major, minor, and patch version
-    ~1.2.3	>=1.2.3 <1.3.0
-    ~1.2	>=1.2.0 <1.3.0
-    ~1	    >=1.0.0 <2.0.0
-    """
-    dot_count = ver.count(".")
-    svi = semver.VersionInfo.parse(ver)
-    if dot_count in (1, 0):
-        vers = [x for x in vers if semver.VersionInfo.parse(x).major == svi.major]
-    elif dot_count >= 2:
-        vers = [
-            x
-            for x in vers
-            if semver.VersionInfo.parse(x).minor == svi.minor
-            and semver.VersionInfo.parse(x).major == svi.major
-        ]
-    return vers
+def handle_tilde(req: str, is_php: bool = False) -> str:
+    """Handle tilde based requirement constraints"""
+    _, version = req.split("~", 1)
+    major, minor, patch, *_ = (version + "...").split(".")
+    if patch:
+        limit = f"{major}.{int(minor) + 1}.0"
+    elif minor and not is_php:
+        # if major.minor is given php wont lock the minor version
+        limit = f"{major}.{int(minor) + 1}.0"
+    else:
+        limit = f"{int(major) + 1}.0.0"
+    return f">={version},<{limit}"
 
 
-def handle_caret_requirements(ver: str, vers: List[str]) -> List[str]:
-    """
-    Compatible versions based on specified version
-    ^1.2.3	>=1.2.3 <2.0.0
-    ^1.2	>=1.2.0 <2.0.0
-    ^1	    >=1.0.0 <2.0.0
-    ^0.2.3	>=0.2.3 <0.3.0
-    ^0.0.3	>=0.0.3 <0.0.4
-    ^0.0	>=0.0.0 <0.1.0
-    ^0	    >=0.0.0 <1.0.0
-    """
-    dot_count = ver.count(".")
-    svi = semver.VersionInfo.parse(ver)
-    if svi.major != 0 or dot_count == 0:
-        vers = [x for x in vers if semver.VersionInfo.parse(x).major == svi.major]
-    elif svi.minor != 0 or dot_count == 1:
-        vers = [
-            x
-            for x in vers
-            if semver.VersionInfo.parse(x).minor == svi.minor
-            and semver.VersionInfo.parse(x).major == svi.major
-        ]
-    elif svi.patch != 0:
-        vers = [
-            x
-            for x in vers
-            if semver.VersionInfo.parse(x).patch == svi.patch
-            and semver.VersionInfo.parse(x).minor == svi.minor
-            and semver.VersionInfo.parse(x).major == svi.major
-        ]
-    return vers
+def try_version(value):
+    """If version parsing fails defer the version"""
+    try:
+        return Version(value)
+    except InvalidVersion:
+        return Version("9999.9999.9999")
