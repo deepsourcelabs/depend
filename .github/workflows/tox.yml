@@ -14,6 +14,10 @@ jobs:
         python-version: ["3.10"]
     name: Python ${{ matrix.python-version }} tests
     steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.0
+        with:
+          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
       - name: Setup python
         uses: actions/setup-python@v2
@@ -30,5 +34,5 @@ jobs:
         uses: deepsourcelabs/test-coverage-action@master
         with:
           key: python
-          coverage-file: coverage.xml
+          coverage-file: ./coverage.xml
           dsn: ${{ secrets.DEEPSOURCE_DSN }}
