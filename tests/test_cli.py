@@ -74,7 +74,7 @@ def test_go_mod(json_schema):
         lang="go",
         packages=None,
         dep_file=Path("tests/data/example_go.mod"),
-        depth=None,
+        depth=5,
     )
     assert json_schema.is_valid(result)
 
@@ -85,7 +85,7 @@ def test_package_json(json_schema):
         lang="javascript",
         packages=None,
         dep_file=Path("tests/data/example_package.json"),
-        depth=None,
+        depth=5,
     )
     assert json_schema.is_valid(result)
 
@@ -96,7 +96,7 @@ def test_npm_shrinkwrap_json(json_schema):
         lang="javascript",
         packages=None,
         dep_file=Path("tests/data/example_npm_shrinkwrap.json"),
-        depth=None,
+        depth=5,
     )
     assert json_schema.is_valid(result)
 
@@ -107,7 +107,7 @@ def test_package_lock_json(json_schema):
         lang="javascript",
         packages=None,
         dep_file=Path("tests/data/example_package_lock.json"),
-        depth=None,
+        depth=5,
     )
     assert json_schema.is_valid(result)
 
@@ -118,7 +118,7 @@ def test_yarn_v1_lock(json_schema):
         lang="javascript",
         packages=None,
         dep_file=Path("tests/data/example_v1_yarn.lock"),
-        depth=None,
+        depth=5,
     )
     assert json_schema.is_valid(result)
 
@@ -129,7 +129,7 @@ def test_yarn_v2_lock(json_schema):
         lang="javascript",
         packages=None,
         dep_file=Path("tests/data/example_v2_yarn.lock"),
-        depth=None,
+        depth=5,
     )
     assert json_schema.is_valid(result)
 
@@ -140,7 +140,7 @@ def test_requirements_txt(json_schema):
         lang="python",
         packages=None,
         dep_file=Path("tests/data/example_requirements.txt"),
-        depth=None,
+        depth=5,
     )
     assert json_schema.is_valid(result)
 
@@ -151,7 +151,7 @@ def test_setup_py(json_schema):
         lang="python",
         packages=None,
         dep_file=Path("tests/data/example_setup.py"),
-        depth=None,
+        depth=5,
     )
     assert json_schema.is_valid(result)
 
@@ -174,7 +174,7 @@ def test_pyproject_toml(json_schema):
         lang="python",
         packages=None,
         dep_file=Path("tests/data/example_pyproject.toml"),
-        depth=None,
+        depth=5,
     )
     assert json_schema.is_valid(result)
 
@@ -185,7 +185,7 @@ def test_poetry_toml(json_schema):
         lang="python",
         packages=None,
         dep_file=Path("tests/data/example_pyproject_poetry.toml"),
-        depth=None,
+        depth=5,
     )
     assert json_schema.is_valid(result)
 
@@ -197,6 +197,6 @@ def test_unsupported(json_schema):
             lang="python",
             packages=None,
             dep_file=Path("tests/data/example_pipfile"),
-            depth=None,
+            depth=5,
         )
         assert json_schema.is_valid(result)
