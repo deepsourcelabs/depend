@@ -16,7 +16,7 @@ app = typer.Typer()
 logging.getLogger().setLevel(logging.INFO)
 
 
-@app.callback()
+@app.callback(invoke_without_command=True)
 def main(
     lang: str = typer.Option(None),
     packages: Optional[str] = typer.Option(None),
@@ -80,5 +80,5 @@ def main(
         except (LanguageNotSupportedError, VCSNotSupportedError, ParamMissing) as e:
             logging.error(e.msg)
             sys.exit(-1)
-    # logging.info(json.dumps(result, indent=3))
+    logging.info(json.dumps(result, indent=3))
     return result

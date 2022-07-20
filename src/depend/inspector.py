@@ -126,7 +126,7 @@ def make_single_request(
     version: str = "",
     force_schema: bool = True,
     all_ver: bool = False,
-) -> Tuple[dict | Result | List[Result], List[str]]:
+) -> Tuple[dict | Result | List[Result], Set[str]]:
     """
     Obtain package license and dependency information.
     :param language: python, javascript or go
@@ -233,15 +233,14 @@ def make_single_request(
                 logging.error(
                     f"{response.status_code}: {url} maybe git: {find_github(response.text)}"
                 )
-        for dep in result.get("pkg_dep", []):
-            rem_dep.add(dep)
+        rem_dep = set(result.get("pkg_dep", []))
         result_list.append(result)
     if not result_list:
         result_list = [result]
     if force_schema:
-        return parse_dep_response(result_list), list(rem_dep)
+        return parse_dep_response(result_list), rem_dep
     else:
-        return result_list, list(rem_dep)
+        return result_list, rem_dep
 
 
 def make_multiple_requests(
@@ -249,6 +248,7 @@ def make_multiple_requests(
     packages: List[str],
     depth: Optional[int] = None,
     result: Optional[list] = None,
+    _already_queried: Optional[Set] = None
 ) -> List[Any]:
     """
     Obtain license and dependency information for list of packages.
@@ -256,23 +256,27 @@ def make_multiple_requests(
     :param packages: a list of dependencies in each language
     :param depth: depth of recursion, None for no limit and 0 for input parsing alone
     :param result: optional result object to apend to during revursion
+    :param _already_queried: set that keeps track of queried packages
     :return: result object with name version license and dependencies
     """
-    deps = []
+    if _already_queried is None:
+        _already_queried = set()
     if result is None:
         result = []
+    deps = set()
     for package_d in packages:
-        name_ver = package_d.rsplit(";", 1)
-        if len(name_ver) == 1:
-            dep_resp, deps = make_single_request(language, name_ver[0])
-        else:
-            dep_resp, deps = make_single_request(language, name_ver[0], name_ver[1])
+        name, ver = package_d.rsplit(";", 1)
+        dep_resp, res_deps = make_single_request(language, name, ver)
         result.append(dep_resp)
+        deps = deps.union(res_deps)
+        _already_queried.add(package_d)
+    deps.difference_update(_already_queried)
     # higher levels may ignore version specifications
+    if  len(deps) == 0:
+        return result
     if depth is None:
-        return make_multiple_requests(language, deps, result=result)
+        return make_multiple_requests(language, list(deps), result=result, _already_queried=_already_queried)
     elif isinstance(depth, int) and depth > 0:
-        print("deps:", deps)
-        return make_multiple_requests(language, deps, depth - 1, result)
+        return make_multiple_requests(language, list(deps), depth - 1, result, _already_queried)
     else:
         return result
