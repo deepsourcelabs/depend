@@ -202,11 +202,14 @@ def make_single_request(
         # Collect repo if available to do vcs query if data incomplete
         match language:
             case "python":
-                repo = handle_pypi(response, queries, result)
+                # repo =
+                handle_pypi(response, queries, result)
             case "javascript":
-                repo = handle_npmjs(response, queries, result)
+                # repo =
+                handle_npmjs(response, queries, result)
             case "cs":
-                repo = handle_cs(response, queries, result)
+                # repo =
+                handle_cs(response, queries, result)
             case "php":
                 handle_php(response, queries, result, ver)
             case "rust":
