@@ -162,9 +162,10 @@ def test_setup_cfg(json_schema):
         lang="python",
         packages=None,
         dep_file=Path("tests/data/example_setup.cfg"),
-        depth=None,
+        depth=7,
     )
     assert json_schema.is_valid(result)
+    assert False
 
 
 def test_pyproject_toml(json_schema):

@@ -80,5 +80,5 @@ def main(
         except (LanguageNotSupportedError, VCSNotSupportedError, ParamMissing) as e:
             logging.error(e.msg)
             sys.exit(-1)
-    logging.info(json.dumps(result, indent=3))
+    # logging.info(json.dumps(result, indent=3))
     return result

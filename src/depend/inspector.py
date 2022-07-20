@@ -269,9 +269,10 @@ def make_multiple_requests(
             dep_resp, deps = make_single_request(language, name_ver[0], name_ver[1])
         result.append(dep_resp)
     # higher levels may ignore version specifications
-    if depth is None and deps:
+    if depth is None:
         return make_multiple_requests(language, deps, result=result)
     elif isinstance(depth, int) and depth > 0:
+        print("deps:", deps)
         return make_multiple_requests(language, deps, depth - 1, result)
     else:
         return result
