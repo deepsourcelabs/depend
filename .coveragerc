@@ -1,6 +1,5 @@
 # .coveragerc to control coverage.py
 [run]
-include=src/depend/**
 branch = True
 omit = tests/**
 
