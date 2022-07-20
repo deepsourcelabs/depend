@@ -165,7 +165,6 @@ def test_setup_cfg(json_schema):
         depth=7,
     )
     assert json_schema.is_valid(result)
-    assert False
 
 
 def test_pyproject_toml(json_schema):
