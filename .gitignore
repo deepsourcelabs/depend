@@ -11,6 +11,6 @@ coverage.xml
 venv*
 *.pyc
 *.egg-info
-build
+/build
 dist
 .tox

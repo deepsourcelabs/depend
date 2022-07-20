@@ -190,7 +190,19 @@ def handle_npmjs(api_response: Response, queries: dict, result: Result):
         result["pkg_ver"] = version
     else:
         logging.error("Version query failed")
-    result["pkg_lic"] = license_q.search(data) or ["Other"]
+    pkg_lic = ["Other"]
+    lic_info = license_q.search(data)
+    if isinstance(lic_info, str):
+        pkg_lic = lic_info.split(",")
+    #     The cases below are just to as to add support for older packages
+    elif isinstance(lic_info, dict):
+        pkg_lic = [lic_info.get("type", "Other")]
+    elif lic_info and isinstance(lic_info, list):
+        if isinstance(lic_info[0], dict):
+            pkg_lic = list({single_lic.get("type", "Other") for single_lic in lic_info})
+        elif isinstance(lic_info[0], str):
+            pkg_lic = lic_info
+    result["pkg_lic"] = pkg_lic
     dep_data = dependencies_q.search(data)
     if dep_data:
         result["pkg_dep"] = [";".join(tup) for tup in dep_data.items()]

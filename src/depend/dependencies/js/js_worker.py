@@ -56,14 +56,17 @@ def handle_json(req_file_data: str) -> Result:
         # This was added because of a failing case in tests
         lang_ver = []
     pkg_lic = ["Other"]
-    lic_info = package_data.get("license", "Other")
+    lic_info = package_data.get("license")
     if isinstance(lic_info, str):
         pkg_lic = lic_info.split(",")
-    #     The 2 cases below are just to as to add support for older packages
+    #     The cases below are just to as to add support for older packages
     elif isinstance(lic_info, dict):
         pkg_lic = [lic_info.get("type", "Other")]
-    elif isinstance(lic_info, list):
-        pkg_lic = list({single_lic.get("type", "Other") for single_lic in lic_info})
+    elif lic_info and isinstance(lic_info, list):
+        if isinstance(lic_info[0], dict):
+            pkg_lic = list({single_lic.get("type", "Other") for single_lic in lic_info})
+        elif isinstance(lic_info[0], str):
+            pkg_lic = lic_info
     filter_dict: Result = {
         "import_name": "",
         "lang_ver": lang_ver,
