@@ -265,8 +265,11 @@ def make_multiple_requests(
         result = []
     deps = set()
     for package_d in packages:
-        name, ver = package_d.rsplit(";", 1)
-        dep_resp, res_deps = make_single_request(language, name, ver)
+        name_ver = package_d.rsplit(";", 1)
+        if len(name_ver) == 1:
+            dep_resp, res_deps = make_single_request(language, name_ver[0])
+        else:
+            dep_resp, res_deps = make_single_request(language, name_ver[0], name_ver[1])
         result.append(dep_resp)
         deps = deps.union(res_deps)
         _already_queried.add(package_d)
