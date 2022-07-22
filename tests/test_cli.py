@@ -1,6 +1,4 @@
 """Test cli and overall pipeline for murdock"""
-from pathlib import Path
-
 import pytest
 from jsonschema import validate
 
@@ -71,7 +69,7 @@ def test_cs(json_schema):
     """C# fetching test"""
     result = main(
         lang="cs",
-        packages="System.Diagnostics.Contracts;4.3.0",
+        packages="System.Runtime",
         dep_file=None,
         depth=None,
     )
@@ -79,7 +77,6 @@ def test_cs(json_schema):
     assert set().union(*(d.keys() for d in result)) == {
         "Microsoft.NETCore.Platforms",
         "System.Runtime",
-        "System.Diagnostics.Contracts",
         "Microsoft.NETCore.Targets",
     }
 
