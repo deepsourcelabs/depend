@@ -248,7 +248,7 @@ def make_multiple_requests(
     packages: List[str],
     depth: Optional[int] = None,
     result: Optional[list] = None,
-    _already_queried: Optional[Set] = None
+    _already_queried: Optional[Set] = None,
 ) -> List[Any]:
     """
     Obtain license and dependency information for list of packages.
@@ -275,11 +275,15 @@ def make_multiple_requests(
         _already_queried.add(package_d)
     deps.difference_update(_already_queried)
     # higher levels may ignore version specifications
-    if  len(deps) == 0:
+    if len(deps) == 0:
         return result
     if depth is None:
-        return make_multiple_requests(language, list(deps), result=result, _already_queried=_already_queried)
+        return make_multiple_requests(
+            language, list(deps), result=result, _already_queried=_already_queried
+        )
     elif isinstance(depth, int) and depth > 0:
-        return make_multiple_requests(language, list(deps), depth - 1, result, _already_queried)
+        return make_multiple_requests(
+            language, list(deps), depth - 1, result, _already_queried
+        )
     else:
         return result
