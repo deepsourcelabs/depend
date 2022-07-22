@@ -74,7 +74,7 @@ def test_cs(json_schema):
         depth=None,
     )
     assert json_schema.is_valid(result)
-    assert set().union(*(d.keys() for d in result)) == {
+    assert {key for res_obj in result for key in res_obj} == {
         "Microsoft.NETCore.Platforms",
         "System.Runtime",
         "System.IO",
@@ -93,7 +93,7 @@ def test_go(json_schema):
         depth=None,
     )
     assert json_schema.is_valid(result)
-    assert set().union(*(d.keys() for d in result)) == {
+    assert {key for res_obj in result for key in res_obj} == {
         "abi",
         "math",
         "cpu",
@@ -120,7 +120,7 @@ def test_js(json_schema):
         depth=None,
     )
     assert json_schema.is_valid(result)
-    assert set().union(*(d.keys() for d in result)) == {
+    assert {key for res_obj in result for key in res_obj} == {
         "json-schema-traverse",
         "uri-js",
         "require-from-string",
@@ -139,7 +139,7 @@ def test_php(json_schema):
         depth=None,
     )
     assert json_schema.is_valid(result)
-    assert set().union(*(d.keys() for d in result)) == {
+    assert {key for res_obj in result for key in res_obj} == {
         "symfony/polyfill-ctype",
         "symfony/service-contracts",
         "psr/log",
@@ -165,7 +165,7 @@ def test_python(json_schema):
         depth=None,
     )
     assert json_schema.is_valid(result)
-    assert set().union(*(d.keys() for d in result)) == {
+    assert {key for res_obj in result for key in res_obj} == {
         "cached-property",
         "pycparser",
         "pygit2",
@@ -182,7 +182,7 @@ def test_rust(json_schema):
         depth=None,
     )
     assert json_schema.is_valid(result)
-    assert set().union(*(d.keys() for d in result)) == {
+    assert {key for res_obj in result for key in res_obj} == {
         "rustc-std-workspace-core",
         "libc",
     }

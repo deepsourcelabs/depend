@@ -259,6 +259,7 @@ def make_multiple_requests(
     :param _already_queried: set that keeps track of queried packages
     :return: result object with name version license and dependencies
     """
+    logging.warning(f"{language} :", packages)
     if _already_queried is None:
         _already_queried = set()
     if result is None:
