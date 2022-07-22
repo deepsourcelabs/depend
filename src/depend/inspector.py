@@ -169,7 +169,6 @@ def make_single_request(
         queries = REGISTRY[language]
         # Get all available versions for specified package
         red_url, response = red_req(url)
-        logging.warning(f"{version_constraints} :" + url)
         match language:
             case "python":
                 vers = py_versions(response, queries)
@@ -186,6 +185,7 @@ def make_single_request(
         # Parse only one version resolved from constraint provided
         if not all_ver and vers:
             resolved_version = resolve_version(vers, version_constraints)
+            logging.warning(resolved_version)
             if resolved_version is not None:
                 vers = [resolved_version]
             else:
@@ -199,6 +199,7 @@ def make_single_request(
         url = make_url(language, package, ver)
         logging.info(url)
         response = requests.get(url)
+        logging.warning(url)
         queries = REGISTRY[language]
         # Collect repo if available to do vcs query if data incomplete
         match language:
