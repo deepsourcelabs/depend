@@ -216,12 +216,14 @@ def make_single_request(
                 handle_rust(response, queries, result, url)
             case "go":
                 if response.status_code == 200:
+                    logging.warning(f"URL parsed: {url}")
                     red_url = url
                     if response.history:
                         red_url = response.url + "@" + version
                         response = requests.get(red_url)
                     scrape_go(response, queries, result, red_url)
                 elif not repo:
+                    logging.warning(f"URL parsed: {url} failed with response {response.text}")
                     repo = package
         if repo:
             try:
