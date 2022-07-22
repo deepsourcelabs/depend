@@ -7,7 +7,7 @@ from typing import Any, List, Optional, Set, Tuple
 from requests import Response
 
 from depend.constants import REGISTRY
-from depend.dep_helper import red_req, requests
+from depend.dep_helper import requests
 from depend.dependencies.dep_types import Result
 from depend.dependencies.helper import (
     fix_constraint,
@@ -168,7 +168,9 @@ def make_single_request(
         url = make_url(language, package)
         queries = REGISTRY[language]
         # Get all available versions for specified package
-        red_url, response = red_req(url)
+        """Request get with protection against 302 redirects"""
+        response = requests.get(url)
+        red_url = url
         logging.warning(f"{red_url}  {url}")
         match language:
             case "python":
@@ -176,6 +178,10 @@ def make_single_request(
             case "javascript":
                 vers = js_versions(response, queries)
             case "go":
+                if response.status_code == 200:
+                    # Handle 302: Redirection
+                    if response.history:
+                        red_url = response.url
                 vers = go_versions(red_url, queries)
             case "cs":
                 vers = nuget_versions(response, queries)

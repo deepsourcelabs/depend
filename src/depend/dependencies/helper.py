@@ -141,11 +141,9 @@ def handle_cs(api_response: Response, queries: dict, result: Result):
     :param result: object to mutate
     """
     _ = queries
-    logging.warning(f"NUSPEC: {api_response.text}")
     if api_response.status_code == 404:
         return ""
     req_file_data = api_response.text
-    logging.warning(f"NUSPEC: {req_file_data}")
     pkg_dep, root = parse_nuspec(req_file_data, result)
     result["pkg_dep"] = list(pkg_dep)
     # @type = git
@@ -323,7 +321,6 @@ def rust_versions(api_response: Response, queries: dict) -> list:
 
 def default_versions(api_response, queries):
     """Default API query structure for obtaining versions"""
-    logging.warning(api_response.text)
     if api_response.status_code == 404:
         return []
     data = api_response.json()
@@ -331,7 +328,6 @@ def default_versions(api_response, queries):
     versions = versions_q.search(data)
     if not versions:
         return []
-    logging.warning(versions)
     return versions
 
 
