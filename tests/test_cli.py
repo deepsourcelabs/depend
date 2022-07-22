@@ -69,7 +69,7 @@ def test_cs(json_schema):
     """C# fetching test"""
     result = main(
         lang="cs",
-        packages="System.Runtime",
+        packages="System.IO;4.3.0",
         dep_file=None,
         depth=None,
     )
@@ -77,7 +77,10 @@ def test_cs(json_schema):
     assert set().union(*(d.keys() for d in result)) == {
         "Microsoft.NETCore.Platforms",
         "System.Runtime",
+        "System.IO",
         "Microsoft.NETCore.Targets",
+        "System.Text.Encoding",
+        "System.Threading.Tasks",
     }
 
 
