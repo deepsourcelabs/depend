@@ -215,9 +215,7 @@ def make_single_request(
             case "rust":
                 handle_rust(response, queries, result, url)
             case "go":
-                logging.warning(f"URL checked: {url} with response {response.text}")
                 if response.status_code == 200:
-                    logging.warning(f"URL parsed: {url}")
                     red_url = url
                     if response.history:
                         red_url = response.url + "@" + version

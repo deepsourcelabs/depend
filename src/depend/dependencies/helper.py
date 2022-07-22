@@ -141,9 +141,11 @@ def handle_cs(api_response: Response, queries: dict, result: Result):
     :param result: object to mutate
     """
     _ = queries
+    logging.warning(f"NUSPEC: {api_response.text}")
     if api_response.status_code == 404:
         return ""
     req_file_data = api_response.text
+    logging.warning(f"NUSPEC: {req_file_data}")
     pkg_dep, root = parse_nuspec(req_file_data, result)
     result["pkg_dep"] = list(pkg_dep)
     # @type = git
