@@ -169,6 +169,7 @@ def make_single_request(
         queries = REGISTRY[language]
         # Get all available versions for specified package
         red_url, response = red_req(url)
+        logging.warning(f"{red_url}  {url}")
         match language:
             case "python":
                 vers = py_versions(response, queries)
