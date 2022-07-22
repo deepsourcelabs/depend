@@ -183,7 +183,6 @@ def make_single_request(
             case "rust":
                 vers = rust_versions(response, queries)
         # Parse only one version resolved from constraint provided
-        logging.warning(f"{vers} {all_ver}")
         if not all_ver and vers:
             resolved_version = resolve_version(vers, version_constraints)
             logging.warning(resolved_version)
