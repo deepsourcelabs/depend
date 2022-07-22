@@ -169,6 +169,7 @@ def make_single_request(
         queries = REGISTRY[language]
         # Get all available versions for specified package
         red_url, response = red_req(url)
+        logging.warning(f"{version_constraints} :" + url)
         match language:
             case "python":
                 vers = py_versions(response, queries)
@@ -259,7 +260,6 @@ def make_multiple_requests(
     :param _already_queried: set that keeps track of queried packages
     :return: result object with name version license and dependencies
     """
-    logging.warning(f"{language} :" + str(packages))
     if _already_queried is None:
         _already_queried = set()
     if result is None:
