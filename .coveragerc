@@ -1,7 +1,15 @@
 # .coveragerc to control coverage.py
+[paths]
+source =
+   src
+   */site-packages
+
 [run]
-branch = True
-omit = tests/**
+branch = true
+parallel = true
+source =
+    depend
+    tests
 
 [report]
 # Regexes for lines to exclude from consideration
