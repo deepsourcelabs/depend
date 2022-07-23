@@ -1,5 +1,6 @@
 """License & Version Extractor"""
 import logging
+import os
 import re
 from datetime import datetime
 from typing import Any, List, Optional, Set, Tuple
@@ -171,6 +172,7 @@ def make_single_request(
         """Request get with protection against 302 redirects"""
         response = requests.get(url)
         red_url = url
+        logging.warning(os.system('curl -v https://api.nuget.org/v3-flatcontainer/System.IO/index.json'))
         logging.warning(f"{red_url}")
         logging.warning(f"{response.text}")
         match language:
