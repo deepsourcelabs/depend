@@ -1,6 +1,5 @@
 """License & Version Extractor"""
 import logging
-import os
 import re
 from datetime import datetime
 from typing import Any, List, Optional, Set, Tuple
@@ -170,7 +169,6 @@ def make_single_request(
         url = make_url(language, package)
         queries = REGISTRY[language]
         # Get all available versions for specified package
-        """Request get with protection against 302 redirects"""
         response = requests.get(url)
         red_url = url
         match language:
