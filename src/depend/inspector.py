@@ -80,6 +80,7 @@ def make_url(language: str, package: str, version: str = "") -> str:
             else:
                 url_elements = (str(REGISTRY[language]["url"]), package)
         case "cs":
+            package = package.lower()
             if version:
                 url_elements = (
                     REGISTRY[language]["url"],
@@ -172,9 +173,6 @@ def make_single_request(
         """Request get with protection against 302 redirects"""
         response = requests.get(url)
         red_url = url
-        logging.warning(os.system('curl -v https://api.nuget.org/v3-flatcontainer/system.io/index.json'))
-        logging.warning(f"{red_url}")
-        logging.warning(f"{response.text}")
         match language:
             case "python":
                 vers = py_versions(response, queries)
@@ -196,7 +194,6 @@ def make_single_request(
         logging.info(vers)
         if not all_ver and vers:
             resolved_version = resolve_version(vers, version_constraints)
-            logging.warning(resolved_version)
             if resolved_version is not None:
                 vers = [resolved_version]
             else:
@@ -210,7 +207,6 @@ def make_single_request(
         url = make_url(language, package, ver)
         logging.info(url)
         response = requests.get(url)
-        logging.warning(url)
         queries = REGISTRY[language]
         # Collect repo if available to do vcs query if data incomplete
         match language:

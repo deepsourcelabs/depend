@@ -321,7 +321,6 @@ def rust_versions(api_response: Response, queries: dict) -> list:
 
 def default_versions(api_response, queries):
     """Default API query structure for obtaining versions"""
-    logging.warning(api_response.text)
     if api_response.status_code == 404:
         return []
     data = api_response.json()
@@ -329,7 +328,6 @@ def default_versions(api_response, queries):
     versions = versions_q.search(data)
     if not versions:
         return []
-    logging.warning(versions)
 
 
 def js_versions(api_response: Response, queries: dict) -> list:
