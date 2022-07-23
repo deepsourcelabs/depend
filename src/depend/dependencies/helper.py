@@ -328,6 +328,7 @@ def default_versions(api_response, queries):
     versions = versions_q.search(data)
     if not versions:
         return []
+    return versions
 
 
 def js_versions(api_response: Response, queries: dict) -> list:
