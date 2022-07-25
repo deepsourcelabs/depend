@@ -26,7 +26,7 @@ def find_github(text: str) -> Match[str] | None:
     :param text: string to check
     """
     repo_identifier = re.search(
-        r"github.com/([^/]+)/([^/.\r\n]+)(?:/tree/|)?([^/.\r\n]+)?", text
+        r"github.com/([^/]+)/([^/.\r\n\'\"]+)(?:/tree/|)?([^/.\r\n\'\"]+)?", text
     )
     return repo_identifier
 
