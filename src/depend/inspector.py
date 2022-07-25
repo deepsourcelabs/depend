@@ -79,6 +79,7 @@ def make_url(language: str, package: str, version: str = "") -> str:
             else:
                 url_elements = (str(REGISTRY[language]["url"]), package)
         case "cs":
+            # Repository expects package name to be lowercase for it to work reliably
             package = package.lower()
             if version:
                 url_elements = (
@@ -189,7 +190,7 @@ def make_single_request(
             case "rust":
                 vers = rust_versions(response, queries)
         # Parse only one version resolved from constraint provided
-        logging.info(vers)
+        logging.debug(vers)
         if not all_ver and vers:
             resolved_version = resolve_version(vers, version_constraints)
             if resolved_version is not None:
@@ -263,8 +264,6 @@ def make_multiple_requests(
     :param _already_queried: set that keeps track of queried packages
     :return: result object with name version license and dependencies
     """
-    if _already_queried is None:
-        _already_queried = set()
     if result is None:
         result = []
     deps = set()
