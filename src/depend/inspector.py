@@ -253,17 +253,33 @@ def make_multiple_requests(
     packages: List[str],
     depth: Optional[int] = None,
     result: Optional[list] = None,
-    _already_queried: Optional[Set] = None,
 ) -> List[Any]:
     """
     Obtain license and dependency information for list of packages.
     :param language: python, javascript or go
     :param packages: a list of dependencies in each language
     :param depth: depth of recursion, None for no limit and 0 for input parsing alone
-    :param result: optional result object to apend to during revursion
+    :param result: optional result object to append to during recursion
     :param _already_queried: set that keeps track of queried packages
     :return: result object with name version license and dependencies
     """
+    return make_multiple_requests(
+        language,
+        packages,
+        depth,
+        result,
+        _already_queried=set(),
+    )
+
+
+def make_multiple_requests(
+    language: str,
+    packages: List[str],
+    depth: Optional[int] = None,
+    result: Optional[list] = None,
+    _already_queried: Optional[Set] = None,
+) -> List[Any]:
+    """Recursive implementation of make_multiple_requests, with caching."""
     if result is None:
         result = []
     deps = set()
