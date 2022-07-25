@@ -23,10 +23,12 @@ class Helpers:
                 "lang_ver": {"type": "array", "items": {"type": "string"}},
                 "pkg_name": {"type": "string"},
                 "pkg_ver": {"type": "string"},
-                "pkg_dep": {"anyOf": [
-                    {"type": "array", "items": {"type": "string"}},
-                    {"type": "null"}
-                ]},
+                "pkg_dep": {
+                    "anyOf": [
+                        {"type": "array", "items": {"type": "string"}},
+                        {"type": "null"},
+                    ]
+                },
                 "pkg_err": {"type": "object"},
                 "pkg_lic": {"type": "array", "items": {"type": "string"}},
                 "timestamp": {"type": "string"},

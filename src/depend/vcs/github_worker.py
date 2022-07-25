@@ -26,7 +26,9 @@ def verify_run(language, result, file_extension="git") -> list[str]:
     )
     # If v is None that means pkg_dep was null from PyPI
     retrievable_keys = [
-        k for k, v in result.items() if not v and v is not None and k not in unavailable_keys
+        k
+        for k, v in result.items()
+        if not v and v is not None and k not in unavailable_keys
     ]
     if result["pkg_lic"][0] == "Other" and "pkg_lic" not in unavailable_keys:
         retrievable_keys.append("pkg_lic")
