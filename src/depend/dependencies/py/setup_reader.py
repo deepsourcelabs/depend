@@ -91,6 +91,7 @@ class LaxSetupReader(SetupReader):
         pkg_dep = self._find_install_requires(setup_call, body)
         if isinstance(pkg_dep, str) and repo_identifier:
             g = get_github()
+            logging.info("Repo:", repo_identifier.groups())
             repo = g.get_repo(repo_identifier.group(1) + "/" + repo_identifier.group(2))
             commit_branch_tag = repo_identifier.group(3) or repo.default_branch
             try:

@@ -297,11 +297,11 @@ def _make_multiple_requests(
     if len(deps) == 0:
         return result
     if depth is None:
-        return make_multiple_requests(
+        return _make_multiple_requests(
             language, list(deps), result=result, _already_queried=_already_queried
         )
     elif isinstance(depth, int) and depth > 0:
-        return make_multiple_requests(
+        return _make_multiple_requests(
             language, list(deps), depth - 1, result, _already_queried
         )
     else:
