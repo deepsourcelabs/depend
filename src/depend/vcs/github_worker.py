@@ -24,6 +24,7 @@ def verify_run(language, result, file_extension="git") -> list[str]:
     unavailable_keys = constants.DEP_FIELDS_MISSED.get(language, {}).get(
         file_extension, []
     )
+    # If v is None that means pkg_dep was null from PyPI
     retrievable_keys = [
         k for k, v in result.items() if not v and v is not None and k not in unavailable_keys
     ]
