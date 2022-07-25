@@ -263,7 +263,7 @@ def make_multiple_requests(
     :param _already_queried: set that keeps track of queried packages
     :return: result object with name version license and dependencies
     """
-    return make_multiple_requests(
+    return _make_multiple_requests(
         language,
         packages,
         depth,
@@ -272,7 +272,7 @@ def make_multiple_requests(
     )
 
 
-def make_multiple_requests(
+def _make_multiple_requests(
     language: str,
     packages: List[str],
     depth: Optional[int] = None,
