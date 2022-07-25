@@ -238,7 +238,7 @@ def make_single_request(
                 logging.error(
                     f"{response.status_code}: {url} maybe git: {find_github(response.text)}"
                 )
-        rem_dep = set(result.get("pkg_dep", []))
+        rem_dep = set(result.get("pkg_dep") or [])
         result_list.append(result)
     if not result_list:
         result_list = [result]
@@ -260,7 +260,6 @@ def make_multiple_requests(
     :param packages: a list of dependencies in each language
     :param depth: depth of recursion, None for no limit and 0 for input parsing alone
     :param result: optional result object to append to during recursion
-    :param _already_queried: set that keeps track of queried packages
     :return: result object with name version license and dependencies
     """
     return _make_multiple_requests(
@@ -279,7 +278,11 @@ def _make_multiple_requests(
     result: Optional[list] = None,
     _already_queried: Optional[Set] = None,
 ) -> List[Any]:
-    """Recursive implementation of make_multiple_requests, with caching."""
+    """
+    Recursive implementation of make_multiple_requests, with caching.
+    :param _already_queried: set that keeps track of queried packages
+    """
+    logging.debug("Fetching packages: %s", packages)
     if result is None:
         result = []
     deps = set()

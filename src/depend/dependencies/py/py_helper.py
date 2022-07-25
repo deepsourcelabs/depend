@@ -20,14 +20,17 @@ def handle_requirements_txt(req_file_data: str) -> Result:
         "pkg_ver": "",
         "pkg_lic": ["Other"],
         "pkg_err": {},
-        "pkg_dep": [],
+        "pkg_dep": None,
         "timestamp": datetime.utcnow().isoformat(),
     }
     install_reqs = parse_requirements(req_file_data)
     ir: packaging.specifiers.SpecifierSet
+    pkg_dep = []
     for ir in install_reqs:
         if not ir.specs:
-            res["pkg_dep"].append(str(ir.key) + ";" + "latest")
+            pkg_dep.append(str(ir.key) + ";" + "latest")
         else:
-            res["pkg_dep"].append(str(ir.key) + ";" + str(ir.specifier))
+            pkg_dep.append(str(ir.key) + ";" + str(ir.specifier))
+    if len(pkg_dep) > 0:
+        res["pkg_dep"] = pkg_dep
     return res

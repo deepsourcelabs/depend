@@ -128,7 +128,7 @@ def handle_pypi(api_response: Response, queries: dict, result: Result):
     result["pkg_ver"] = version_q.search(data) or ""
     result["pkg_lic"] = [license_q.search(data) or "Other"]
     req_file_data = "\n".join(dependencies_q.search(data) or "")
-    result["pkg_dep"] = handle_requirements_txt(req_file_data).get("pkg_dep", [])
+    result["pkg_dep"] = handle_requirements_txt(req_file_data).get("pkg_dep")
     repo = repo_q.search(data) or ""
     return repo
 

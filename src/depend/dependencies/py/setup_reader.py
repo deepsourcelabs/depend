@@ -292,7 +292,7 @@ class LaxSetupReader(SetupReader):
             res["pkg_ver"] = ""
         res["pkg_dep"] = handle_requirements_txt(
             parser.get("options", "install_requires", fallback="")
-        ).get("pkg_dep", [])
+        ).get("pkg_dep")
         res["lang_ver"] = parser.get("options", "python_requires", fallback="").split(
             ","
         )
