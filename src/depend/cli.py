@@ -1,10 +1,11 @@
 """CLI for murdock."""
 import json
-import logging
+import coloredlogs, logging
 import os.path
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
+from rich import print
 
 import typer
 
@@ -13,15 +14,15 @@ from depend.error import LanguageNotSupportedError, ParamMissing, VCSNotSupporte
 from depend.inspector import make_multiple_requests
 
 app = typer.Typer()
-logging.getLogger().setLevel(logging.INFO)
+coloredlogs.install(level='WARNING', fmt='%(name)s[%(process)d] %(levelname)s %(message)s')
 
 
 @app.callback(invoke_without_command=True)
 def main(
-    lang: str = typer.Option(None),
-    packages: Optional[str] = typer.Option(None),
-    dep_file: Optional[Path] = typer.Option(None),
-    depth: Optional[int] = typer.Option(None),
+    lang: str = typer.Option(..., help="python, javascript, go, cs, php, rust"),
+    packages: Optional[str] = typer.Option(None, help="rich;latest,pygit2;~=1.9.2,..."),
+    dep_file: Optional[Path] = typer.Option(None, help="Absolute or Relative Path"),
+    depth: Optional[int] = typer.Option(None, help="Recursive resolution by default"),
 ) -> List[Any]:
     """
     Dependency Inspector
@@ -33,7 +34,7 @@ def main(
     Parameters such as auth tokens and passwords can be defined in config.ini
     rather than specifying as an argument
 
-    :param lang: go, python or javascript
+    :param lang: language associated with the packages or dependency file
 
     :param packages: list of packages to check
 
@@ -55,10 +56,13 @@ def main(
         payload[lang] = dep_content.get("pkg_dep")
         result.append(parse_dep_response([dep_content]))
         if depth == 0:
-            logging.info(result)
+            print(result)
             return result
-    else:
+    elif packages:
         payload[lang] = packages
+    else:
+        logging.error("Nothing to process please specify either dep_file or packages")
+        sys.exit(-1)
     if lang not in ["go", "python", "javascript", "rust", "php", "cs"]:
         raise LanguageNotSupportedError(lang)
     for language, dependencies in payload.items():
@@ -69,7 +73,6 @@ def main(
             dep_list = dependencies
         else:
             dep_list = []
-            logging.error("Unknown Response")
         try:
             if file_extension == "lock":
                 # For a lockfile, we just want to fetch details of the dependencies
@@ -80,5 +83,5 @@ def main(
         except (LanguageNotSupportedError, VCSNotSupportedError, ParamMissing) as e:
             logging.error(e.msg)
             sys.exit(-1)
-    logging.info(json.dumps(result, indent=3))
+    print(json.dumps(result, indent=3))
     return result

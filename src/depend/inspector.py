@@ -232,7 +232,7 @@ def make_single_request(
             try:
                 handle_vcs(language, repo, result)
             except VCSNotSupportedError:
-                logging.warning(f"Unable to use VCS as unsupported: {repo}")
+                logging.info(f"Unable to use VCS as unsupported: {repo}")
         else:
             if response.status_code != 200:
                 logging.error(
