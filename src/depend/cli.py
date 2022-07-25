@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import coloredlogs
 import typer
-from rich import print
+from rich import print as rprint
 
 from depend.dependencies.helper import handle_dep_file, parse_dep_response
 from depend.error import LanguageNotSupportedError, ParamMissing, VCSNotSupportedError
@@ -59,7 +59,7 @@ def main(
         payload[lang] = dep_content.get("pkg_dep")
         result.append(parse_dep_response([dep_content]))
         if depth == 0:
-            print(result)
+            rprint(result)
             return result
     elif packages:
         payload[lang] = packages
@@ -86,5 +86,5 @@ def main(
         except (LanguageNotSupportedError, VCSNotSupportedError, ParamMissing) as e:
             logging.error(e.msg)
             sys.exit(-1)
-    print(json.dumps(result, indent=3))
+    rprint(json.dumps(result, indent=3))
     return result
