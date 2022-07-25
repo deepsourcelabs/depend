@@ -1,20 +1,23 @@
 """CLI for murdock."""
 import json
-import coloredlogs, logging
+import logging
 import os.path
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
-from rich import print
 
+import coloredlogs
 import typer
+from rich import print
 
 from depend.dependencies.helper import handle_dep_file, parse_dep_response
 from depend.error import LanguageNotSupportedError, ParamMissing, VCSNotSupportedError
 from depend.inspector import make_multiple_requests
 
 app = typer.Typer()
-coloredlogs.install(level='WARNING', fmt='%(name)s[%(process)d] %(levelname)s %(message)s')
+coloredlogs.install(
+    level="WARNING", fmt="%(name)s[%(process)d] %(levelname)s %(message)s"
+)
 
 
 @app.callback(invoke_without_command=True)
