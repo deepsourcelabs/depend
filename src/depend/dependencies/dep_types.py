@@ -1,5 +1,5 @@
 """Type definitions for murdock"""
-from typing import Optional, TypedDict
+from typing import Optional, TypedDict, Union
 
 
 class Result(TypedDict):
@@ -11,5 +11,5 @@ class Result(TypedDict):
     pkg_ver: str
     pkg_lic: list[str]
     pkg_err: dict
-    pkg_dep: list[str]
+    pkg_dep: Union[list[str], None]
     timestamp: str

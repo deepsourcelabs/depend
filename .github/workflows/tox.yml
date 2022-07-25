@@ -1,0 +1,54 @@
+name: Tox
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10"]
+    name: Python ${{ matrix.python-version }} tests
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.0
+        with:
+          access_token: ${{ github.token }}
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.tox
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
+
+      - name: Run tests and type checking
+        env:
+          GITHUB_TOKEN: ${{ secrets.PUBLIC_PAT }}
+        run: |
+          pip install tox
+          tox
+
+      - name: Report test coverage to DeepSource
+        uses: deepsourcelabs/test-coverage-action@master
+        with:
+          key: python
+          coverage-file: ./coverage.xml
+          dsn: ${{ secrets.DEEPSOURCE_DSN }}

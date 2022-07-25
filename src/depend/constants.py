@@ -117,7 +117,8 @@ LICENSE_DICT: dict = {
     "CeCILL": "CeCILL Free Software License",
     "CDDL": "Common Development and Distribution License",
     "Creative Commons Attribution 4.0": "Creative Commons Attribution 4.0 International Public License",
-    "Creative Commons Attribution-ShareAlike 4.0": "Creative Commons Attribution-ShareAlike 4.0 International Public License",
+    "Creative Commons Attribution-ShareAlike 4.0": "Creative Commons Attribution-ShareAlike 4.0 International Public "
+    "License",
     "CC0": "Creative Commons Legal Code",
     "Clear BSD": "Clear BSD License",
     "DO WHAT THE": "Do What The F*ck You Want To Public License",

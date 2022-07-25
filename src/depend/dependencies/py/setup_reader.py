@@ -15,9 +15,9 @@ from github.ContentFile import ContentFile
 from poetry.core.semver import Version, exceptions
 from poetry.utils.setup_reader import SetupReader
 
-from dependencies.dep_types import Result
-from dependencies.py.py_helper import handle_requirements_txt
-from handle_env import get_github
+from depend.dependencies.dep_types import Result
+from depend.dependencies.py.py_helper import handle_requirements_txt
+from depend.handle_env import get_github
 
 
 def find_github(text: str) -> Match[str] | None:
@@ -91,6 +91,7 @@ class LaxSetupReader(SetupReader):
         pkg_dep = self._find_install_requires(setup_call, body)
         if isinstance(pkg_dep, str) and repo_identifier:
             g = get_github()
+            logging.info("Repo: %s", repo_identifier.groups())
             repo = g.get_repo(repo_identifier.group(1) + "/" + repo_identifier.group(2))
             commit_branch_tag = repo_identifier.group(3) or repo.default_branch
             try:
@@ -291,7 +292,7 @@ class LaxSetupReader(SetupReader):
             res["pkg_ver"] = ""
         res["pkg_dep"] = handle_requirements_txt(
             parser.get("options", "install_requires", fallback="")
-        ).get("pkg_dep", [])
+        ).get("pkg_dep")
         res["lang_ver"] = parser.get("options", "python_requires", fallback="").split(
             ","
         )

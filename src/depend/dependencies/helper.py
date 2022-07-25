@@ -12,8 +12,8 @@ from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.version import InvalidVersion, Version
 from requests import Response
 
-from dep_helper import requests
-from error import FileNotSupportedError
+from depend.dep_helper import requests
+from depend.error import FileNotSupportedError
 
 from .cs.cs_worker import findkeys, handle_nuspec
 from .dep_types import Result
@@ -128,7 +128,7 @@ def handle_pypi(api_response: Response, queries: dict, result: Result):
     result["pkg_ver"] = version_q.search(data) or ""
     result["pkg_lic"] = [license_q.search(data) or "Other"]
     req_file_data = "\n".join(dependencies_q.search(data) or "")
-    result["pkg_dep"] = handle_requirements_txt(req_file_data).get("pkg_dep", [])
+    result["pkg_dep"] = handle_requirements_txt(req_file_data).get("pkg_dep")
     repo = repo_q.search(data) or ""
     return repo
 
@@ -190,7 +190,19 @@ def handle_npmjs(api_response: Response, queries: dict, result: Result):
         result["pkg_ver"] = version
     else:
         logging.error("Version query failed")
-    result["pkg_lic"] = license_q.search(data) or ["Other"]
+    pkg_lic = ["Other"]
+    lic_info = license_q.search(data)
+    if isinstance(lic_info, str):
+        pkg_lic = lic_info.split(",")
+    #     The cases below are just to as to add support for older packages
+    elif isinstance(lic_info, dict):
+        pkg_lic = [lic_info.get("type", "Other")]
+    elif lic_info and isinstance(lic_info, list):
+        if isinstance(lic_info[0], dict):
+            pkg_lic = list({single_lic.get("type", "Other") for single_lic in lic_info})
+        elif isinstance(lic_info[0], str):
+            pkg_lic = lic_info
+    result["pkg_lic"] = pkg_lic
     dep_data = dependencies_q.search(data)
     if dep_data:
         result["pkg_dep"] = [";".join(tup) for tup in dep_data.items()]
@@ -431,7 +443,7 @@ def fix_constraint(language: str, reqs: str) -> list[SpecifierSet]:
             all_constraints = [">=" + fixed_constraint]
         case "cs":
             # https://docs.microsoft.com/en-us/nuget/concepts/package-versioning#version-ranges
-            all_constraints = fix_constraint_cs(fixed_constraint)
+            all_constraints = [fix_constraint_cs(fixed_constraint)]
         case "php":
             # https://getcomposer.org/doc/articles/versions.md#writing-version-constraints
             # handle logical or
@@ -523,8 +535,7 @@ def fix_constraint_cs(fixed_constraint: str) -> str:
                 fixed_constraint = ">=" + ver_spec[0] + ",<=" + ver_spec[1]
     else:
         fixed_constraint = ">=" + fixed_constraint
-    all_constraints = [fixed_constraint]
-    return all_constraints
+    return fixed_constraint
 
 
 def fix_constraint_js(sub_constraint: str) -> str:

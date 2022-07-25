@@ -2,7 +2,7 @@
 import json
 from datetime import datetime
 
-from dependencies.dep_types import Result
+from depend.dependencies.dep_types import Result
 
 
 def handle_composer_json(req_file_data: str) -> Result:

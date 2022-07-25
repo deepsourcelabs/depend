@@ -6,10 +6,10 @@ from typing import Any, List, Optional, Set, Tuple
 
 from requests import Response
 
-from constants import REGISTRY
-from dep_helper import red_req, requests
-from dependencies.dep_types import Result
-from dependencies.helper import (
+from depend.constants import REGISTRY
+from depend.dep_helper import requests
+from depend.dependencies.dep_types import Result
+from depend.dependencies.helper import (
     fix_constraint,
     go_versions,
     handle_cs,
@@ -26,8 +26,8 @@ from dependencies.helper import (
     rust_versions,
     scrape_go,
 )
-from error import LanguageNotSupportedError, VCSNotSupportedError
-from vcs.github_worker import handle_github
+from depend.error import LanguageNotSupportedError, VCSNotSupportedError
+from depend.vcs.github_worker import handle_github
 
 
 def handle_vcs(
@@ -79,6 +79,8 @@ def make_url(language: str, package: str, version: str = "") -> str:
             else:
                 url_elements = (str(REGISTRY[language]["url"]), package)
         case "cs":
+            # Repository expects package name to be lowercase for it to work reliably
+            package = package.lower()
             if version:
                 url_elements = (
                     REGISTRY[language]["url"],
@@ -126,7 +128,7 @@ def make_single_request(
     version: str = "",
     force_schema: bool = True,
     all_ver: bool = False,
-) -> Tuple[dict | Result | List[Result], List[str]]:
+) -> Tuple[dict | Result | List[Result], Set[str]]:
     """
     Obtain package license and dependency information.
     :param language: python, javascript or go
@@ -168,13 +170,18 @@ def make_single_request(
         url = make_url(language, package)
         queries = REGISTRY[language]
         # Get all available versions for specified package
-        red_url, response = red_req(url)
+        response = requests.get(url)
+        red_url = url
         match language:
             case "python":
                 vers = py_versions(response, queries)
             case "javascript":
                 vers = js_versions(response, queries)
             case "go":
+                if response.status_code == 200:
+                    # Handle 302: Redirection
+                    if response.history:
+                        red_url = response.url
                 vers = go_versions(red_url, queries)
             case "cs":
                 vers = nuget_versions(response, queries)
@@ -183,6 +190,7 @@ def make_single_request(
             case "rust":
                 vers = rust_versions(response, queries)
         # Parse only one version resolved from constraint provided
+        logging.debug(vers)
         if not all_ver and vers:
             resolved_version = resolve_version(vers, version_constraints)
             if resolved_version is not None:
@@ -230,15 +238,14 @@ def make_single_request(
                 logging.error(
                     f"{response.status_code}: {url} maybe git: {find_github(response.text)}"
                 )
-        for dep in result.get("pkg_dep", []):
-            rem_dep.add(dep)
+        rem_dep = set(result.get("pkg_dep") or [])
         result_list.append(result)
     if not result_list:
         result_list = [result]
     if force_schema:
-        return parse_dep_response(result_list), list(rem_dep)
+        return parse_dep_response(result_list), rem_dep
     else:
-        return result_list, list(rem_dep)
+        return result_list, rem_dep
 
 
 def make_multiple_requests(
@@ -252,23 +259,53 @@ def make_multiple_requests(
     :param language: python, javascript or go
     :param packages: a list of dependencies in each language
     :param depth: depth of recursion, None for no limit and 0 for input parsing alone
-    :param result: optional result object to apend to during revursion
+    :param result: optional result object to append to during recursion
     :return: result object with name version license and dependencies
     """
-    deps = []
+    return _make_multiple_requests(
+        language,
+        packages,
+        depth,
+        result,
+        _already_queried=set(),
+    )
+
+
+def _make_multiple_requests(
+    language: str,
+    packages: List[str],
+    depth: Optional[int] = None,
+    result: Optional[list] = None,
+    _already_queried: Optional[Set] = None,
+) -> List[Any]:
+    """
+    Recursive implementation of make_multiple_requests, with caching.
+    :param _already_queried: set that keeps track of queried packages
+    """
+    logging.debug("Fetching packages: %s", packages)
     if result is None:
         result = []
+    deps = set()
     for package_d in packages:
         name_ver = package_d.rsplit(";", 1)
         if len(name_ver) == 1:
-            dep_resp, deps = make_single_request(language, name_ver[0])
+            dep_resp, res_deps = make_single_request(language, name_ver[0])
         else:
-            dep_resp, deps = make_single_request(language, name_ver[0], name_ver[1])
+            dep_resp, res_deps = make_single_request(language, name_ver[0], name_ver[1])
         result.append(dep_resp)
+        deps = deps.union(res_deps)
+        _already_queried.add(package_d)
+    deps.difference_update(_already_queried)
     # higher levels may ignore version specifications
-    if depth is None and deps:
-        return make_multiple_requests(language, deps, result=result)
+    if len(deps) == 0:
+        return result
+    if depth is None:
+        return _make_multiple_requests(
+            language, list(deps), result=result, _already_queried=_already_queried
+        )
     elif isinstance(depth, int) and depth > 0:
-        return make_multiple_requests(language, deps, depth - 1, result)
+        return _make_multiple_requests(
+            language, list(deps), depth - 1, result, _already_queried
+        )
     else:
         return result

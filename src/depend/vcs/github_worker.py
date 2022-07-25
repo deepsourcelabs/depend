@@ -9,9 +9,9 @@ from typing import Iterable
 import github.GithubException
 from github.ContentFile import ContentFile
 
-import constants
-from dependencies.helper import Result, handle_dep_file, parse_license
-from handle_env import get_github
+import depend.constants as constants
+from depend.dependencies.helper import Result, handle_dep_file, parse_license
+from depend.handle_env import get_github
 
 
 def verify_run(language, result, file_extension="git") -> list[str]:
@@ -24,8 +24,11 @@ def verify_run(language, result, file_extension="git") -> list[str]:
     unavailable_keys = constants.DEP_FIELDS_MISSED.get(language, {}).get(
         file_extension, []
     )
+    # If v is None that means pkg_dep was null from PyPI
     retrievable_keys = [
-        k for k, v in result.items() if not v and k not in unavailable_keys
+        k
+        for k, v in result.items()
+        if not v and v is not None and k not in unavailable_keys
     ]
     if result["pkg_lic"][0] == "Other" and "pkg_lic" not in unavailable_keys:
         retrievable_keys.append("pkg_lic")

@@ -1,11 +1,8 @@
 """Test cli and overall pipeline for murdock"""
-from pathlib import Path
-
 import pytest
 from jsonschema import validate
 
-from cli import main
-from error import FileNotSupportedError
+from depend.cli import main
 
 
 class Helpers:
@@ -68,134 +65,124 @@ def json_schema():
     return Helpers
 
 
-def test_go_mod(json_schema):
-    """Check go.mod file output"""
+def test_cs(json_schema):
+    """C# fetching test"""
+    result = main(
+        lang="cs",
+        packages="System.IO;4.3.0",
+        dep_file=None,
+        depth=None,
+    )
+    assert json_schema.is_valid(result)
+    assert {key for res_obj in result for key in res_obj} == {
+        "Microsoft.NETCore.Platforms",
+        "System.Runtime",
+        "System.IO",
+        "Microsoft.NETCore.Targets",
+        "System.Text.Encoding",
+        "System.Threading.Tasks",
+    }
+
+
+def test_go(json_schema):
+    """Go fetching test"""
     result = main(
         lang="go",
-        packages=None,
-        dep_file=Path("tests/data/example_go.mod"),
+        packages="reflectlite;go1.18.4",
+        dep_file=None,
         depth=None,
     )
     assert json_schema.is_valid(result)
+    assert {key for res_obj in result for key in res_obj} == {
+        "abi",
+        "math",
+        "cpu",
+        "goarch",
+        "atomic",
+        "reflectlite",
+        "unsafeheader",
+        "sys",
+        "goexperiment",
+        "runtime",
+        "goos",
+        "unsafe",
+        "bytealg",
+        "syscall",
+    }
 
 
-def test_package_json(json_schema):
-    """Check package.json file output"""
+def test_js(json_schema):
+    """JavaScript fetching test"""
     result = main(
         lang="javascript",
-        packages=None,
-        dep_file=Path("tests/data/example_package.json"),
+        packages="uri-js;<=4.4.1,ajv;8.11.0",
+        dep_file=None,
         depth=None,
     )
     assert json_schema.is_valid(result)
+    assert {key for res_obj in result for key in res_obj} == {
+        "json-schema-traverse",
+        "uri-js",
+        "require-from-string",
+        "punycode",
+        "fast-deep-equal",
+        "ajv",
+    }
 
 
-def test_npm_shrinkwrap_json(json_schema):
-    """Check shrinkwrap file output"""
+def test_php(json_schema):
+    """PHP fetching test"""
     result = main(
-        lang="javascript",
-        packages=None,
-        dep_file=Path("tests/data/example_npm_shrinkwrap.json"),
+        lang="php",
+        packages="nunomaduro/collision;^6.0",
+        dep_file=None,
         depth=None,
     )
     assert json_schema.is_valid(result)
+    assert {key for res_obj in result for key in res_obj} == {
+        "symfony/polyfill-ctype",
+        "symfony/service-contracts",
+        "psr/log",
+        "symfony/polyfill-intl-normalizer",
+        "psr/container",
+        "symfony/console",
+        "nunomaduro/collision",
+        "facade/ignition-contracts",
+        "symfony/string",
+        "symfony/polyfill-mbstring",
+        "filp/whoops",
+        "symfony/polyfill-intl-grapheme",
+        "symfony/deprecation-contracts",
+    }
 
 
-def test_package_lock_json(json_schema):
-    """Check package lock file output"""
-    result = main(
-        lang="javascript",
-        packages=None,
-        dep_file=Path("tests/data/example_package_lock.json"),
-        depth=None,
-    )
-    assert json_schema.is_valid(result)
-
-
-def test_yarn_v1_lock(json_schema):
-    """Check yarn.lock v1 file output"""
-    result = main(
-        lang="javascript",
-        packages=None,
-        dep_file=Path("tests/data/example_v1_yarn.lock"),
-        depth=None,
-    )
-    assert json_schema.is_valid(result)
-
-
-def test_yarn_v2_lock(json_schema):
-    """Check yarn.lock v2 file output"""
-    result = main(
-        lang="javascript",
-        packages=None,
-        dep_file=Path("tests/data/example_v2_yarn.lock"),
-        depth=None,
-    )
-    assert json_schema.is_valid(result)
-
-
-def test_requirements_txt(json_schema):
-    """Check requirements.txt file output"""
+def test_python(json_schema):
+    """Python fetching test"""
     result = main(
         lang="python",
-        packages=None,
-        dep_file=Path("tests/data/example_requirements.txt"),
+        packages="pygit2;==1.9.2",
+        dep_file=None,
         depth=None,
     )
     assert json_schema.is_valid(result)
+    assert {key for res_obj in result for key in res_obj} == {
+        "cached-property",
+        "pycparser",
+        "pygit2",
+        "cffi",
+    }
 
 
-def test_setup_py(json_schema):
-    """Check setup.py file output"""
+def test_rust(json_schema):
+    """Rust fetching test"""
     result = main(
-        lang="python",
-        packages=None,
-        dep_file=Path("tests/data/example_setup.py"),
+        lang="rust",
+        packages="libc;0.2.126",
+        dep_file=None,
         depth=None,
     )
     assert json_schema.is_valid(result)
-
-
-def test_setup_cfg(json_schema):
-    """Check setup.cfg file output"""
-    result = main(
-        lang="python",
-        packages=None,
-        dep_file=Path("tests/data/example_setup.cfg"),
-        depth=None,
-    )
-    assert json_schema.is_valid(result)
-
-
-def test_pyproject_toml(json_schema):
-    """Check toml file output"""
-    result = main(
-        lang="python",
-        packages=None,
-        dep_file=Path("tests/data/example_pyproject.toml"),
-        depth=None,
-    )
-    assert json_schema.is_valid(result)
-
-
-def test_poetry_toml(json_schema):
-    """Check poetry toml file output"""
-    result = main(
-        lang="python",
-        packages=None,
-        dep_file=Path("tests/data/example_pyproject_poetry.toml"),
-        depth=None,
-    )
-    assert json_schema.is_valid(result)
-
-
-def test_unsupported(json_schema):
-    """Check no extension output"""
-    with pytest.raises(FileNotSupportedError, match="example_pipfile"):
-        result = main(
-            lang="python",
-            packages=None,
-            dep_file=Path("tests/data/example_pipfile"),
-            depth=None,
-        )
-        assert json_schema.is_valid(result)
+    assert {key for res_obj in result for key in res_obj} == {
+        "rustc-std-workspace-core",
+        "libc",
+    }

@@ -8,3 +8,9 @@ __pycache__/
 /configuration.ini
 /venv/
 coverage.xml
+venv*
+*.pyc
+*.egg-info
+/build
+dist
+.tox
