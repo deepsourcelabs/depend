@@ -5,7 +5,6 @@ import re
 from typing import List, Optional
 
 import jmespath
-import requests
 import xmltodict
 from bs4 import BeautifulSoup
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
@@ -239,7 +238,8 @@ def handle_rust(api_response: Response, queries: dict, result: Result, url: str)
     :param url: url queried for response
     """
     dep_url = url + "/dependencies"
-    dep_res = requests.get(dep_url)
+    fut_dep = requests.get(dep_url)
+    dep_res = fut_dep.result()
     version_q: jmespath.parser.ParsedResult = queries["version"]
     license_q: jmespath.parser.ParsedResult = queries["license"]
     dependencies_q: jmespath.parser.ParsedResult = queries["dependency"]
@@ -277,7 +277,8 @@ def scrape_go(response: Response, queries: dict, result: Result, url: str):
     dependencies_tag = []
     # requirements not version specific
     non_ver_url = url.split("@")[0] + "?tab=imports"
-    dep_res = requests.get(non_ver_url, allow_redirects=False)
+    fut_res = requests.get(non_ver_url, allow_redirects=False)
+    dep_res = fut_res.result()
     if dep_res.status_code == 200:
         dep_soup = BeautifulSoup(dep_res.text, "html.parser")
         dependencies_tag = [
@@ -298,7 +299,8 @@ def go_versions(url: str, queries: dict) -> list:
     :return: list of versions
     """
     ver_parse = queries["versions"].split(".")
-    ver_res = requests.get(url + "?tab=versions", allow_redirects=False)
+    fut_res = requests.get(url + "?tab=versions", allow_redirects=False)
+    ver_res = fut_res.result()
     releases = []
     if ver_res.status_code == 200:
         version_soup = BeautifulSoup(ver_res.text, "html.parser")

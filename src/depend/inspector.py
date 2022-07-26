@@ -170,7 +170,8 @@ def make_single_request(
         url = make_url(language, package)
         queries = REGISTRY[language]
         # Get all available versions for specified package
-        response = requests.get(url)
+        fut_response = requests.get(url)
+        response = fut_response.result()
         red_url = url
         match language:
             case "python":
@@ -205,7 +206,8 @@ def make_single_request(
         # Construct URL for version specific data
         url = make_url(language, package, ver)
         logging.info(url)
-        response = requests.get(url)
+        fut_response = requests.get(url)
+        response = fut_response.result()
         queries = REGISTRY[language]
         # Collect repo if available to do vcs query if data incomplete
         match language:
@@ -224,7 +226,8 @@ def make_single_request(
                     red_url = url
                     if response.history:
                         red_url = response.url + "@" + version
-                        response = requests.get(red_url)
+                        fut_response = requests.get(red_url)
+                        response = fut_response.result()
                     scrape_go(response, queries, result, red_url)
                 elif not repo:
                     repo = package
