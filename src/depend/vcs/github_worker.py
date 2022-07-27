@@ -48,9 +48,8 @@ def handle_github(
         rl = g.get_rate_limit()
         reset_timestamp = calendar.timegm(rl.core.reset.timetuple())
         if rl.core.remaining == 0:
-            logging.error("GitHub API limit exhausted - Sleeping")
+            logging.error(f"GitHub API limit exhausted - Time left {reset_timestamp - calendar.timegm(time.gmtime()) + 5}")
             sys.exit(-1)
-            # time.sleep(reset_timestamp - calendar.timegm(time.gmtime()) + 5)
 
         repo_identifier = re.search(
             r"github.com/([^/]+)/([^/\\\r\n\s]+)(?:/tree/|)?([^/.\\\r\n\s]+)?",
