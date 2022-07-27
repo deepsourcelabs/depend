@@ -34,14 +34,25 @@ def handle_nuspec(req_file_data: str) -> dict:
         "pkg_dep": [],
         "timestamp": datetime.utcnow().isoformat(),
     }
+    parse_nuspec(req_file_data, res)
+    return res
+
+
+def parse_nuspec(req_file_data, result):
+    """Get data frim .nuspec files"""
     root = xmltodict.parse(req_file_data).get("package", {}).get("metadata")
-    res["pkg_name"] = root.get("id")
-    res["pkg_ver"] = root.get("version")
+    result["pkg_name"] = root.get("id")
+    result["pkg_ver"] = root.get("version")
     # ignores "file" type
     if root.get("license", {}).get("@type") == "expression":
-        res["pkg_lic"] = [root.get("license", {}).get("#text")]
-    pkg_dep = []
-    for dep in sum(list(findkeys(root.get("dependencies"), "dependency")), []):
-        pkg_dep.append(dep.get("@id") + ";" + dep.get("@version"))
-    res["pkg_dep"] = pkg_dep
-    return res
+        result["pkg_lic"] = [root.get("license", {}).get("#text")]
+    pkg_dep = set()
+    for gen_e in findkeys(root.get("dependencies"), "dependency"):
+        if isinstance(gen_e, list):
+            for dep_e in gen_e:
+                dep_entry = dep_e.get("@id") + ";" + dep_e.get("@version")
+                pkg_dep.add(dep_entry)
+        else:
+            dep_entry = gen_e.get("@id") + ";" + gen_e.get("@version")
+            pkg_dep.add(dep_entry)
+    return pkg_dep, root

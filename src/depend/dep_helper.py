@@ -17,4 +17,3 @@ cached_requests = CachedSession(
     match_headers=True,  # Match all request headers
 )
 requests = FuturesSession(session=cached_requests, max_workers=10)
-

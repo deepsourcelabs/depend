@@ -1,11 +1,13 @@
 """Functions to handle JavaScript files"""
 import json
+import logging
 from datetime import datetime
-from typing import Any
 
+import jmespath
 import yaml
 from pyarn import lockfile
 
+from depend.constants import REGISTRY
 from depend.dependencies.dep_types import Result
 
 
@@ -48,15 +50,47 @@ def handle_json(req_file_data: str) -> Result:
     :return: list of requirement and specs
     """
     package_data = json.loads(req_file_data)
+    res: Result = {
+        "import_name": "",
+        "lang_ver": [],
+        "pkg_name": "",
+        "pkg_ver": "",
+        "pkg_lic": ["Other"],
+        "pkg_err": {},
+        "pkg_dep": [],
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+    handle_js(package_data, res)
+    return res
+
+
+def nested_deps(json_input):
+    for item, value in json_input.items():
+        yield f"{item};{value.get('version', '')}"
+        if "dependencies" in value:
+            yield from nested_deps(value.get("dependencies"))
+
+
+def handle_js(package_data, result):
+    queries = REGISTRY["javascript"]
+    version_q: jmespath.parser.ParsedResult = queries["version"]
+    license_q: jmespath.parser.ParsedResult = queries["license"]
+    dependencies_q: jmespath.parser.ParsedResult = queries["dependency"]
+    repo_q: jmespath.parser.ParsedResult = queries["repo"]
+    version = version_q.search(package_data)
+    if version:
+        result["pkg_ver"] = version
+    else:
+        logging.error("Version query failed")
     engines = package_data.get("engines", {})
     if isinstance(engines, dict):
-        lang_ver = [engines.get("node", "")]
+        result["lang_ver"] = [engines.get("node", "")]
     else:
         # The documentation specifies that this entry must be a dictionary
         # This was added because of a failing case in tests
-        lang_ver = []
+        result["lang_ver"] = []
     pkg_lic = ["Other"]
-    lic_info = package_data.get("license")
+    lic_info = license_q.search(package_data)
     if isinstance(lic_info, str):
         pkg_lic = lic_info.split(",")
     #     The cases below are just to as to add support for older packages
@@ -67,52 +101,14 @@ def handle_json(req_file_data: str) -> Result:
             pkg_lic = list({single_lic.get("type", "Other") for single_lic in lic_info})
         elif isinstance(lic_info[0], str):
             pkg_lic = lic_info
-    filter_dict: Result = {
-        "import_name": "",
-        "lang_ver": lang_ver,
-        "pkg_name": package_data.get("name", ""),
-        "pkg_ver": package_data.get("version", ""),
-        "pkg_lic": pkg_lic,
-        "pkg_dep": package_data.get("dependencies", {}),
-        "pkg_err": {},
-        "timestamp": datetime.utcnow().isoformat(),
-    }
-    for k, v in filter_dict.items():
-        if k == "pkg_dep":
-            handle_json_dep(filter_dict, k, v)
-        elif k not in ["lang_ver", "pkg_lic"]:
-            flatten_content(filter_dict, k, v)
-    filter_dict["pkg_err"] = {}
-    return filter_dict
-
-
-def handle_json_dep(filter_dict: Result, k: str, v: Any) -> None:
-    """
-    Flattens variants of dependencies to uniform
-    :param filter_dict: any dict or list
-    :param k: key to check
-    :param v: associated value
-    """
-    if any(isinstance(i, dict) for i in v.values()):
-        filter_dict[k] = [i + ";" + v[i].get("version", "") for i in v.keys()]  # type: ignore
-    else:
-        filter_dict[k] = [";".join(i) for i in v.items()]  # type: ignore
-
-
-def flatten_content(filter_dict: Result, k: str, v: Any):
-    """
-    Flattens a dict/list - used to handle deprecated formats
-    :param filter_dict: any dict or list
-    :param k: key to check
-    :param v: associated value
-    """
-    if isinstance(v, dict):
-        filter_dict[k] = ";".join(v.values())  # type: ignore
-    elif isinstance(v, list):
-        if any(isinstance(i, dict) for i in v):
-            temp_list = [";".join(s.values()) for s in v if isinstance(s, dict)]
-            filter_dict[k] = ";".join(temp_list)  # type: ignore
+    result["pkg_lic"] = pkg_lic
+    dep_data = dependencies_q.search(package_data)
+    result["pkg_dep"] = []
+    if dep_data:
+        if any(isinstance(i, dict) for i in dep_data.values()):
+            result["pkg_dep"] = [*nested_deps(dep_data)]
         else:
-            filter_dict[k] = ";".join(v)  # type: ignore
-    else:
-        filter_dict[k] = str(filter_dict[k])  # type: ignore
+            for item, value in dep_data.items():
+                result["pkg_dep"].append(f"{item};{value}")
+    repo = repo_q.search(package_data) or ""
+    return repo
