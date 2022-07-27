@@ -145,8 +145,7 @@ def handle_cs(api_response: Response, result: Result):
     if api_response.status_code == 404:
         return ""
     req_file_data = api_response.text
-    pkg_dep, root = parse_nuspec(req_file_data, result)
-    result["pkg_dep"] = list(pkg_dep)
+    root = parse_nuspec(req_file_data, result)
     # @type = git
     return root.get("repository", {}).get("@url")
 
