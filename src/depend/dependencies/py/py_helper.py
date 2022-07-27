@@ -8,7 +8,7 @@ from pkg_resources import parse_requirements
 from depend.dependencies.dep_types import Result
 
 
-def handle_requirements_txt(req_file_data: str) -> Result:
+def handle_requirements_txt(req_file_data) -> Result:
     """
     Parse requirements file
     :param req_file_data: Content of requirements.txt
@@ -28,6 +28,8 @@ def handle_requirements_txt(req_file_data: str) -> Result:
 
 
 def get_py_dep_from_iterable(api_depend):
+    if not api_depend:
+        return []
     install_reqs = parse_requirements(api_depend)
     ir: packaging.specifiers.SpecifierSet
     pkg_dep = []

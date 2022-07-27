@@ -56,5 +56,4 @@ def handle_nuspec_dep(dep_list_obj: OrderedDict):
     else:
         dep_entry = dep_list_obj.get("@id") + ";" + dep_list_obj.get("@version")
         pkg_dep.add(dep_entry)
-        print()
     return pkg_dep
