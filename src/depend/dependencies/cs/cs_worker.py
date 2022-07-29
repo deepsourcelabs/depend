@@ -24,7 +24,10 @@ def handle_nuspec(req_file_data: str) -> dict:
 
 
 def parse_nuspec(req_file_data, result):
-    """Get data frim .nuspec files"""
+    """
+    Get data frim .nuspec files
+    https://docs.microsoft.com/en-us/nuget/reference/nuspec#dependencies-element
+    """
     root = xmltodict.parse(req_file_data).get("package", {}).get("metadata")
     result["pkg_name"] = root.get("id")
     result["pkg_ver"] = root.get("version")
