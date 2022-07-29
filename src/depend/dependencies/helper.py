@@ -191,8 +191,7 @@ def handle_rust(api_response: Response, result: Result, url: str):
     """
     queries = REGISTRY["rust"]
     dep_url = url + "/dependencies"
-    fut_dep = requests.get(dep_url)
-    dep_res = fut_dep.result()
+    dep_res = requests.get(dep_url)
     version_q: jmespath.parser.ParsedResult = queries["version"]
     license_q: jmespath.parser.ParsedResult = queries["license"]
     dependencies_q: jmespath.parser.ParsedResult = queries["dependency"]
@@ -230,8 +229,7 @@ def scrape_go(response: Response, result: Result, url: str):
     dependencies_tag = []
     # requirements not version specific
     non_ver_url = url.split("@")[0] + "?tab=imports"
-    fut_res = requests.get(non_ver_url, allow_redirects=False)
-    dep_res = fut_res.result()
+    dep_res = requests.get(non_ver_url, allow_redirects=False)
     if dep_res.status_code == 200:
         dep_soup = BeautifulSoup(dep_res.text, "html.parser")
         dependencies_tag = [
@@ -252,8 +250,7 @@ def go_versions(url: str) -> list:
     """
     queries = REGISTRY["go"]
     ver_parse = queries["versions"].split(".")
-    fut_res = requests.get(url + "?tab=versions", allow_redirects=False)
-    ver_res = fut_res.result()
+    ver_res = requests.get(url + "?tab=versions", allow_redirects=False)
     releases = []
     if ver_res.status_code == 200:
         version_soup = BeautifulSoup(ver_res.text, "html.parser")
