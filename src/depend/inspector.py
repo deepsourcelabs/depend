@@ -168,27 +168,26 @@ def make_single_request(
     else:
         version_constraints = fix_constraint(language, version)
         url = make_url(language, package)
-        queries = REGISTRY[language]
         # Get all available versions for specified package
         response = requests.get(url)
         red_url = url
         match language:
             case "python":
-                vers = py_versions(response, queries)
+                vers = py_versions(response)
             case "javascript":
-                vers = js_versions(response, queries)
+                vers = js_versions(response)
             case "go":
                 if response.status_code == 200:
                     # Handle 302: Redirection
                     if response.history:
                         red_url = response.url
-                vers = go_versions(red_url, queries)
+                vers = go_versions(red_url)
             case "cs":
-                vers = nuget_versions(response, queries)
+                vers = nuget_versions(response)
             case "php":
-                vers = php_versions(response, queries)
+                vers = php_versions(response)
             case "rust":
-                vers = rust_versions(response, queries)
+                vers = rust_versions(response)
         # Parse only one version resolved from constraint provided
         logging.debug(vers)
         if not all_ver and vers:
@@ -206,26 +205,25 @@ def make_single_request(
         url = make_url(language, package, ver)
         logging.info(url)
         response = requests.get(url)
-        queries = REGISTRY[language]
         # Collect repo if available to do vcs query if data incomplete
         match language:
             case "python":
-                repo = handle_pypi(response, queries, result)
+                repo = handle_pypi(response, result)
             case "javascript":
-                repo = handle_npmjs(response, queries, result)
+                repo = handle_npmjs(response, result)
             case "cs":
-                repo = handle_cs(response, queries, result)
+                repo = handle_cs(response, result)
             case "php":
-                handle_php(response, queries, result, ver)
+                handle_php(response, result, ver)
             case "rust":
-                handle_rust(response, queries, result, url)
+                handle_rust(response, result, url)
             case "go":
                 if response.status_code == 200:
                     red_url = url
                     if response.history:
                         red_url = response.url + "@" + version
                         response = requests.get(red_url)
-                    scrape_go(response, queries, result, red_url)
+                    scrape_go(response, result, red_url)
                 elif not repo:
                     repo = package
         if repo:

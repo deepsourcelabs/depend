@@ -4,7 +4,7 @@ from datetime import timedelta
 from requests_cache import CachedSession
 
 requests = CachedSession(
-    "murdock_cache",
+    "depend_cache",
     use_cache_dir=True,  # Save files in the default user cache dir
     cache_control=True,  # Use Cache-Control headers for expiration, if available
     expire_after=timedelta(days=1),  # Otherwise expire responses after one day

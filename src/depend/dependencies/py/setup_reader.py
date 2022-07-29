@@ -290,9 +290,10 @@ class LaxSetupReader(SetupReader):
             ).text
         except exceptions.ParseVersionError:
             res["pkg_ver"] = ""
-        res["pkg_dep"] = handle_requirements_txt(
-            parser.get("options", "install_requires", fallback="")
-        ).get("pkg_dep")
+        dep_info = parser.get("options", "install_requires", fallback="")
+        if dep_info and not dep_info.startswith("\n"):
+            dep_info = dep_info.split(";")
+        res["pkg_dep"] = handle_requirements_txt(dep_info).get("pkg_dep")
         res["lang_ver"] = parser.get("options", "python_requires", fallback="").split(
             ","
         )
